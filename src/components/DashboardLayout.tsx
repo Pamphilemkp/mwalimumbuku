@@ -1,0 +1,152 @@
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import {
+  BookOpen, LogOut, User, Home, Award, Smile, GraduationCap,
+  Users, BarChart3, Settings, FileText, MessageSquare, Menu, X,
+  PlusCircle, ClipboardList, Shield
+} from 'lucide-react';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+const roleNavItems: Record<string, NavItem[]> = {
+  student: [
+    { label: 'Dashboard', href: '/dashboard', icon: Home },
+    { label: 'Courses', href: '/dashboard/courses', icon: BookOpen },
+    { label: 'My Progress', href: '/dashboard/progress', icon: BarChart3 },
+    { label: 'Badges', href: '/dashboard/badges', icon: Award },
+    { label: 'Mood', href: '/dashboard/mood', icon: Smile },
+    { label: 'Profile', href: '/dashboard/profile', icon: User },
+  ],
+  teacher: [
+    { label: 'Dashboard', href: '/dashboard', icon: Home },
+    { label: 'My Courses', href: '/dashboard/my-courses', icon: BookOpen },
+    { label: 'Create Course', href: '/dashboard/create-course', icon: PlusCircle },
+    { label: 'Student Results', href: '/dashboard/results', icon: ClipboardList },
+    { label: 'Profile', href: '/dashboard/profile', icon: User },
+  ],
+  parent: [
+    { label: 'Dashboard', href: '/dashboard', icon: Home },
+    { label: 'My Children', href: '/dashboard/children', icon: Users },
+    { label: 'Progress', href: '/dashboard/child-progress', icon: BarChart3 },
+    { label: 'Profile', href: '/dashboard/profile', icon: User },
+  ],
+  admin: [
+    { label: 'Dashboard', href: '/dashboard', icon: Home },
+    { label: 'Users', href: '/dashboard/users', icon: Users },
+    { label: 'Courses', href: '/dashboard/manage-courses', icon: BookOpen },
+    { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { label: 'Profile', href: '/dashboard/profile', icon: User },
+  ],
+};
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { user, role } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navItems = roleNavItems[role ?? 'student'] ?? roleNavItems.student;
+  const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : '';
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const roleColor: Record<string, string> = {
+    student: 'bg-primary/10 text-primary',
+    parent: 'bg-secondary/10 text-secondary',
+    teacher: 'bg-accent/10 text-accent',
+    admin: 'bg-destructive/10 text-destructive',
+  };
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card transition-transform duration-200 lg:static lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex h-16 items-center gap-2 border-b border-border px-6">
+          <BookOpen className="h-6 w-6 text-primary" />
+          <span className="font-display text-lg font-bold text-foreground">Mwalimu</span>
+          <button className="ml-auto lg:hidden" onClick={() => setSidebarOpen(false)}>
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-border p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">
+                {user?.user_metadata?.full_name || 'User'}
+              </p>
+              <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium', roleColor[role ?? 'student'])}>
+                {roleLabel}
+              </span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="shrink-0">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="flex flex-1 flex-col">
+        {/* Mobile header */}
+        <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:hidden">
+          <button onClick={() => setSidebarOpen(true)}>
+            <Menu className="h-5 w-5 text-foreground" />
+          </button>
+          <BookOpen className="h-5 w-5 text-primary" />
+          <span className="font-display font-bold text-foreground">Mwalimu</span>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
