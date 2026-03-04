@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   BookOpen, LogOut, User, Home, Award, Smile, GraduationCap,
   Users, BarChart3, Settings, FileText, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, Shield
+  PlusCircle, ClipboardList, Shield, CreditCard, MessageCircle
 } from 'lucide-react';
 
 interface NavItem {
@@ -23,6 +23,8 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'My Progress', href: '/dashboard/progress', icon: BarChart3 },
     { label: 'Badges', href: '/dashboard/badges', icon: Award },
     { label: 'Mood', href: '/dashboard/mood', icon: Smile },
+    { label: 'Forum', href: '/dashboard/forum', icon: MessageSquare },
+    { label: 'Subscription', href: '/dashboard/subscription', icon: CreditCard },
     { label: 'Profile', href: '/dashboard/profile', icon: User },
   ],
   teacher: [
@@ -30,12 +32,16 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'My Courses', href: '/dashboard/my-courses', icon: BookOpen },
     { label: 'Create Course', href: '/dashboard/create-course', icon: PlusCircle },
     { label: 'Student Results', href: '/dashboard/results', icon: ClipboardList },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageCircle },
+    { label: 'Forum', href: '/dashboard/forum', icon: MessageSquare },
     { label: 'Profile', href: '/dashboard/profile', icon: User },
   ],
   parent: [
     { label: 'Dashboard', href: '/dashboard', icon: Home },
     { label: 'My Children', href: '/dashboard/children', icon: Users },
     { label: 'Progress', href: '/dashboard/child-progress', icon: BarChart3 },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageCircle },
+    { label: 'Forum', href: '/dashboard/forum', icon: MessageSquare },
     { label: 'Profile', href: '/dashboard/profile', icon: User },
   ],
   admin: [
@@ -43,6 +49,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Users', href: '/dashboard/users', icon: Users },
     { label: 'Courses', href: '/dashboard/manage-courses', icon: BookOpen },
     { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { label: 'Forum', href: '/dashboard/forum', icon: MessageSquare },
     { label: 'Profile', href: '/dashboard/profile', icon: User },
   ],
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useCourseLessons, useLessonExercises, useSubmitAnswer } from '@/hooks/useCourses';
+import { useCourseLessons, useLessonExercises } from '@/hooks/useCourses';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -31,24 +31,27 @@ export default function CourseView() {
 
   const { data: lessons, isLoading } = useCourseLessons(courseId);
   const { data: exercises } = useLessonExercises(selectedLessonId ?? undefined);
-  const submitAnswer = useSubmitAnswer();
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState<Record<string, { is_correct: boolean; points_earned: number }>>({});
 
-  const handleAnswer = (exerciseId: string, answer: string, correctAnswer: string, points: number) => {
-    const isCorrect = answer === correctAnswer;
+  const handleAnswer = async (exerciseId: string, answer: string) => {
     setAnswers((prev) => ({ ...prev, [exerciseId]: answer }));
-    setSubmitted((prev) => ({ ...prev, [exerciseId]: true }));
 
-    submitAnswer.mutate(
-      { exercise_id: exerciseId, answer, is_correct: isCorrect, points_earned: isCorrect ? points : 0 },
-      {
-        onSuccess: () => {
-          toast(isCorrect ? '🎉 Correct! Well done!' : '❌ Not quite. Keep trying!');
-        },
-      }
-    );
+    // Server-side answer checking — correct_answer is never exposed to client
+    const { data, error } = await supabase.rpc('check_answer', {
+      _exercise_id: exerciseId,
+      _answer: answer,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const result = data as { is_correct: boolean; points_earned: number };
+    setSubmitted((prev) => ({ ...prev, [exerciseId]: result }));
+    toast(result.is_correct ? '🎉 Correct! Well done!' : '❌ Not quite. Keep trying!');
   };
 
   const selectedLesson = lessons?.find((l) => l.id === selectedLessonId);
@@ -111,31 +114,33 @@ export default function CourseView() {
                     <h3 className="font-display text-lg font-semibold text-foreground">Exercises</h3>
                     {exercises.map((ex) => {
                       const options = Array.isArray(ex.options) ? (ex.options as string[]) : [];
-                      const isSubmitted = submitted[ex.id];
+                      const result = submitted[ex.id];
                       const userAnswer = answers[ex.id];
+                      const isSubmitted = !!result;
 
                       return (
                         <div key={ex.id} className="rounded-xl border border-border bg-card p-5">
                           <p className="mb-3 font-medium text-foreground">{ex.question}</p>
                           <div className="space-y-2">
                             {options.map((opt) => {
-                              const isCorrect = opt === ex.correct_answer;
                               const isSelected = userAnswer === opt;
+                              const isCorrectAnswer = isSubmitted && result.is_correct && isSelected;
+                              const isWrongAnswer = isSubmitted && !result.is_correct && isSelected;
 
                               return (
                                 <button
                                   key={opt}
                                   disabled={isSubmitted}
-                                  onClick={() => handleAnswer(ex.id, opt, ex.correct_answer, ex.points)}
+                                  onClick={() => handleAnswer(ex.id, opt)}
                                   className={cn(
                                     'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-all',
-                                    isSubmitted && isCorrect && 'border-primary bg-primary/5 text-primary',
-                                    isSubmitted && isSelected && !isCorrect && 'border-destructive bg-destructive/5 text-destructive',
+                                    isCorrectAnswer && 'border-primary bg-primary/5 text-primary',
+                                    isWrongAnswer && 'border-destructive bg-destructive/5 text-destructive',
                                     !isSubmitted && 'border-border hover:border-primary/50 hover:bg-primary/5'
                                   )}
                                 >
-                                  {isSubmitted && isCorrect && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-                                  {isSubmitted && isSelected && !isCorrect && <XCircle className="h-4 w-4 shrink-0" />}
+                                  {isCorrectAnswer && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                                  {isWrongAnswer && <XCircle className="h-4 w-4 shrink-0" />}
                                   {opt}
                                 </button>
                               );
@@ -143,7 +148,7 @@ export default function CourseView() {
                           </div>
                           {isSubmitted && (
                             <p className="mt-2 text-xs text-muted-foreground">
-                              +{userAnswer === ex.correct_answer ? ex.points : 0} points
+                              +{result.points_earned} points
                             </p>
                           )}
                         </div>

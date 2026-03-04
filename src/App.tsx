@@ -32,6 +32,11 @@ import TeacherResults from "./pages/dashboard/TeacherResults";
 import ChildrenPage from "./pages/dashboard/ChildrenPage";
 import ChildProgress from "./pages/dashboard/ChildProgress";
 
+// Shared pages
+import ForumPage from "./pages/dashboard/ForumPage";
+import MessagesPage from "./pages/dashboard/MessagesPage";
+import SubscriptionPage from "./pages/dashboard/SubscriptionPage";
+
 // Admin pages
 import AdminUsers from "./pages/dashboard/AdminUsers";
 import AdminCourses from "./pages/dashboard/AdminCourses";
@@ -88,6 +93,11 @@ const App = () => (
             <Route path="/dashboard/users" element={<DashboardRoute><AdminUsers /></DashboardRoute>} />
             <Route path="/dashboard/manage-courses" element={<DashboardRoute><AdminCourses /></DashboardRoute>} />
             <Route path="/dashboard/analytics" element={<DashboardRoute><AdminAnalytics /></DashboardRoute>} />
+
+            {/* Shared routes */}
+            <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
+            <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
+            <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

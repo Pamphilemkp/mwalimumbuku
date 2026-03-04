@@ -55,9 +55,7 @@ export default function ChildrenPage() {
 
   const linkByUserId = useMutation({
     mutationFn: async (studentId: string) => {
-      const { error } = await supabase
-        .from('parent_student')
-        .insert({ parent_id: user!.id, student_id: studentId });
+      const { error } = await supabase.rpc('link_parent_child', { _student_id: studentId });
       if (error) throw error;
     },
     onSuccess: () => {
