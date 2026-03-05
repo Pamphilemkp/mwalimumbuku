@@ -60,18 +60,11 @@ export default function SubscriptionPage() {
 
   const updateTier = useMutation({
     mutationFn: async (tier: string) => {
-      if (subscription) {
-        const { error } = await supabase
-          .from('subscriptions')
-          .update({ tier, updated_at: new Date().toISOString() })
-          .eq('user_id', user!.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('subscriptions')
-          .insert({ user_id: user!.id, tier });
-        if (error) throw error;
-      }
+      const { data, error } = await supabase.functions.invoke('update-subscription', {
+        body: { tier },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: (_, tier) => {
       toast.success(tier === 'premium' ? '🎉 Welcome to Premium!' : 'Plan updated.');

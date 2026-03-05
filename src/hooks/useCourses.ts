@@ -121,16 +121,14 @@ export function useCreateExercise() {
 
 export function useSubmitAnswer() {
   const qc = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
-    mutationFn: async (values: { exercise_id: string; answer: string; is_correct: boolean; points_earned: number }) => {
-      const { data, error } = await supabase
-        .from('results')
-        .insert({ ...values, user_id: user!.id })
-        .select()
-        .single();
+    mutationFn: async (values: { exercise_id: string; answer: string }) => {
+      const { data, error } = await supabase.rpc('check_answer', {
+        _exercise_id: values.exercise_id,
+        _answer: values.answer,
+      });
       if (error) throw error;
-      return data;
+      return data as { is_correct: boolean; points_earned: number };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['results'] });
