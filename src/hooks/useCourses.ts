@@ -54,10 +54,9 @@ export function useLessonExercises(lessonId: string | undefined) {
   return useQuery({
     queryKey: ['exercises', lessonId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('lesson_id', lessonId!);
+      const { data, error } = await supabase.rpc('get_lesson_exercises', {
+        _lesson_id: lessonId!,
+      });
       if (error) throw error;
       return data;
     },
