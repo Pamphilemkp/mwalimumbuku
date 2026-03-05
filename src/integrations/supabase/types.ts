@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           created_at: string
@@ -41,11 +76,42 @@ export type Database = {
         }
         Relationships: []
       }
+      course_enrollments: {
+        Row: {
+          course_id: string
+          enrolled_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          enrolled_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          enrolled_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
+          deadline: string | null
           description: string | null
           id: string
+          is_open_enrollment: boolean
           is_published: boolean
           level: string
           subject: string
@@ -55,8 +121,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deadline?: string | null
           description?: string | null
           id?: string
+          is_open_enrollment?: boolean
           is_published?: boolean
           level?: string
           subject: string
@@ -66,8 +134,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deadline?: string | null
           description?: string | null
           id?: string
+          is_open_enrollment?: boolean
           is_published?: boolean
           level?: string
           subject?: string

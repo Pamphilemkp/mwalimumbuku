@@ -1,15 +1,49 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePublishedCourses } from '@/hooks/useCourses';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Search, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/components/ui/sonner';
 
 export default function CourseBrowser() {
   const { data: courses, isLoading } = usePublishedCourses();
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
+
+  const { data: enrollments } = useQuery({
+    queryKey: ['enrollments', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select('course_id')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return new Set(data.map((e) => e.course_id));
+    },
+    enabled: !!user,
+  });
+
+  const enroll = useMutation({
+    mutationFn: async (courseId: string) => {
+      const { error } = await supabase
+        .from('course_enrollments')
+        .insert({ course_id: courseId, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['enrollments'] });
+      toast.success('Enrolled successfully!');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const filtered = courses?.filter(
     (c) =>
@@ -21,54 +55,61 @@ export default function CourseBrowser() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground">Courses</h1>
-        <p className="mt-1 text-muted-foreground">Browse and start learning.</p>
+        <p className="mt-1 text-muted-foreground">Browse and enroll in courses.</p>
       </div>
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search courses..."
-          className="pl-10"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <Input placeholder="Search courses..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-48 rounded-xl" />
-          ))}
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
         </div>
       ) : filtered?.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BookOpen className="mb-4 h-12 w-12 text-muted-foreground/40" />
           <p className="text-lg font-medium text-muted-foreground">No courses found</p>
-          <p className="text-sm text-muted-foreground">Check back later for new courses.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered?.map((course, i) => (
-            <Link key={course.id} to={`/dashboard/courses/${course.id}`}>
+          {filtered?.map((course, i) => {
+            const isEnrolled = enrollments?.has(course.id);
+            return (
               <motion.div
+                key={course.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="group rounded-xl border border-border bg-card p-6 hover:shadow-md transition-all"
+                className="group rounded-xl border border-border bg-card p-6 hover:shadow-md transition-all flex flex-col"
               >
                 <div className="mb-3 flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs">{course.subject}</Badge>
                   <Badge variant="outline" className="text-xs">{course.level}</Badge>
                 </div>
-                <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {course.title}
-                </h3>
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                <Link to={`/dashboard/courses/${course.id}`}>
+                  <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {course.title}
+                  </h3>
+                </Link>
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground flex-1">
                   {course.description || 'No description available.'}
                 </p>
+                <div className="mt-4">
+                  {isEnrolled ? (
+                    <div className="flex items-center gap-1.5 text-sm text-primary font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Enrolled
+                    </div>
+                  ) : (
+                    <Button size="sm" onClick={() => enroll.mutate(course.id)} disabled={enroll.isPending}>
+                      Enroll
+                    </Button>
+                  )}
+                </div>
               </motion.div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
