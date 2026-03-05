@@ -43,9 +43,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // For downgrade to free, allow directly
-    // For upgrade to premium, in production verify payment via Stripe webhook
-    // For now, we enforce server-side control so clients can't bypass
+    // Only allow downgrades to free via this endpoint.
+    // Premium upgrades MUST go through Stripe checkout/webhook flow.
+    if (tier === "premium") {
+      return new Response(JSON.stringify({ error: "Payment required. Please use the checkout flow to upgrade." }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: existing } = await adminClient

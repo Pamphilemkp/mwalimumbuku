@@ -131,7 +131,13 @@ export default function SubscriptionPage() {
                 className="mt-6 w-full"
                 variant={isCurrent ? 'outline' : tier.popular ? 'default' : 'secondary'}
                 disabled={isCurrent || updateTier.isPending}
-                onClick={() => updateTier.mutate(tier.id)}
+                onClick={() => {
+                  if (tier.id === 'premium') {
+                    toast.info('Stripe checkout is not yet configured. Contact an administrator to upgrade.');
+                    return;
+                  }
+                  updateTier.mutate(tier.id);
+                }}
               >
                 {isCurrent ? 'Current Plan' : tier.id === 'premium' ? 'Upgrade to Premium' : 'Downgrade'}
               </Button>
