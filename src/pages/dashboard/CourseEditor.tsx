@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCourseLessons, useLessonExercises, useCreateLesson, useCreateExercise } from '@/hooks/useCourses';
+import { useCourseLessons, useCreateLesson, useCreateExercise } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +37,18 @@ export default function CourseEditor() {
   });
 
   const { data: lessons, isLoading } = useCourseLessons(courseId);
-  const { data: exercises } = useLessonExercises(selectedLessonId ?? undefined);
+  const { data: exercises } = useQuery({
+    queryKey: ['exercises-teacher', selectedLessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select('*')
+        .eq('lesson_id', selectedLessonId!);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedLessonId,
+  });
   const createLesson = useCreateLesson();
   const createExercise = useCreateExercise();
 
