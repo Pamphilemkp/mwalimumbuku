@@ -1,15 +1,49 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeacherCourses } from '@/hooks/useCourses';
-import { BookOpen, PlusCircle, ClipboardList } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { BookOpen, PlusCircle, ClipboardList, Users, MessageCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeacherHome() {
   const { user } = useAuth();
-  const { data: courses } = useTeacherCourses();
+  const { data: courses, isLoading } = useTeacherCourses();
+
+  const courseIds = courses?.map((c) => c.id) ?? [];
+
+  const { data: enrollmentCount } = useQuery({
+    queryKey: ['teacher-enrollment-count', courseIds],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('course_enrollments')
+        .select('*', { count: 'exact', head: true })
+        .in('course_id', courseIds);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: courseIds.length > 0,
+  });
 
   const published = courses?.filter((c) => c.is_published).length ?? 0;
   const drafts = courses?.filter((c) => !c.is_published).length ?? 0;
+
+  if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /></div>;
+
+  const stats = [
+    { label: 'Total Courses', value: courses?.length ?? 0, icon: BookOpen, color: 'text-primary' },
+    { label: 'Published', value: published, icon: TrendingUp, color: 'text-primary' },
+    { label: 'Drafts', value: drafts, icon: ClipboardList, color: 'text-secondary' },
+    { label: 'Enrolled Students', value: enrollmentCount ?? 0, icon: Users, color: 'text-accent' },
+  ];
+
+  const actions = [
+    { label: 'My Courses', href: '/dashboard/my-courses', icon: BookOpen, desc: 'View and manage your courses', color: 'text-primary' },
+    { label: 'Create Course', href: '/dashboard/create-course', icon: PlusCircle, desc: 'Build new learning content', color: 'text-accent' },
+    { label: 'Student Results', href: '/dashboard/results', icon: ClipboardList, desc: 'View student performance', color: 'text-secondary' },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageCircle, desc: 'Communicate with parents', color: 'text-primary' },
+  ];
 
   return (
     <div className="space-y-8">
@@ -20,37 +54,58 @@ export default function TeacherHome() {
         <p className="mt-1 text-muted-foreground">Manage your courses and students.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: 'Total Courses', value: courses?.length ?? 0, icon: BookOpen },
-          { label: 'Published', value: published, icon: BookOpen },
-          { label: 'Drafts', value: drafts, icon: ClipboardList },
-        ].map((s, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className="rounded-xl border border-border bg-card p-5">
-            <s.icon className="mb-2 h-5 w-5 text-primary" />
+            <s.icon className={`mb-2 h-5 w-5 ${s.color}`} />
             <p className="text-2xl font-bold text-foreground">{s.value}</p>
             <p className="text-sm text-muted-foreground">{s.label}</p>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link to="/dashboard/my-courses">
-          <div className="rounded-xl border border-border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer">
-            <BookOpen className="mb-3 h-8 w-8 text-primary" />
-            <h3 className="font-display font-semibold text-foreground">My Courses</h3>
-            <p className="mt-1 text-sm text-muted-foreground">View and manage your courses</p>
-          </div>
-        </Link>
-        <Link to="/dashboard/create-course">
-          <div className="rounded-xl border border-border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer">
-            <PlusCircle className="mb-3 h-8 w-8 text-accent" />
-            <h3 className="font-display font-semibold text-foreground">Create Course</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Build new learning content</p>
-          </div>
-        </Link>
+      <div>
+        <h2 className="mb-4 font-display text-xl font-semibold text-foreground">Quick Actions</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {actions.map((item, i) => (
+            <Link key={item.href} to={item.href}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.05 }}
+                className="rounded-xl border border-border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer h-full"
+              >
+                <item.icon className={`mb-3 h-8 w-8 ${item.color}`} />
+                <h3 className="font-display font-semibold text-foreground">{item.label}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{item.desc}</p>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
       </div>
+
+      {/* Recent courses */}
+      {courses && courses.length > 0 && (
+        <div>
+          <h2 className="mb-4 font-display text-xl font-semibold text-foreground">Recent Courses</h2>
+          <div className="space-y-2">
+            {courses.slice(0, 5).map((c) => (
+              <Link key={c.id} to={`/dashboard/courses/${c.id}/edit`}>
+                <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/50 transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{c.title}</p>
+                    <p className="text-xs text-muted-foreground">{c.subject} · {c.level}</p>
+                  </div>
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${c.is_published ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    {c.is_published ? 'Published' : 'Draft'}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
