@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { useCourseLessons, useLessonExercises } from '@/hooks/useCourses';
+import { useCourseLessons, useLessonExercises, useUserResults } from '@/hooks/useCourses';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { BookOpen, CheckCircle2, XCircle, ChevronRight } from 'lucide-react';
+import { BookOpen, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 
 export default function CourseView() {
   const { courseId } = useParams();
@@ -31,14 +32,38 @@ export default function CourseView() {
 
   const { data: lessons, isLoading } = useCourseLessons(courseId);
   const { data: exercises } = useLessonExercises(selectedLessonId ?? undefined);
+  const { data: allResults } = useUserResults();
+
+  // Map exercise results for current user - track best attempt per exercise
+  const exerciseResults = useMemo(() => {
+    if (!allResults) return new Map<string, { is_correct: boolean; points_earned: number; answer: string; attempts: number }>();
+    const map = new Map<string, { is_correct: boolean; points_earned: number; answer: string; attempts: number }>();
+    // Group results by exercise_id
+    const grouped = new Map<string, typeof allResults>();
+    for (const r of allResults) {
+      const existing = grouped.get(r.exercise_id) ?? [];
+      existing.push(r);
+      grouped.set(r.exercise_id, existing);
+    }
+    for (const [exId, results] of grouped) {
+      const best = results.reduce((a, b) => (b.points_earned > a.points_earned ? b : a), results[0]);
+      map.set(exId, {
+        is_correct: best.is_correct,
+        points_earned: best.points_earned,
+        answer: best.answer,
+        attempts: results.length,
+      });
+    }
+    return map;
+  }, [allResults]);
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<Record<string, { is_correct: boolean; points_earned: number }>>({});
+  const [retaking, setRetaking] = useState<Set<string>>(new Set());
 
   const handleAnswer = async (exerciseId: string, answer: string) => {
     setAnswers((prev) => ({ ...prev, [exerciseId]: answer }));
 
-    // Server-side answer checking — correct_answer is never exposed to client
     const { data, error } = await supabase.rpc('check_answer', {
       _exercise_id: exerciseId,
       _answer: answer,
@@ -51,10 +76,42 @@ export default function CourseView() {
 
     const result = data as { is_correct: boolean; points_earned: number };
     setSubmitted((prev) => ({ ...prev, [exerciseId]: result }));
+    setRetaking((prev) => { const n = new Set(prev); n.delete(exerciseId); return n; });
     toast(result.is_correct ? '🎉 Correct! Well done!' : '❌ Not quite. Keep trying!');
   };
 
+  const handleRetake = (exerciseId: string) => {
+    setRetaking((prev) => new Set(prev).add(exerciseId));
+    setAnswers((prev) => { const n = { ...prev }; delete n[exerciseId]; return n; });
+    setSubmitted((prev) => { const n = { ...prev }; delete n[exerciseId]; return n; });
+  };
+
   const selectedLesson = lessons?.find((l) => l.id === selectedLessonId);
+
+  // Calculate lesson completion
+  const lessonCompletion = useMemo(() => {
+    if (!lessons || !exercises) return new Map<string, number>();
+    const map = new Map<string, number>();
+    // We only have exercises for the selected lesson, so can't calc for all
+    return map;
+  }, [lessons, exercises]);
+
+  // Current lesson exercise stats
+  const currentExerciseStats = useMemo(() => {
+    if (!exercises) return { total: 0, completed: 0, correct: 0 };
+    const total = exercises.length;
+    let completed = 0;
+    let correct = 0;
+    for (const ex of exercises) {
+      const prev = exerciseResults.get(ex.id);
+      const current = submitted[ex.id];
+      if (current || (prev && !retaking.has(ex.id))) {
+        completed++;
+        if (current?.is_correct || prev?.is_correct) correct++;
+      }
+    }
+    return { total, completed, correct };
+  }, [exercises, exerciseResults, submitted, retaking]);
 
   if (isLoading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-40" /></div>;
@@ -81,7 +138,7 @@ export default function CourseView() {
             lessons?.map((lesson) => (
               <button
                 key={lesson.id}
-                onClick={() => { setSelectedLessonId(lesson.id); setAnswers({}); setSubmitted({}); }}
+                onClick={() => { setSelectedLessonId(lesson.id); setAnswers({}); setSubmitted({}); setRetaking(new Set()); }}
                 className={cn(
                   'flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
                   selectedLessonId === lesson.id
@@ -108,24 +165,62 @@ export default function CourseView() {
                   </div>
                 </div>
 
+                {/* Exercise progress bar */}
+                {exercises && exercises.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-border bg-card p-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">
+                        Exercise Progress: {currentExerciseStats.completed}/{currentExerciseStats.total}
+                      </span>
+                      {currentExerciseStats.completed === currentExerciseStats.total && currentExerciseStats.total > 0 && (
+                        <div className="flex items-center gap-1 text-primary font-medium">
+                          <Trophy className="h-4 w-4" /> Lesson Complete!
+                        </div>
+                      )}
+                    </div>
+                    <Progress
+                      value={currentExerciseStats.total > 0 ? (currentExerciseStats.completed / currentExerciseStats.total) * 100 : 0}
+                      className="h-2"
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {currentExerciseStats.correct} correct out of {currentExerciseStats.completed} attempted
+                    </p>
+                  </div>
+                )}
+
                 {/* Exercises */}
                 {exercises && exercises.length > 0 && (
                   <div className="mt-6 space-y-4">
                     <h3 className="font-display text-lg font-semibold text-foreground">Exercises</h3>
                     {exercises.map((ex) => {
                       const options = Array.isArray(ex.options) ? (ex.options as string[]) : [];
-                      const result = submitted[ex.id];
-                      const userAnswer = answers[ex.id];
-                      const isSubmitted = !!result;
+                      const currentResult = submitted[ex.id];
+                      const previousResult = exerciseResults.get(ex.id);
+                      const isRetaking = retaking.has(ex.id);
+                      const activeResult = currentResult || (!isRetaking && previousResult ? { is_correct: previousResult.is_correct, points_earned: previousResult.points_earned } : null);
+                      const isSubmitted = !!activeResult;
+                      const userAnswer = answers[ex.id] || (!isRetaking && previousResult?.answer);
 
                       return (
-                        <div key={ex.id} className="rounded-xl border border-border bg-card p-5">
+                        <motion.div
+                          key={ex.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={cn(
+                            'rounded-xl border p-5 transition-colors',
+                            isSubmitted && activeResult?.is_correct
+                              ? 'border-primary/30 bg-primary/5'
+                              : isSubmitted && !activeResult?.is_correct
+                              ? 'border-destructive/30 bg-destructive/5'
+                              : 'border-border bg-card'
+                          )}
+                        >
                           <p className="mb-3 font-medium text-foreground">{ex.question}</p>
                           <div className="space-y-2">
                             {options.map((opt) => {
                               const isSelected = userAnswer === opt;
-                              const isCorrectAnswer = isSubmitted && result.is_correct && isSelected;
-                              const isWrongAnswer = isSubmitted && !result.is_correct && isSelected;
+                              const isCorrectAnswer = isSubmitted && activeResult?.is_correct && isSelected;
+                              const isWrongAnswer = isSubmitted && !activeResult?.is_correct && isSelected;
 
                               return (
                                 <button
@@ -134,9 +229,9 @@ export default function CourseView() {
                                   onClick={() => handleAnswer(ex.id, opt)}
                                   className={cn(
                                     'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-all',
-                                    isCorrectAnswer && 'border-primary bg-primary/5 text-primary',
-                                    isWrongAnswer && 'border-destructive bg-destructive/5 text-destructive',
-                                    !isSubmitted && 'border-border hover:border-primary/50 hover:bg-primary/5'
+                                    isCorrectAnswer && 'border-primary bg-primary/10 text-primary font-medium',
+                                    isWrongAnswer && 'border-destructive bg-destructive/10 text-destructive font-medium',
+                                    !isSubmitted && 'border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer'
                                   )}
                                 >
                                   {isCorrectAnswer && <CheckCircle2 className="h-4 w-4 shrink-0" />}
@@ -147,11 +242,35 @@ export default function CourseView() {
                             })}
                           </div>
                           {isSubmitted && (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              +{result.points_earned} points
-                            </p>
+                            <div className="mt-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {activeResult?.is_correct ? (
+                                  <Badge variant="default" className="bg-primary text-primary-foreground">
+                                    <CheckCircle2 className="mr-1 h-3 w-3" /> Correct
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="destructive">
+                                    <XCircle className="mr-1 h-3 w-3" /> Incorrect
+                                  </Badge>
+                                )}
+                                <span className="text-xs text-muted-foreground">+{activeResult?.points_earned} pts</span>
+                                {previousResult && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ({previousResult.attempts} attempt{previousResult.attempts !== 1 ? 's' : ''})
+                                  </span>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRetake(ex.id)}
+                                className="text-muted-foreground hover:text-foreground"
+                              >
+                                <RotateCcw className="mr-1 h-3 w-3" /> Retake
+                              </Button>
+                            </div>
                           )}
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
