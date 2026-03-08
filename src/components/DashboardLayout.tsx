@@ -90,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
-          <BookOpen className="h-6 w-6 text-primary" />
+          <img src={logo} alt="Mwalimu Mbuku" className="h-10 w-10 object-contain" />
           <span className="font-display text-lg font-bold text-foreground">Mwalimu</span>
           <button className="ml-auto lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5 text-muted-foreground" />
