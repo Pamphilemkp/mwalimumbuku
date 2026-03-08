@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/login');
   };
 
   const roleColor: Record<string, string> = {
