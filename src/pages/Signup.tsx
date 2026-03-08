@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { signUp, AppRole } from '@/lib/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,13 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { t } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already authenticated (e.g. auto-confirm), redirect to dashboard
+  if (!authLoading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,10 +57,16 @@ export default function Signup() {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, fullName, role);
+    const { data, error } = await signUp(email, password, fullName, role);
     setLoading(false);
-    if (error) toast.error(error.message);
-    else setSuccess(true);
+    if (error) {
+      toast.error(error.message);
+    } else if (data?.session) {
+      // Auto-confirmed — redirect to dashboard
+      navigate('/dashboard');
+    } else {
+      setSuccess(true);
+    }
   };
 
   if (success) {

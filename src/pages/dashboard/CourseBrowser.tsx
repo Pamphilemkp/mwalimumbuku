@@ -14,7 +14,7 @@ import { toast } from '@/components/ui/sonner';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function CourseBrowser() {
-  const { data: courses, isLoading } = usePublishedCourses();
+  const { data: courses, isLoading, isError } = usePublishedCourses();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -63,7 +63,7 @@ export default function CourseBrowser() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
         </div>
-      ) : filtered?.length === 0 ? (
+      ) : isError || !filtered || filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BookOpen className="mb-4 h-12 w-12 text-muted-foreground/40" />
           <p className="text-lg font-medium text-muted-foreground">{t.courseBrowser.noCourses}</p>
