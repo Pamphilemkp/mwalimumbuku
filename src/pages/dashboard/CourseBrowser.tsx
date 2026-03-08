@@ -71,7 +71,7 @@ export default function CourseBrowser() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered?.map((course, i) => {
-            const isEnrolled = enrollments?.has(course.id);
+            const isEnrolled = enrolledIds?.includes(course.id);
             return (
               <motion.div key={course.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 className="group rounded-xl border border-border bg-card p-6 hover:shadow-md transition-all flex flex-col">
