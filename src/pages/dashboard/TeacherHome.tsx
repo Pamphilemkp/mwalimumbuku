@@ -6,20 +6,18 @@ import { useQuery } from '@tanstack/react-query';
 import { BookOpen, PlusCircle, ClipboardList, Users, MessageCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function TeacherHome() {
   const { user } = useAuth();
   const { data: courses, isLoading } = useTeacherCourses();
-
+  const { t } = useLanguage();
   const courseIds = courses?.map((c) => c.id) ?? [];
 
   const { data: enrollmentCount } = useQuery({
     queryKey: ['teacher-enrollment-count', courseIds],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('course_enrollments')
-        .select('*', { count: 'exact', head: true })
-        .in('course_id', courseIds);
+      const { count, error } = await supabase.from('course_enrollments').select('*', { count: 'exact', head: true }).in('course_id', courseIds);
       if (error) throw error;
       return count ?? 0;
     },
@@ -32,26 +30,26 @@ export default function TeacherHome() {
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /></div>;
 
   const stats = [
-    { label: 'Total Courses', value: courses?.length ?? 0, icon: BookOpen, color: 'text-primary' },
-    { label: 'Published', value: published, icon: TrendingUp, color: 'text-primary' },
-    { label: 'Drafts', value: drafts, icon: ClipboardList, color: 'text-secondary' },
-    { label: 'Enrolled Students', value: enrollmentCount ?? 0, icon: Users, color: 'text-accent' },
+    { label: t.teacherHome.totalCourses, value: courses?.length ?? 0, icon: BookOpen, color: 'text-primary' },
+    { label: t.published, value: published, icon: TrendingUp, color: 'text-primary' },
+    { label: t.teacherHome.drafts, value: drafts, icon: ClipboardList, color: 'text-secondary' },
+    { label: t.teacherHome.enrolledStudents, value: enrollmentCount ?? 0, icon: Users, color: 'text-accent' },
   ];
 
   const actions = [
-    { label: 'My Courses', href: '/dashboard/my-courses', icon: BookOpen, desc: 'View and manage your courses', color: 'text-primary' },
-    { label: 'Create Course', href: '/dashboard/create-course', icon: PlusCircle, desc: 'Build new learning content', color: 'text-accent' },
-    { label: 'Student Results', href: '/dashboard/results', icon: ClipboardList, desc: 'View student performance', color: 'text-secondary' },
-    { label: 'Messages', href: '/dashboard/messages', icon: MessageCircle, desc: 'Communicate with parents', color: 'text-primary' },
+    { label: t.teacherHome.myCourses, href: '/dashboard/my-courses', icon: BookOpen, desc: t.teacherHome.myCoursesDesc, color: 'text-primary' },
+    { label: t.teacherHome.createCourse, href: '/dashboard/create-course', icon: PlusCircle, desc: t.teacherHome.createCourseDesc, color: 'text-accent' },
+    { label: t.teacherHome.studentResults, href: '/dashboard/results', icon: ClipboardList, desc: t.teacherHome.studentResultsDesc, color: 'text-secondary' },
+    { label: t.teacherHome.messagesAction, href: '/dashboard/messages', icon: MessageCircle, desc: t.teacherHome.messagesDesc, color: 'text-primary' },
   ];
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground">
-          Welcome, {user?.user_metadata?.full_name || 'Teacher'}!
+          {t.teacherHome.welcome}, {user?.user_metadata?.full_name || 'Teacher'} !
         </h1>
-        <p className="mt-1 text-muted-foreground">Manage your courses and students.</p>
+        <p className="mt-1 text-muted-foreground">{t.teacherHome.manageDesc}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -66,16 +64,12 @@ export default function TeacherHome() {
       </div>
 
       <div>
-        <h2 className="mb-4 font-display text-xl font-semibold text-foreground">Quick Actions</h2>
+        <h2 className="mb-4 font-display text-xl font-semibold text-foreground">{t.studentHome.quickActions}</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {actions.map((item, i) => (
             <Link key={item.href} to={item.href}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.05 }}
-                className="rounded-xl border border-border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer h-full"
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.05 }}
+                className="rounded-xl border border-border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
                 <item.icon className={`mb-3 h-8 w-8 ${item.color}`} />
                 <h3 className="font-display font-semibold text-foreground">{item.label}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{item.desc}</p>
@@ -85,10 +79,9 @@ export default function TeacherHome() {
         </div>
       </div>
 
-      {/* Recent courses */}
       {courses && courses.length > 0 && (
         <div>
-          <h2 className="mb-4 font-display text-xl font-semibold text-foreground">Recent Courses</h2>
+          <h2 className="mb-4 font-display text-xl font-semibold text-foreground">{t.teacherHome.recentCourses}</h2>
           <div className="space-y-2">
             {courses.slice(0, 5).map((c) => (
               <Link key={c.id} to={`/dashboard/courses/${c.id}/edit`}>
@@ -98,7 +91,7 @@ export default function TeacherHome() {
                     <p className="text-xs text-muted-foreground">{c.subject} · {c.level}</p>
                   </div>
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${c.is_published ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                    {c.is_published ? 'Published' : 'Draft'}
+                    {c.is_published ? t.published : t.draft}
                   </span>
                 </div>
               </Link>
