@@ -20,12 +20,12 @@ export default function CourseBrowser() {
   const [search, setSearch] = useState('');
   const { t } = useLanguage();
 
-  const { data: enrollments } = useQuery({
+  const { data: enrolledIds } = useQuery({
     queryKey: ['enrollments', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.from('course_enrollments').select('course_id').eq('user_id', user!.id);
       if (error) throw error;
-      return new Set(data.map((e) => e.course_id));
+      return data.map((e) => e.course_id);
     },
     enabled: !!user,
   });
