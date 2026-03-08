@@ -21,18 +21,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Only allow if called with service role key in Authorization header
-    const authHeader = req.headers.get("Authorization") || "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Check if the apikey header matches service role key
-    const apiKey = req.headers.get("apikey") || "";
-    if (apiKey !== serviceKey) {
-      return new Response(JSON.stringify({ error: "Unauthorized - service role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
