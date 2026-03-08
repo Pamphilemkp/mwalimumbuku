@@ -12,11 +12,23 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, full_name, secret } = await req.json();
+    const { email, password, full_name } = await req.json();
 
-    // Simple shared secret to prevent unauthorized admin creation
-    if (secret !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    if (!email || !password || !full_name) {
+      return new Response(JSON.stringify({ error: "Missing fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Only allow if called with service role key in Authorization header
+    const authHeader = req.headers.get("Authorization") || "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Check if the apikey header matches service role key
+    const apiKey = req.headers.get("apikey") || "";
+    if (apiKey !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized - service role required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -24,7 +36,7 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      serviceKey,
       { auth: { persistSession: false } }
     );
 
@@ -39,8 +51,8 @@ Deno.serve(async (req) => {
     if (createError) throw createError;
     const userId = userData.user.id;
 
-    // The handle_new_user trigger will set role to 'student' (blocks admin).
-    // Override it to 'admin' using service role.
+    // The handle_new_user trigger sets role to 'student' (blocks admin).
+    // Override with service role.
     await adminClient.from("user_roles").update({ role: "admin" }).eq("user_id", userId);
 
     return new Response(JSON.stringify({ success: true, user_id: userId }), {
