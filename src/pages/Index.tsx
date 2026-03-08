@@ -1,7 +1,7 @@
 import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2, BookOpen } from 'lucide-react';
+import { GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2, BookOpen, User } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import LanguageSwitcher from '@/components/LanguageSwitcher';

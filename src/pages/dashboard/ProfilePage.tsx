@@ -59,6 +59,7 @@ export default function ProfilePage() {
   });
 
   if (isLoading) return <Skeleton className="h-40" />;
+  if (isError) return <p className="text-muted-foreground">Unable to load profile. Please refresh the page.</p>;
 
   return (
     <div className="space-y-8">
