@@ -1,5 +1,4 @@
 import { useAuth } from '@/hooks/useAuth';
-import DashboardLayout from '@/components/DashboardLayout';
 import StudentHome from './dashboard/StudentHome';
 import TeacherHome from './dashboard/TeacherHome';
 import ParentHome from './dashboard/ParentHome';
@@ -15,9 +14,5 @@ export default function Dashboard() {
     admin: AdminHome,
   }[role ?? 'student'] ?? StudentHome;
 
-  return (
-    <DashboardLayout>
-      <HomeComponent />
-    </DashboardLayout>
-  );
+  return <HomeComponent />;
 }
