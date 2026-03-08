@@ -24,11 +24,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session?.user) {
-          const userRole = await getUserRole(session.user.id);
-          setRole(userRole);
+      async (_event, sess) => {
+        setSession(sess);
+        if (sess?.user) {
+          try {
+            const userRole = await getUserRole(sess.user.id);
+            setRole(userRole);
+          } catch {
+            setRole(null);
+          }
         } else {
           setRole(null);
         }
@@ -36,11 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        const userRole = await getUserRole(session.user.id);
-        setRole(userRole);
+    supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
+      setSession(sess);
+      if (sess?.user) {
+        try {
+          const userRole = await getUserRole(sess.user.id);
+          setRole(userRole);
+        } catch {
+          setRole(null);
+        }
       }
       setLoading(false);
     });
