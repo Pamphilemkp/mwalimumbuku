@@ -78,6 +78,10 @@ export default function CourseView() {
     setSubmitted((prev) => ({ ...prev, [exerciseId]: result }));
     setRetaking((prev) => { const n = new Set(prev); n.delete(exerciseId); return n; });
     toast(result.is_correct ? '🎉 Correct! Well done!' : '❌ Not quite. Keep trying!');
+    // Notify parent (best-effort)
+    supabase.functions.invoke('notify-enrollment', {
+      body: { type: 'exercise_complete', exercise_id: exerciseId },
+    }).catch(() => {});
   };
 
   const handleRetake = (exerciseId: string) => {
