@@ -3,7 +3,6 @@ import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { signUp, AppRole } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
-import { signUp, AppRole } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
