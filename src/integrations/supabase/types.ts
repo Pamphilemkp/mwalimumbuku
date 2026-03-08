@@ -112,6 +112,7 @@ export type Database = {
           description: string | null
           id: string
           is_open_enrollment: boolean
+          is_premium: boolean
           is_published: boolean
           level: string
           subject: string
@@ -125,6 +126,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_open_enrollment?: boolean
+          is_premium?: boolean
           is_published?: boolean
           level?: string
           subject: string
@@ -138,6 +140,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_open_enrollment?: boolean
+          is_premium?: boolean
           is_published?: boolean
           level?: string
           subject?: string
