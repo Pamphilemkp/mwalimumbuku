@@ -493,4 +493,7 @@ export const translations = {
 } as const;
 
 export type Language = keyof typeof translations;
-export type TranslationKeys = typeof translations['fr'];
+// Use a general shape so both languages are assignable
+export type TranslationKeys = {
+  [K in keyof typeof translations['fr']]: (typeof translations['fr'])[K];
+} & Record<string, any>;
