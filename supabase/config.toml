@@ -12,8 +12,6 @@ verify_jwt = false
 [functions.customer-portal]
 verify_jwt = false
 
-[functions.seed-admin]
-verify_jwt = false
 
 [functions.validate-teacher-code]
 verify_jwt = false
