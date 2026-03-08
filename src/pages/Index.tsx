@@ -37,7 +37,7 @@ export default function Index() {
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <nav className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-primary" />
+            <img src={logo} alt="Mwalimu Mbuku" className="h-10 w-10 object-contain" />
             <span className="font-display text-xl font-bold text-foreground">{t.appName}</span>
           </div>
           <div className="flex items-center gap-3">

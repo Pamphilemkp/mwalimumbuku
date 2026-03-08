@@ -139,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5 text-foreground" />
           </button>
-          <BookOpen className="h-5 w-5 text-primary" />
+          <img src={logo} alt="Mwalimu Mbuku" className="h-8 w-8 object-contain" />
           <span className="font-display font-bold text-foreground">Mwalimu</span>
         </header>
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>

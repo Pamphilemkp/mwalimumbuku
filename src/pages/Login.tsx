@@ -41,7 +41,7 @@ export default function Login() {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md space-y-8">
           <div className="flex justify-end"><LanguageSwitcher variant="outline" /></div>
           <div className="lg:hidden mb-8 text-center">
-            <BookOpen className="mx-auto mb-3 h-10 w-10 text-primary" />
+            <img src={logo} alt="Mwalimu Mbuku" className="mx-auto mb-3 h-16 w-16 object-contain" />
             <h1 className="font-display text-2xl font-bold text-foreground">{t.appName}</h1>
           </div>
           <div>
