@@ -68,7 +68,7 @@ export function useCreateCourse() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (values: { title: string; subject: string; level: string; description: string }) => {
+    mutationFn: async (values: { title: string; subject: string; level: string; description: string; is_premium?: boolean }) => {
       const { data, error } = await supabase
         .from('courses')
         .insert({ ...values, teacher_id: user!.id })

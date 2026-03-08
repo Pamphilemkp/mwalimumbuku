@@ -75,9 +75,14 @@ export default function CourseBrowser() {
             return (
               <motion.div key={course.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 className="group rounded-xl border border-border bg-card p-6 hover:shadow-md transition-all flex flex-col">
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="text-xs">{course.subject}</Badge>
                   <Badge variant="outline" className="text-xs">{course.level}</Badge>
+                  {(course as any).is_premium && (
+                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+                      <Crown className="mr-1 h-3 w-3" /> Premium
+                    </Badge>
+                  )}
                 </div>
                 <Link to={`/dashboard/courses/${course.id}`}>
                   <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">{course.title}</h3>

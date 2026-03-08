@@ -64,6 +64,13 @@ export default function CreateCourse() {
           <Label>Description</Label>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What will students learn?" />
         </div>
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div>
+            <Label className="text-sm font-medium">Premium Course</Label>
+            <p className="text-xs text-muted-foreground">Premium courses require a subscription to access</p>
+          </div>
+          <Switch checked={isPremium} onCheckedChange={setIsPremium} />
+        </div>
         <Button type="submit" disabled={createCourse.isPending}>
           {createCourse.isPending ? 'Creating…' : 'Create Course'}
         </Button>

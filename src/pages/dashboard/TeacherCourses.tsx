@@ -43,11 +43,16 @@ export default function TeacherCourses() {
           {courses?.map((course, i) => (
             <motion.div key={course.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="rounded-xl border border-border bg-card p-6">
-              <div className="mb-3 flex items-center gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">{course.subject}</Badge>
                 <Badge variant={course.is_published ? 'default' : 'outline'}>
                   {course.is_published ? 'Published' : 'Draft'}
                 </Badge>
+                {(course as any).is_premium && (
+                  <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                    <Crown className="mr-1 h-3 w-3" /> Premium
+                  </Badge>
+                )}
               </div>
               <h3 className="font-display text-lg font-semibold text-foreground">{course.title}</h3>
               <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{course.description}</p>
