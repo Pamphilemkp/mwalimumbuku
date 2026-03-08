@@ -5,8 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/sonner';
-import { Check, Crown, Zap } from 'lucide-react';
+import { Check, Crown, Zap, ExternalLink, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
+
+const STRIPE_PRODUCT_ID = 'prod_U6r4ltf6EsC5jk';
 
 const TIERS = [
   {
@@ -43,6 +47,19 @@ const TIERS = [
 export default function SubscriptionPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+
+  // Check for return from Stripe
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success('🎉 Welcome to Premium! Your subscription is active.');
+      qc.invalidateQueries({ queryKey: ['subscription'] });
+      qc.invalidateQueries({ queryKey: ['stripe-subscription'] });
+    }
+    if (searchParams.get('canceled') === 'true') {
+      toast.info('Checkout was canceled.');
+    }
+  }, [searchParams, qc]);
 
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['subscription', user?.id],
@@ -58,32 +75,80 @@ export default function SubscriptionPage() {
     enabled: !!user,
   });
 
-  const updateTier = useMutation({
-    mutationFn: async (tier: string) => {
+  const { data: stripeStatus, refetch: refreshStripe } = useQuery({
+    queryKey: ['stripe-subscription', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw error;
+      return data as { subscribed: boolean; product_id: string | null; subscription_end: string | null };
+    },
+    enabled: !!user,
+    refetchInterval: 60000,
+  });
+
+  const checkout = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { url: string };
+    },
+    onSuccess: (data) => {
+      if (data.url) window.open(data.url, '_blank');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const manageSubscription = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { url: string };
+    },
+    onSuccess: (data) => {
+      if (data.url) window.open(data.url, '_blank');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const downgrade = useMutation({
+    mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('update-subscription', {
-        body: { tier },
+        body: { tier: 'free' },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
     },
-    onSuccess: (_, tier) => {
-      toast.success(tier === 'premium' ? '🎉 Welcome to Premium!' : 'Plan updated.');
+    onSuccess: () => {
+      toast.success('Plan updated to Free.');
       qc.invalidateQueries({ queryKey: ['subscription'] });
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const currentTier = subscription?.tier || 'free';
+  const isPremium = stripeStatus?.subscribed || subscription?.tier === 'premium';
+  const currentTier = isPremium ? 'premium' : 'free';
 
   if (isLoading) return <Skeleton className="h-60" />;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-foreground">Subscription</h1>
-        <p className="mt-1 text-muted-foreground">
-          Your current plan: <Badge variant={currentTier === 'premium' ? 'default' : 'secondary'}>{currentTier.charAt(0).toUpperCase() + currentTier.slice(1)}</Badge>
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-foreground">Subscription</h1>
+          <p className="mt-1 text-muted-foreground">
+            Your current plan: <Badge variant={isPremium ? 'default' : 'secondary'}>{currentTier.charAt(0).toUpperCase() + currentTier.slice(1)}</Badge>
+            {stripeStatus?.subscription_end && (
+              <span className="ml-2 text-xs">
+                (renews {new Date(stripeStatus.subscription_end).toLocaleDateString()})
+              </span>
+            )}
+          </p>
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => refreshStripe()} title="Refresh status">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-3xl">
@@ -100,9 +165,9 @@ export default function SubscriptionPage() {
                 isCurrent && 'ring-2 ring-primary'
               )}
             >
-              {tier.popular && (
+              {isCurrent && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">
-                  Popular
+                  Your Plan
                 </span>
               )}
               <div className="flex items-center gap-3">
@@ -127,20 +192,39 @@ export default function SubscriptionPage() {
                 ))}
               </ul>
 
-              <Button
-                className="mt-6 w-full"
-                variant={isCurrent ? 'outline' : tier.popular ? 'default' : 'secondary'}
-                disabled={isCurrent || updateTier.isPending}
-                onClick={() => {
-                  if (tier.id === 'premium') {
-                    toast.info('Stripe checkout is not yet configured. Contact an administrator to upgrade.');
-                    return;
-                  }
-                  updateTier.mutate(tier.id);
-                }}
-              >
-                {isCurrent ? 'Current Plan' : tier.id === 'premium' ? 'Upgrade to Premium' : 'Downgrade'}
-              </Button>
+              {tier.id === 'premium' && !isPremium ? (
+                <Button
+                  className="mt-6 w-full"
+                  disabled={checkout.isPending}
+                  onClick={() => checkout.mutate()}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  {checkout.isPending ? 'Opening checkout…' : 'Upgrade to Premium'}
+                </Button>
+              ) : tier.id === 'premium' && isPremium ? (
+                <div className="mt-6 space-y-2">
+                  <Button variant="outline" className="w-full" disabled>Current Plan</Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-xs"
+                    onClick={() => manageSubscription.mutate()}
+                    disabled={manageSubscription.isPending}
+                  >
+                    Manage Subscription
+                  </Button>
+                </div>
+              ) : tier.id === 'free' && isPremium ? (
+                <Button
+                  className="mt-6 w-full"
+                  variant="secondary"
+                  disabled={downgrade.isPending}
+                  onClick={() => downgrade.mutate()}
+                >
+                  Downgrade to Free
+                </Button>
+              ) : (
+                <Button className="mt-6 w-full" variant="outline" disabled>Current Plan</Button>
+              )}
             </div>
           );
         })}

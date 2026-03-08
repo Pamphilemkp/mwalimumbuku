@@ -6,19 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Mail, Lock, User } from 'lucide-react';
+import { BookOpen, Mail, Lock, User, Key } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+
+// Teacher signup requires an access code to prevent unauthorized teacher accounts
+const TEACHER_ACCESS_CODE = 'MWALIMU2026';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<AppRole>('student');
+  const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (role === 'teacher' && accessCode !== TEACHER_ACCESS_CODE) {
+      toast.error('Invalid teacher access code. Please contact administration.');
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters long.');
+      return;
+    }
+
     setLoading(true);
     const { error } = await signUp(email, password, fullName, role);
     setLoading(false);
@@ -129,14 +144,15 @@ export default function Signup() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Min 6 characters"
+                  placeholder="Min 8 characters"
                   className="pl-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                 />
               </div>
+              <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
             </div>
 
             <div className="space-y-2">
@@ -152,6 +168,26 @@ export default function Signup() {
                 </SelectContent>
               </Select>
             </div>
+
+            {role === 'teacher' && (
+              <div className="space-y-2">
+                <Label htmlFor="accessCode">Teacher Access Code</Label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="accessCode"
+                    placeholder="Enter your access code"
+                    className="pl-10"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Contact your school administrator for the teacher access code.
+                </p>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
               {loading ? 'Creating account…' : 'Create Account'}
