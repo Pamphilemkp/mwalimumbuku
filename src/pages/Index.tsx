@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { BookOpen, GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2, BookOpen } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import logo from '@/assets/logo.png';
 
 export default function Index() {
   const { t } = useLanguage();
