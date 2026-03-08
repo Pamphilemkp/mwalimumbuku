@@ -22,7 +22,13 @@ Deno.serve(async (req) => {
     }
 
     // Server-side secret — never exposed to client
-    const validCode = Deno.env.get("TEACHER_ACCESS_CODE") || "MWALIMU2026";
+    const validCode = Deno.env.get("TEACHER_ACCESS_CODE");
+    if (!validCode) {
+      return new Response(
+        JSON.stringify({ valid: false, error: "Server misconfigured: missing access code" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const isValid = access_code.trim() === validCode;
 
