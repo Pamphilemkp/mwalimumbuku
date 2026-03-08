@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import logo from '@/assets/logo.png';
 import {
-  BookOpen, LogOut, User, Home, Award, Smile, GraduationCap,
-  Users, BarChart3, Settings, FileText, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, Shield, CreditCard, MessageCircle
+  LogOut, User, Home, Award, Smile,
+  Users, BarChart3, MessageSquare, Menu, X,
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen
 } from 'lucide-react';
 
 interface NavItem {
