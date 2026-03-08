@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/sonner';
 
 export default function CreateCourse() {
@@ -15,6 +16,7 @@ export default function CreateCourse() {
   const [subject, setSubject] = useState('');
   const [level, setLevel] = useState('beginner');
   const [description, setDescription] = useState('');
+  const [isPremium, setIsPremium] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +24,7 @@ export default function CreateCourse() {
       toast.error('Title and subject are required');
       return;
     }
-    createCourse.mutate({ title, subject, level, description }, {
+    createCourse.mutate({ title, subject, level, description, is_premium: isPremium }, {
       onSuccess: (data) => {
         toast.success('Course created!');
         navigate(`/dashboard/courses/${data.id}/edit`);
@@ -61,6 +63,13 @@ export default function CreateCourse() {
         <div className="space-y-2">
           <Label>Description</Label>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What will students learn?" />
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div>
+            <Label className="text-sm font-medium">Premium Course</Label>
+            <p className="text-xs text-muted-foreground">Premium courses require a subscription to access</p>
+          </div>
+          <Switch checked={isPremium} onCheckedChange={setIsPremium} />
         </div>
         <Button type="submit" disabled={createCourse.isPending}>
           {createCourse.isPending ? 'Creating…' : 'Create Course'}
