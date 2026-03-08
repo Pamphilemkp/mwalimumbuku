@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -55,54 +56,56 @@ function DashboardRoute({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Dashboard home uses its own layout */}
-            <Route path="/dashboard" element={<Dashboard />} />
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              
+              {/* Dashboard home uses its own layout */}
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Shared routes */}
-            <Route path="/dashboard/profile" element={<DashboardRoute><ProfilePage /></DashboardRoute>} />
+              {/* Shared routes */}
+              <Route path="/dashboard/profile" element={<DashboardRoute><ProfilePage /></DashboardRoute>} />
 
-            {/* Student routes */}
-            <Route path="/dashboard/courses" element={<DashboardRoute><CourseBrowser /></DashboardRoute>} />
-            <Route path="/dashboard/courses/:courseId" element={<DashboardRoute><CourseView /></DashboardRoute>} />
-            <Route path="/dashboard/progress" element={<DashboardRoute><ProgressPage /></DashboardRoute>} />
-            <Route path="/dashboard/badges" element={<DashboardRoute><BadgesPage /></DashboardRoute>} />
-            <Route path="/dashboard/mood" element={<DashboardRoute><MoodPage /></DashboardRoute>} />
+              {/* Student routes */}
+              <Route path="/dashboard/courses" element={<DashboardRoute><CourseBrowser /></DashboardRoute>} />
+              <Route path="/dashboard/courses/:courseId" element={<DashboardRoute><CourseView /></DashboardRoute>} />
+              <Route path="/dashboard/progress" element={<DashboardRoute><ProgressPage /></DashboardRoute>} />
+              <Route path="/dashboard/badges" element={<DashboardRoute><BadgesPage /></DashboardRoute>} />
+              <Route path="/dashboard/mood" element={<DashboardRoute><MoodPage /></DashboardRoute>} />
 
-            {/* Teacher routes */}
-            <Route path="/dashboard/my-courses" element={<DashboardRoute><TeacherCourses /></DashboardRoute>} />
-            <Route path="/dashboard/create-course" element={<DashboardRoute><CreateCourse /></DashboardRoute>} />
-            <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute><CourseEditor /></DashboardRoute>} />
-            <Route path="/dashboard/results" element={<DashboardRoute><TeacherResults /></DashboardRoute>} />
+              {/* Teacher routes */}
+              <Route path="/dashboard/my-courses" element={<DashboardRoute><TeacherCourses /></DashboardRoute>} />
+              <Route path="/dashboard/create-course" element={<DashboardRoute><CreateCourse /></DashboardRoute>} />
+              <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute><CourseEditor /></DashboardRoute>} />
+              <Route path="/dashboard/results" element={<DashboardRoute><TeacherResults /></DashboardRoute>} />
 
-            {/* Parent routes */}
-            <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
-            <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />
+              {/* Parent routes */}
+              <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
+              <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />
 
-            {/* Admin routes */}
-            <Route path="/dashboard/users" element={<DashboardRoute><AdminUsers /></DashboardRoute>} />
-            <Route path="/dashboard/manage-courses" element={<DashboardRoute><AdminCourses /></DashboardRoute>} />
-            <Route path="/dashboard/analytics" element={<DashboardRoute><AdminAnalytics /></DashboardRoute>} />
+              {/* Admin routes */}
+              <Route path="/dashboard/users" element={<DashboardRoute><AdminUsers /></DashboardRoute>} />
+              <Route path="/dashboard/manage-courses" element={<DashboardRoute><AdminCourses /></DashboardRoute>} />
+              <Route path="/dashboard/analytics" element={<DashboardRoute><AdminAnalytics /></DashboardRoute>} />
 
-            {/* Shared routes */}
-            <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
-            <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
-            <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
+              {/* Shared routes */}
+              <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
+              <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
+              <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

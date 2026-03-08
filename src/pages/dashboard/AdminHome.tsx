@@ -1,12 +1,14 @@
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Users, BookOpen, BarChart3, Shield } from 'lucide-react';
+import { Users, BookOpen, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function AdminHome() {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const { data: userCount } = useQuery({
     queryKey: ['admin-user-count'],
@@ -27,15 +29,15 @@ export default function AdminHome() {
   });
 
   const stats = [
-    { label: 'Total Users', value: userCount ?? 0, icon: Users, color: 'text-primary' },
-    { label: 'Total Courses', value: courseCount ?? 0, icon: BookOpen, color: 'text-accent' },
+    { label: t.adminHome.totalUsers, value: userCount ?? 0, icon: Users, color: 'text-primary' },
+    { label: t.adminHome.totalCourses, value: courseCount ?? 0, icon: BookOpen, color: 'text-accent' },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">Platform overview and management.</p>
+        <h1 className="font-display text-3xl font-bold text-foreground">{t.adminHome.title}</h1>
+        <p className="mt-1 text-muted-foreground">{t.adminHome.desc}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -51,9 +53,9 @@ export default function AdminHome() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          { label: 'Manage Users', href: '/dashboard/users', icon: Users, desc: 'View and manage all users' },
-          { label: 'Manage Courses', href: '/dashboard/manage-courses', icon: BookOpen, desc: 'Review and moderate courses' },
-          { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, desc: 'Platform usage statistics' },
+          { label: t.adminHome.manageUsers, href: '/dashboard/users', icon: Users, desc: t.adminHome.manageUsersDesc },
+          { label: t.adminHome.manageCourses, href: '/dashboard/manage-courses', icon: BookOpen, desc: t.adminHome.manageCoursesDesc },
+          { label: t.adminHome.analytics, href: '/dashboard/analytics', icon: BarChart3, desc: t.adminHome.analyticsDesc },
         ].map((item, i) => (
           <Link key={item.href} to={item.href}>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }}
