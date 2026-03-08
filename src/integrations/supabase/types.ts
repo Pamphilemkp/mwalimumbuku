@@ -552,6 +552,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_badge_if_eligible: {
+        Args: { _badge_id: string }
+        Returns: undefined
+      }
       check_answer: {
         Args: { _answer: string; _exercise_id: string }
         Returns: Json
