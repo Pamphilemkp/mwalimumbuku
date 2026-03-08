@@ -69,7 +69,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    // Clear react-query cache to prevent stale data
+    window.location.href = '/login';
   };
 
   const roleColor: Record<string, string> = {
