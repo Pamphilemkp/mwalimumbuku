@@ -37,6 +37,10 @@ export default function CourseBrowser() {
         .from('course_enrollments')
         .insert({ course_id: courseId, user_id: user!.id });
       if (error) throw error;
+      // Fire notification (best-effort, don't block enrollment)
+      supabase.functions.invoke('notify-enrollment', {
+        body: { type: 'enrollment', course_id: courseId },
+      }).catch(() => {});
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['enrollments'] });
