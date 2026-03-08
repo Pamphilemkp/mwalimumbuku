@@ -1,5 +1,9 @@
 import { useUserBadges, useAllBadges, useUserResults } from '@/hooks/useCourses';
-import { Award, Lock } from 'lucide-react';
+import { Award, Lock, CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 
