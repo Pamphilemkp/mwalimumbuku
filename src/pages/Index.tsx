@@ -12,7 +12,7 @@ export default function Index() {
   const { user, loading } = useAuth();
 
   if (loading) return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (!loading && user) return <Navigate to="/dashboard" replace />;
 
   const features = [
     { icon: GraduationCap, title: t.landing.adaptiveLearning, desc: t.landing.adaptiveDesc, color: 'text-primary' },
