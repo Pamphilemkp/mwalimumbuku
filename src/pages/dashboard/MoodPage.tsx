@@ -22,7 +22,7 @@ export default function MoodPage() {
   const [selectedMood, setSelectedMood] = useState('');
   const [note, setNote] = useState('');
 
-  const { data: moodHistory, isLoading } = useQuery({
+  const { data: moodHistory, isLoading, isError } = useQuery({
     queryKey: ['moods', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -32,9 +32,11 @@ export default function MoodPage() {
         .order('created_at', { ascending: false })
         .limit(14);
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: !!user,
+    retry: 1,
+    staleTime: 30000,
   });
 
   const submit = useMutation({
@@ -90,7 +92,9 @@ export default function MoodPage() {
         <h2 className="mb-4 font-display text-xl font-semibold text-foreground">Recent Moods</h2>
         {isLoading ? (
           <Skeleton className="h-20" />
-        ) : moodHistory?.length === 0 ? (
+        ) : isError ? (
+          <p className="text-muted-foreground">Unable to load mood history. Please try again.</p>
+        ) : !moodHistory || moodHistory.length === 0 ? (
           <p className="text-muted-foreground">No moods logged yet.</p>
         ) : (
           <div className="space-y-2">

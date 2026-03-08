@@ -15,18 +15,20 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [dyslexiaMode, setDyslexiaMode] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user!.id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!user,
+    retry: 1,
+    staleTime: 30000,
   });
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export default function ProfilePage() {
   });
 
   if (isLoading) return <Skeleton className="h-40" />;
+  if (isError) return <p className="text-muted-foreground">Unable to load profile. Please refresh the page.</p>;
 
   return (
     <div className="space-y-8">
