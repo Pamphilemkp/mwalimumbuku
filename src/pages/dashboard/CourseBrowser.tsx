@@ -14,7 +14,7 @@ import { toast } from '@/components/ui/sonner';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function CourseBrowser() {
-  const { data: courses, isLoading } = usePublishedCourses();
+  const { data: courses, isLoading, isError } = usePublishedCourses();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
