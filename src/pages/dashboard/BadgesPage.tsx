@@ -11,9 +11,20 @@ export default function BadgesPage() {
   const { data: userBadges, isLoading: lb } = useUserBadges();
   const { data: allBadges, isLoading: ab } = useAllBadges();
   const { data: results } = useUserResults();
+  const queryClient = useQueryClient();
 
   const totalPoints = results?.reduce((sum, r) => sum + r.points_earned, 0) ?? 0;
   const earnedIds = new Set(userBadges?.map((ub) => ub.badge_id));
+
+  const claimBadge = async (badgeId: string) => {
+    const { error } = await supabase.rpc('award_badge_if_eligible', { _badge_id: badgeId });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Badge earned!');
+      queryClient.invalidateQueries({ queryKey: ['user-badges'] });
+    }
+  };
 
   if (lb || ab) {
     return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /></div>;
@@ -32,6 +43,7 @@ export default function BadgesPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {allBadges?.map((badge, i) => {
             const earned = earnedIds.has(badge.id);
+            const eligible = totalPoints >= badge.points_required && !earned;
             return (
               <motion.div
                 key={badge.id}
@@ -52,6 +64,12 @@ export default function BadgesPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">{badge.description}</p>
                 <p className="mt-2 text-xs text-muted-foreground">{badge.points_required} points required</p>
+                {earned && (
+                  <p className="mt-2 flex items-center gap-1 text-xs text-primary"><CheckCircle className="h-3 w-3" /> Earned</p>
+                )}
+                {eligible && (
+                  <Button size="sm" className="mt-3" onClick={() => claimBadge(badge.id)}>Claim Badge</Button>
+                )}
               </motion.div>
             );
           })}
