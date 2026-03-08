@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Mail, Lock, User, Key } from 'lucide-react';
+import { Mail, Lock, User, Key } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import logo from '@/assets/logo.png';
 
 const TEACHER_ACCESS_CODE = 'MWALIMU2026';
 
@@ -59,7 +60,7 @@ export default function Signup() {
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12" style={{ background: 'var(--gradient-hero)' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-md text-center">
-          <BookOpen className="mx-auto mb-6 h-16 w-16 text-primary-foreground" />
+          <img src={logo} alt="Mwalimu Mbuku" className="mx-auto mb-6 h-24 w-24 object-contain" />
           <h1 className="mb-4 font-display text-4xl font-bold text-primary-foreground">{t.auth.joinUs}</h1>
           <p className="text-lg text-primary-foreground/80">{t.auth.startJourney}</p>
         </motion.div>
@@ -69,7 +70,7 @@ export default function Signup() {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md space-y-8">
           <div className="flex justify-end"><LanguageSwitcher variant="outline" /></div>
           <div className="lg:hidden mb-8 text-center">
-            <BookOpen className="mx-auto mb-3 h-10 w-10 text-primary" />
+            <img src={logo} alt="Mwalimu Mbuku" className="mx-auto mb-3 h-16 w-16 object-contain" />
             <h1 className="font-display text-2xl font-bold text-foreground">{t.appName}</h1>
           </div>
           <div>

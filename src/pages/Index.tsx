@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { BookOpen, GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2, BookOpen } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import logo from '@/assets/logo.png';
 
 export default function Index() {
   const { t } = useLanguage();
@@ -36,7 +37,7 @@ export default function Index() {
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <nav className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-primary" />
+            <img src={logo} alt="Mwalimu Mbuku" className="h-10 w-10 object-contain" />
             <span className="font-display text-xl font-bold text-foreground">{t.appName}</span>
           </div>
           <div className="flex items-center gap-3">

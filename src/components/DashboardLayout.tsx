@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import logo from '@/assets/logo.png';
 import {
-  BookOpen, LogOut, User, Home, Award, Smile, GraduationCap,
-  Users, BarChart3, Settings, FileText, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, Shield, CreditCard, MessageCircle
+  LogOut, User, Home, Award, Smile,
+  Users, BarChart3, MessageSquare, Menu, X,
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen
 } from 'lucide-react';
 
 interface NavItem {
@@ -68,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/login');
   };
 
   const roleColor: Record<string, string> = {
@@ -89,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
-          <BookOpen className="h-6 w-6 text-primary" />
+          <img src={logo} alt="Mwalimu Mbuku" className="h-10 w-10 object-contain" />
           <span className="font-display text-lg font-bold text-foreground">Mwalimu</span>
           <button className="ml-auto lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5 text-muted-foreground" />
@@ -138,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5 text-foreground" />
           </button>
-          <BookOpen className="h-5 w-5 text-primary" />
+          <img src={logo} alt="Mwalimu Mbuku" className="h-8 w-8 object-contain" />
           <span className="font-display font-bold text-foreground">Mwalimu</span>
         </header>
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
