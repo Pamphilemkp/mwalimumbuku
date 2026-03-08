@@ -16,6 +16,7 @@ export default function CreateCourse() {
   const [subject, setSubject] = useState('');
   const [level, setLevel] = useState('beginner');
   const [description, setDescription] = useState('');
+  const [isPremium, setIsPremium] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,7 @@ export default function CreateCourse() {
       toast.error('Title and subject are required');
       return;
     }
-    createCourse.mutate({ title, subject, level, description }, {
+    createCourse.mutate({ title, subject, level, description, is_premium: isPremium }, {
       onSuccess: (data) => {
         toast.success('Course created!');
         navigate(`/dashboard/courses/${data.id}/edit`);
