@@ -12,8 +12,6 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import logo from '@/assets/logo.png';
 
-const TEACHER_ACCESS_CODE = 'MWALIMU2026';
-
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,9 +24,25 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === 'teacher' && accessCode !== TEACHER_ACCESS_CODE) {
-      toast.error(t.auth.invalidTeacherCode);
-      return;
+    if (role === 'teacher') {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-teacher-code`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_code: accessCode }),
+          }
+        );
+        const result = await res.json();
+        if (!result.valid) {
+          toast.error(t.auth.invalidTeacherCode);
+          return;
+        }
+      } catch {
+        toast.error('Validation error');
+        return;
+      }
     }
     if (password.length < 8) {
       toast.error(t.auth.passwordTooShort);
