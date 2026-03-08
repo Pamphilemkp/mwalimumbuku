@@ -31,7 +31,7 @@ export default function Login() {
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12" style={{ background: 'var(--gradient-hero)' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-md text-center">
-          <BookOpen className="mx-auto mb-6 h-16 w-16 text-primary-foreground" />
+          <img src={logo} alt="Mwalimu Mbuku" className="mx-auto mb-6 h-24 w-24 object-contain" />
           <h1 className="mb-4 font-display text-4xl font-bold text-primary-foreground">{t.appName}</h1>
           <p className="text-lg text-primary-foreground/80">{t.auth.empowering}</p>
         </motion.div>
