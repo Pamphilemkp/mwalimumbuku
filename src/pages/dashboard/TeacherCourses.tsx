@@ -3,7 +3,7 @@ import { useTeacherCourses, useTogglePublish } from '@/hooks/useCourses';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, BookOpen, Plus } from 'lucide-react';
+import { Eye, EyeOff, BookOpen, Plus, Crown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { toast } from '@/components/ui/sonner';
