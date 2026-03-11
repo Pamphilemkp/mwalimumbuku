@@ -67,9 +67,9 @@ function PageLoader() {
   );
 }
 
-function DashboardRoute({ children }: { children: React.ReactNode }) {
+function DashboardRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: import('@/lib/auth').AppRole[] }) {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={allowedRoles}>
       <DashboardLayout>{children}</DashboardLayout>
     </ProtectedRoute>
   );
