@@ -67,9 +67,9 @@ function PageLoader() {
   );
 }
 
-function DashboardRoute({ children }: { children: React.ReactNode }) {
+function DashboardRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: import('@/lib/auth').AppRole[] }) {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={allowedRoles}>
       <DashboardLayout>{children}</DashboardLayout>
     </ProtectedRoute>
   );
@@ -101,17 +101,17 @@ const App = () => (
                 <Route path="/dashboard/badges" element={<DashboardRoute><BadgesPage /></DashboardRoute>} />
                 <Route path="/dashboard/mood" element={<DashboardRoute><MoodPage /></DashboardRoute>} />
 
-                <Route path="/dashboard/my-courses" element={<DashboardRoute><TeacherCourses /></DashboardRoute>} />
-                <Route path="/dashboard/create-course" element={<DashboardRoute><CreateCourse /></DashboardRoute>} />
-                <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute><CourseEditor /></DashboardRoute>} />
-                <Route path="/dashboard/results" element={<DashboardRoute><TeacherResults /></DashboardRoute>} />
+                <Route path="/dashboard/my-courses" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherCourses /></DashboardRoute>} />
+                <Route path="/dashboard/create-course" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><CreateCourse /></DashboardRoute>} />
+                <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><CourseEditor /></DashboardRoute>} />
+                <Route path="/dashboard/results" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherResults /></DashboardRoute>} />
 
                 <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
                 <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />
 
-                <Route path="/dashboard/users" element={<DashboardRoute><AdminUsers /></DashboardRoute>} />
-                <Route path="/dashboard/manage-courses" element={<DashboardRoute><AdminCourses /></DashboardRoute>} />
-                <Route path="/dashboard/analytics" element={<DashboardRoute><AdminAnalytics /></DashboardRoute>} />
+                <Route path="/dashboard/users" element={<DashboardRoute allowedRoles={['admin']}><AdminUsers /></DashboardRoute>} />
+                <Route path="/dashboard/manage-courses" element={<DashboardRoute allowedRoles={['admin']}><AdminCourses /></DashboardRoute>} />
+                <Route path="/dashboard/analytics" element={<DashboardRoute allowedRoles={['admin']}><AdminAnalytics /></DashboardRoute>} />
 
                 <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
                 <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
