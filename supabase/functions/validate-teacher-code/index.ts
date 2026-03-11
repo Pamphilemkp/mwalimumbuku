@@ -30,8 +30,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[VALIDATE] Received code length: ${access_code.trim().length}, Expected code length: ${validCode.length}`);
-    console.log(`[VALIDATE] Match: ${access_code.trim() === validCode.trim()}`);
     const isValid = access_code.trim() === validCode.trim();
 
     return new Response(
