@@ -109,9 +109,9 @@ const App = () => (
                 <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
                 <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />
 
-                <Route path="/dashboard/users" element={<DashboardRoute><AdminUsers /></DashboardRoute>} />
-                <Route path="/dashboard/manage-courses" element={<DashboardRoute><AdminCourses /></DashboardRoute>} />
-                <Route path="/dashboard/analytics" element={<DashboardRoute><AdminAnalytics /></DashboardRoute>} />
+                <Route path="/dashboard/users" element={<DashboardRoute allowedRoles={['admin']}><AdminUsers /></DashboardRoute>} />
+                <Route path="/dashboard/manage-courses" element={<DashboardRoute allowedRoles={['admin']}><AdminCourses /></DashboardRoute>} />
+                <Route path="/dashboard/analytics" element={<DashboardRoute allowedRoles={['admin']}><AdminAnalytics /></DashboardRoute>} />
 
                 <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
                 <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
