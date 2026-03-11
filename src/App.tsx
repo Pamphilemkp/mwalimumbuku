@@ -101,10 +101,10 @@ const App = () => (
                 <Route path="/dashboard/badges" element={<DashboardRoute><BadgesPage /></DashboardRoute>} />
                 <Route path="/dashboard/mood" element={<DashboardRoute><MoodPage /></DashboardRoute>} />
 
-                <Route path="/dashboard/my-courses" element={<DashboardRoute><TeacherCourses /></DashboardRoute>} />
-                <Route path="/dashboard/create-course" element={<DashboardRoute><CreateCourse /></DashboardRoute>} />
-                <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute><CourseEditor /></DashboardRoute>} />
-                <Route path="/dashboard/results" element={<DashboardRoute><TeacherResults /></DashboardRoute>} />
+                <Route path="/dashboard/my-courses" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherCourses /></DashboardRoute>} />
+                <Route path="/dashboard/create-course" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><CreateCourse /></DashboardRoute>} />
+                <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><CourseEditor /></DashboardRoute>} />
+                <Route path="/dashboard/results" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherResults /></DashboardRoute>} />
 
                 <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
                 <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />
