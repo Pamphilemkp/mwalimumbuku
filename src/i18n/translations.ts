@@ -216,7 +216,6 @@ export const translations = {
       enrolledSuccess: 'Inscription réussie !',
     },
 
-    // Subscription
     // Games
     games: {
       title: 'Jeux Éducatifs',
@@ -258,6 +257,211 @@ export const translations = {
       },
     },
 
+    // Badges
+    badges: {
+      title: 'Badges',
+      yourPoints: 'Vos points totaux :',
+      noBadges: 'Aucun badge disponible pour le moment.',
+      pointsRequired: 'points requis',
+      earned: 'Obtenu',
+      claimBadge: 'Réclamer le badge',
+      badgeEarned: 'Badge obtenu !',
+    },
+
+    // Mood
+    mood: {
+      title: 'Humeur du jour',
+      howFeeling: 'Comment vous sentez-vous aujourd\'hui ?',
+      addNote: 'Ajouter une note (optionnel)...',
+      logMood: 'Enregistrer l\'humeur',
+      moodLogged: 'Humeur enregistrée !',
+      recentMoods: 'Humeurs récentes',
+      noMoods: 'Aucune humeur enregistrée.',
+      errorLoad: 'Impossible de charger l\'historique. Réessayez.',
+      moods: {
+        Happy: 'Heureux',
+        Neutral: 'Neutre',
+        Sad: 'Triste',
+        Frustrated: 'Frustré',
+        Excited: 'Excité',
+      },
+    },
+
+    // Forum
+    forum: {
+      title: 'Forum',
+      subtitle: 'Discutez avec votre communauté.',
+      newPost: 'Nouveau sujet',
+      createPost: 'Créer un sujet',
+      postTitle: 'Titre',
+      category: 'Catégorie',
+      content: 'Contenu',
+      post: 'Publier',
+      postCreated: 'Sujet créé !',
+      postDeleted: 'Sujet supprimé',
+      noPosts: 'Aucun sujet. Lancez la conversation !',
+      selectPost: 'Sélectionnez un sujet',
+      replies: 'Réponses',
+      noReplies: 'Aucune réponse.',
+      writeReply: 'Écrire une réponse...',
+      reply: 'Répondre',
+      replyPosted: 'Réponse publiée !',
+      replyDeleted: 'Réponse supprimée',
+      by: 'par',
+      categories: {
+        general: 'Général',
+        homework: 'Devoirs',
+        announcements: 'Annonces',
+        resources: 'Ressources',
+        social: 'Social',
+      },
+    },
+
+    // Messages
+    messages: {
+      title: 'Messages',
+      subtitle: 'Messagerie privée parent-enseignant.',
+      searchOrStart: 'Rechercher ou démarrer...',
+      startConversation: 'Démarrer une conversation',
+      selectConversation: 'Sélectionnez une conversation ou recherchez un utilisateur',
+      typeMessage: 'Tapez un message...',
+    },
+
+    // Profile
+    profilePage: {
+      title: 'Profil',
+      subtitle: 'Gérez les paramètres de votre compte.',
+      email: 'Email',
+      userId: 'ID utilisateur (partagez avec les parents pour lier les comptes)',
+      fullName: 'Nom complet',
+      dyslexiaMode: 'Mode dyslexie',
+      saveChanges: 'Enregistrer les modifications',
+      profileUpdated: 'Profil mis à jour !',
+      errorLoad: 'Impossible de charger le profil. Rafraîchissez la page.',
+    },
+
+    // Progress
+    progress: {
+      title: 'Ma Progression',
+      subtitle: 'Suivez votre parcours d\'apprentissage.',
+      totalPoints: 'Total des points',
+      correctAnswers: 'Réponses correctes',
+      recentActivity: 'Activité récente',
+      noActivity: 'Aucune activité. Commencez un cours !',
+    },
+
+    // Children (Parent)
+    children: {
+      title: 'Mes enfants',
+      subtitle: 'Gérez les comptes élèves liés.',
+      linkChild: 'Lier un enfant',
+      linkChildDialog: 'Lier un enfant',
+      linkChildDesc: 'Entrez l\'identifiant de votre enfant. Il peut le trouver sur sa page Profil.',
+      studentUserId: 'ID utilisateur de l\'élève',
+      childLinked: 'Enfant lié avec succès !',
+      noChildren: 'Aucun enfant lié.',
+    },
+
+    // Toolbox
+    toolbox: {
+      title: 'Boîte à outils',
+      subtitle: 'Outils pédagogiques pour t\'aider dans ton apprentissage',
+      tools: {
+        calculator: { label: 'Calculatrice vocale', desc: 'Calculs avec commandes vocales' },
+        spellcheck: { label: 'Correcteur orthographique', desc: 'Vérifiez vos textes' },
+        dictation: { label: 'Dictée vocale', desc: 'Écrivez avec votre voix' },
+        tts: { label: 'Lecteur vocal', desc: 'Écoutez du texte lu à voix haute' },
+        recorder: { label: 'Enregistreur audio', desc: 'Enregistrez vos réponses orales' },
+      },
+      clickAndSpeak: 'Cliquez puis parlez clairement',
+      dictatedPlaceholder: 'Le texte dicté apparaîtra ici...',
+      copyText: 'Copier le texte',
+      clear: 'Effacer',
+      ttsPlaceholder: 'Collez ou tapez un texte ici pour l\'écouter...',
+      recorderDesc: 'Utilisez l\'enregistreur pour capturer vos réponses orales ou pratiquer la prononciation.',
+      keyConcepts: 'Concepts clés',
+      subjects: {
+        math: { title: 'Mathématiques', concepts: ['Addition & Soustraction', 'Multiplication & Division', 'Fractions', 'Géométrie de base'] },
+        french: { title: 'Français', concepts: ['Grammaire', 'Conjugaison', 'Orthographe', 'Vocabulaire'] },
+        science: { title: 'Sciences', concepts: ['Le corps humain', 'Les animaux', 'Les plantes', 'L\'environnement'] },
+        history: { title: 'Histoire-Géographie', concepts: ['La RDC', 'L\'Afrique', 'Le monde', 'Les grandes dates'] },
+      },
+    },
+
+    // Spell Checker
+    spellChecker: {
+      placeholder: 'Tapez ou collez votre texte ici pour vérifier l\'orthographe...',
+      check: 'Vérifier',
+      fixAll: 'Corriger tout',
+      noErrors: 'Aucune erreur détectée',
+      fix: 'Corriger',
+    },
+
+    // Calculator
+    calculator: {
+      history: 'Historique',
+      error: 'Erreur',
+      resultIs: 'Le résultat est',
+    },
+
+    // Speech
+    speech: {
+      notSupported: 'La reconnaissance vocale n\'est pas supportée par ce navigateur.',
+      error: 'Erreur de reconnaissance vocale',
+      stopDictation: 'Arrêter la dictée',
+      startDictation: 'Dictée vocale',
+      stop: 'Arrêter',
+    },
+
+    // TTS
+    tts: {
+      pause: 'Pause',
+      listen: 'Écouter',
+      speed: 'Vitesse :',
+    },
+
+    // Recorder
+    recorder: {
+      record: 'Enregistrer',
+      recording: 'Enregistrement',
+      stopRec: 'Arrêter',
+      micDenied: 'Accès au micro refusé',
+    },
+
+    // Onboarding
+    onboarding: {
+      title: 'Guide d\'utilisation',
+      subtitle: 'Apprenez à utiliser Mwalimu selon votre rôle',
+      step: 'Étape',
+      tips: 'Conseils',
+      previous: 'Précédent',
+      next: 'Suivant',
+      roles: {
+        student: 'Élève',
+        parent: 'Parent',
+        teacher: 'Enseignant',
+        admin: 'Administrateur',
+      },
+    },
+
+    // Docs
+    docs: {
+      title: 'Documentation',
+      subtitle: 'Guide complet pour utiliser Mwalimu Mbuku',
+      sections: {
+        overview: 'Vue d\'ensemble',
+        roles: 'Rôles & Accès',
+        courses: 'Gestion des cours',
+        admin: 'Guide Admin',
+        subscription: 'Abonnements & Paiements',
+        gamification: 'Gamification & Badges',
+        forum: 'Forum & Messagerie',
+        accessibility: 'Accessibilité & Paramètres',
+        mood: 'Suivi d\'humeur',
+      },
+    },
+
+    // Subscription
     subscription: {
       title: 'Abonnement',
       currentPlan: 'Votre plan actuel :',
@@ -543,6 +747,195 @@ export const translations = {
       },
     },
 
+    badges: {
+      title: 'Badges',
+      yourPoints: 'Your total points:',
+      noBadges: 'No badges available yet.',
+      pointsRequired: 'points required',
+      earned: 'Earned',
+      claimBadge: 'Claim Badge',
+      badgeEarned: 'Badge earned!',
+    },
+
+    mood: {
+      title: 'Daily Mood',
+      howFeeling: 'How are you feeling today?',
+      addNote: 'Add a note (optional)...',
+      logMood: 'Log Mood',
+      moodLogged: 'Mood logged!',
+      recentMoods: 'Recent Moods',
+      noMoods: 'No moods logged yet.',
+      errorLoad: 'Unable to load mood history. Please try again.',
+      moods: {
+        Happy: 'Happy',
+        Neutral: 'Neutral',
+        Sad: 'Sad',
+        Frustrated: 'Frustrated',
+        Excited: 'Excited',
+      },
+    },
+
+    forum: {
+      title: 'Forum',
+      subtitle: 'Discuss with your community.',
+      newPost: 'New Post',
+      createPost: 'Create a Post',
+      postTitle: 'Title',
+      category: 'Category',
+      content: 'Content',
+      post: 'Post',
+      postCreated: 'Post created!',
+      postDeleted: 'Post deleted',
+      noPosts: 'No posts yet. Start the conversation!',
+      selectPost: 'Select a post to view',
+      replies: 'Replies',
+      noReplies: 'No replies yet.',
+      writeReply: 'Write a reply...',
+      reply: 'Reply',
+      replyPosted: 'Reply posted!',
+      replyDeleted: 'Reply deleted',
+      by: 'by',
+      categories: {
+        general: 'General',
+        homework: 'Homework',
+        announcements: 'Announcements',
+        resources: 'Resources',
+        social: 'Social',
+      },
+    },
+
+    messages: {
+      title: 'Messages',
+      subtitle: 'Private parent-teacher messaging.',
+      searchOrStart: 'Search or start new...',
+      startConversation: 'Start conversation',
+      selectConversation: 'Select a conversation or search for a user',
+      typeMessage: 'Type a message...',
+    },
+
+    profilePage: {
+      title: 'Profile',
+      subtitle: 'Manage your account settings.',
+      email: 'Email',
+      userId: 'User ID (share with parents to link accounts)',
+      fullName: 'Full Name',
+      dyslexiaMode: 'Dyslexia-friendly mode',
+      saveChanges: 'Save Changes',
+      profileUpdated: 'Profile updated!',
+      errorLoad: 'Unable to load profile. Please refresh the page.',
+    },
+
+    progress: {
+      title: 'My Progress',
+      subtitle: 'Track your learning journey.',
+      totalPoints: 'Total Points',
+      correctAnswers: 'Correct Answers',
+      recentActivity: 'Recent Activity',
+      noActivity: 'No activity yet. Start a course!',
+    },
+
+    children: {
+      title: 'My Children',
+      subtitle: 'Manage linked student accounts.',
+      linkChild: 'Link Child',
+      linkChildDialog: 'Link a Child',
+      linkChildDesc: "Enter your child's User ID. They can find it on their Profile page.",
+      studentUserId: 'Student User ID',
+      childLinked: 'Child linked successfully!',
+      noChildren: 'No children linked yet.',
+    },
+
+    toolbox: {
+      title: 'Toolbox',
+      subtitle: 'Pedagogical tools to help you learn',
+      tools: {
+        calculator: { label: 'Vocal Calculator', desc: 'Calculate with voice commands' },
+        spellcheck: { label: 'Spell Checker', desc: 'Check your texts' },
+        dictation: { label: 'Voice Dictation', desc: 'Write with your voice' },
+        tts: { label: 'Text Reader', desc: 'Listen to text read aloud' },
+        recorder: { label: 'Audio Recorder', desc: 'Record your oral answers' },
+      },
+      clickAndSpeak: 'Click then speak clearly',
+      dictatedPlaceholder: 'Dictated text will appear here...',
+      copyText: 'Copy text',
+      clear: 'Clear',
+      ttsPlaceholder: 'Paste or type text here to listen...',
+      recorderDesc: 'Use the recorder to capture your oral answers or practice pronunciation.',
+      keyConcepts: 'Key Concepts',
+      subjects: {
+        math: { title: 'Mathematics', concepts: ['Addition & Subtraction', 'Multiplication & Division', 'Fractions', 'Basic Geometry'] },
+        french: { title: 'French', concepts: ['Grammar', 'Conjugation', 'Spelling', 'Vocabulary'] },
+        science: { title: 'Science', concepts: ['The Human Body', 'Animals', 'Plants', 'The Environment'] },
+        history: { title: 'History & Geography', concepts: ['DRC', 'Africa', 'The World', 'Key Dates'] },
+      },
+    },
+
+    spellChecker: {
+      placeholder: 'Type or paste your text here to check spelling...',
+      check: 'Check',
+      fixAll: 'Fix All',
+      noErrors: 'No errors detected',
+      fix: 'Fix',
+    },
+
+    calculator: {
+      history: 'History',
+      error: 'Error',
+      resultIs: 'The result is',
+    },
+
+    speech: {
+      notSupported: 'Speech recognition is not supported by this browser.',
+      error: 'Speech recognition error',
+      stopDictation: 'Stop dictation',
+      startDictation: 'Voice dictation',
+      stop: 'Stop',
+    },
+
+    tts: {
+      pause: 'Pause',
+      listen: 'Listen',
+      speed: 'Speed:',
+    },
+
+    recorder: {
+      record: 'Record',
+      recording: 'Recording',
+      stopRec: 'Stop',
+      micDenied: 'Microphone access denied',
+    },
+
+    onboarding: {
+      title: 'User Guide',
+      subtitle: 'Learn how to use Mwalimu based on your role',
+      step: 'Step',
+      tips: 'Tips',
+      previous: 'Previous',
+      next: 'Next',
+      roles: {
+        student: 'Student',
+        parent: 'Parent',
+        teacher: 'Teacher',
+        admin: 'Administrator',
+      },
+    },
+
+    docs: {
+      title: 'Documentation',
+      subtitle: 'Complete guide to using Mwalimu Mbuku',
+      sections: {
+        overview: 'Platform Overview',
+        roles: 'User Roles & Access',
+        courses: 'Course Management',
+        admin: 'Admin Guide',
+        subscription: 'Subscriptions & Payments',
+        gamification: 'Gamification & Badges',
+        forum: 'Forum & Messaging',
+        accessibility: 'Accessibility & Settings',
+        mood: 'Mood Tracking',
+      },
+    },
+
     subscription: {
       title: 'Subscription',
       currentPlan: 'Your current plan:',
@@ -582,7 +975,6 @@ export const translations = {
 } as const;
 
 export type Language = keyof typeof translations;
-// Use a general shape so both languages are assignable
 export type TranslationKeys = {
   [K in keyof typeof translations['fr']]: (typeof translations['fr'])[K];
 } & Record<string, any>;
