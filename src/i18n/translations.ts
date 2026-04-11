@@ -286,6 +286,7 @@ export const translations = {
       myProgress: 'My Progress',
       badges: 'Badges',
       games: 'Games',
+      toolbox: 'Toolbox',
       mood: 'Mood',
       forum: 'Forum',
       subscription: 'Subscription',
@@ -297,6 +298,7 @@ export const translations = {
       users: 'Users',
       manageCourses: 'Courses',
       analytics: 'Analytics',
+      docs: 'Documentation',
     },
 
     landing: {
