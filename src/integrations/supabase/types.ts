@@ -518,6 +518,13 @@ export type Database = {
             referencedRelation: "exercises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "results_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "student_exercises"
+            referencedColumns: ["id"]
+          },
         ]
       }
       subscriptions: {
@@ -602,7 +609,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      student_exercises: {
+        Row: {
+          created_at: string | null
+          exercise_type: string | null
+          id: string | null
+          lesson_id: string | null
+          options: Json | null
+          points: number | null
+          question: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       award_badge_if_eligible: {
