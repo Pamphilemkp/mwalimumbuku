@@ -10,7 +10,7 @@ import logo from '@/assets/logo.png';
 import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench
 } from 'lucide-react';
 
 interface NavItem {
@@ -26,9 +26,12 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'myProgress', href: '/dashboard/progress', icon: BarChart3 },
     { labelKey: 'badges', href: '/dashboard/badges', icon: Award },
     { labelKey: 'games', href: '/dashboard/games', icon: Gamepad2 },
+    { labelKey: 'toolbox', href: '/dashboard/toolbox', icon: Wrench },
     { labelKey: 'mood', href: '/dashboard/mood', icon: Smile },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
+    { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'subscription', href: '/dashboard/subscription', icon: CreditCard },
+    { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
   teacher: [
@@ -38,6 +41,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
+    { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
   parent: [
@@ -46,6 +50,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'progress', href: '/dashboard/child-progress', icon: BarChart3 },
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
+    { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
   admin: [
@@ -55,6 +60,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
+    { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
 };
