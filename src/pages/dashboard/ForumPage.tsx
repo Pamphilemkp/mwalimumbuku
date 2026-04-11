@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/sonner';
-import { MessageSquare, Plus, User, Clock } from 'lucide-react';
+import { MessageSquare, Plus, User, Clock, Trash2, Shield } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const CATEGORIES = ['general', 'homework', 'announcements', 'resources', 'social'];
@@ -88,7 +88,32 @@ export default function ForumPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const activePost = posts?.find((p: any) => p.id === selectedPost);
+  const deletePost = useMutation({
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase.from('forum_posts').delete().eq('id', postId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Post deleted');
+      setSelectedPost(null);
+      qc.invalidateQueries({ queryKey: ['forum-posts'] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteReply = useMutation({
+    mutationFn: async (replyId: string) => {
+      const { error } = await supabase.from('forum_replies').delete().eq('id', replyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Reply deleted');
+      qc.invalidateQueries({ queryKey: ['forum-replies', selectedPost] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const isAdmin = role === 'admin';
 
   return (
     <div className="space-y-6">
