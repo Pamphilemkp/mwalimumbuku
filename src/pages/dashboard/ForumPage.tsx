@@ -195,19 +195,36 @@ export default function ForumPage() {
           {activePost ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-card p-6">
-                <Badge variant="secondary" className="mb-2">{activePost.category}</Badge>
+                <div className="flex items-start justify-between">
+                  <Badge variant="secondary" className="mb-2">{activePost.category}</Badge>
+                  {(isAdmin || activePost.user_id === user?.id) && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => deletePost.mutate(activePost.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
                 <h2 className="font-display text-xl font-bold text-foreground">{activePost.title}</h2>
                 <p className="mt-3 whitespace-pre-wrap text-foreground/90">{activePost.content}</p>
                 <p className="mt-3 text-xs text-muted-foreground">
                   by {activePost.profiles?.full_name || 'User'} · {formatDistanceToNow(new Date(activePost.created_at), { addSuffix: true })}
                 </p>
+                {isAdmin && <Badge variant="outline" className="mt-2 text-[10px]"><Shield className="mr-1 h-3 w-3" /> Admin</Badge>}
               </div>
 
               <div className="space-y-3">
                 <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Replies</h3>
                 {replies?.map((r: any) => (
                   <div key={r.id} className="rounded-lg border border-border bg-card p-4">
-                    <p className="text-sm text-foreground/90">{r.content}</p>
+                    <div className="flex items-start justify-between">
+                      <p className="text-sm text-foreground/90 flex-1">{r.content}</p>
+                      {(isAdmin || r.user_id === user?.id) && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-destructive"
+                          onClick={() => deleteReply.mutate(r.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {r.profiles?.full_name || 'User'} · {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                     </p>
