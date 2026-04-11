@@ -23,6 +23,7 @@ export default function CourseEditor() {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonContent, setLessonContent] = useState('');
+  const [lessonVideoUrl, setLessonVideoUrl] = useState('');
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
@@ -116,12 +117,13 @@ export default function CourseEditor() {
   const handleAddLesson = () => {
     if (!lessonTitle) return;
     createLesson.mutate(
-      { title: lessonTitle, content: lessonContent, course_id: courseId!, sort_order: (lessons?.length ?? 0) + 1 },
+      { title: lessonTitle, content: lessonContent, course_id: courseId!, sort_order: (lessons?.length ?? 0) + 1, video_url: lessonVideoUrl || undefined } as any,
       {
         onSuccess: () => {
           toast.success('Lesson added!');
           setLessonTitle('');
           setLessonContent('');
+          setLessonVideoUrl('');
           setLessonDialogOpen(false);
         },
         onError: (e: any) => toast.error(e.message),
@@ -205,6 +207,7 @@ export default function CourseEditor() {
                 <div className="space-y-4">
                   <div className="space-y-2"><Label>Title</Label><Input value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} /></div>
                   <div className="space-y-2"><Label>Content</Label><Textarea value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} rows={6} /></div>
+                  <div className="space-y-2"><Label>YouTube Video URL (optional)</Label><Input value={lessonVideoUrl} onChange={(e) => setLessonVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></div>
                   <Button onClick={handleAddLesson} disabled={createLesson.isPending}>Add Lesson</Button>
                 </div>
               </DialogContent>
