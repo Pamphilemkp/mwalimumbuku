@@ -48,6 +48,9 @@ const AdminUsers = lazy(() => import("./pages/dashboard/AdminUsers"));
 const AdminCourses = lazy(() => import("./pages/dashboard/AdminCourses"));
 const AdminAnalytics = lazy(() => import("./pages/dashboard/AdminAnalytics"));
 
+// Docs
+const DocsPage = lazy(() => import("./pages/dashboard/DocsPage"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -116,6 +119,7 @@ const App = () => (
                 <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
                 <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
                 <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
+                <Route path="/dashboard/docs" element={<DashboardRoute><DocsPage /></DashboardRoute>} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
