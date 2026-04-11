@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePublishedCourses } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription, isPremium as checkPremium } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Search, CheckCircle2, Crown } from 'lucide-react';
+import { BookOpen, Search, CheckCircle2, Crown, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/sonner';
@@ -15,7 +16,9 @@ import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function CourseBrowser() {
   const { data: courses, isLoading, isError } = usePublishedCourses();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const { data: subscription } = useSubscription();
+  const userIsPremium = checkPremium(subscription) || role === 'admin' || role === 'teacher';
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const { t } = useLanguage();
@@ -89,7 +92,13 @@ export default function CourseBrowser() {
                 </Link>
                 <p className="mt-2 line-clamp-2 text-sm text-muted-foreground flex-1">{course.description || t.courseBrowser.noDesc}</p>
                 <div className="mt-4">
-                  {isEnrolled ? (
+                  {(course as any).is_premium && !userIsPremium ? (
+                    <Link to="/dashboard/subscription">
+                      <Button size="sm" variant="outline" className="gap-1.5 text-amber-600 border-amber-500/30">
+                        <Lock className="h-3 w-3" /> Premium
+                      </Button>
+                    </Link>
+                  ) : isEnrolled ? (
                     <div className="flex items-center gap-1.5 text-sm text-primary font-medium">
                       <CheckCircle2 className="h-4 w-4" /> {t.enrolled}
                     </div>
