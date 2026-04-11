@@ -33,6 +33,7 @@ export const translations = {
       createCourse: 'Créer un cours',
       myProgress: 'Ma progression',
       badges: 'Badges',
+      games: 'Jeux',
       mood: 'Humeur',
       forum: 'Forum',
       subscription: 'Abonnement',
