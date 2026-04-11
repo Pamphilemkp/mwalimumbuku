@@ -10,7 +10,7 @@ import logo from '@/assets/logo.png';
 import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText
 } from 'lucide-react';
 
 interface NavItem {
