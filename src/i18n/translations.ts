@@ -283,6 +283,7 @@ export const translations = {
       createCourse: 'Create Course',
       myProgress: 'My Progress',
       badges: 'Badges',
+      games: 'Games',
       mood: 'Mood',
       forum: 'Forum',
       subscription: 'Subscription',
