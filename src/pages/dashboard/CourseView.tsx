@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useCourseLessons, useLessonExercises, useUserResults } from '@/hooks/useCourses';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription, isPremium as checkPremium } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { BookOpen, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy } from 'lucide-react';
+import { BookOpen, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy, Lock, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +16,9 @@ import { Progress } from '@/components/ui/progress';
 
 export default function CourseView() {
   const { courseId } = useParams();
+  const { role } = useAuth();
+  const { data: subscription } = useSubscription();
+  const userIsPremium = checkPremium(subscription) || role === 'admin' || role === 'teacher';
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
 
   const { data: course } = useQuery({
@@ -121,6 +126,24 @@ export default function CourseView() {
     return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-40" /></div>;
   }
 
+  // Premium course gate
+  if (course?.is_premium && !userIsPremium) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
+          <Lock className="h-8 w-8 text-amber-600" />
+        </div>
+        <h2 className="font-display text-2xl font-bold text-foreground">Premium Course</h2>
+        <p className="max-w-md text-muted-foreground">
+          This course requires a Premium subscription. Upgrade your plan to access all premium content.
+        </p>
+        <Link to="/dashboard/subscription">
+          <Button className="gap-2"><Crown className="h-4 w-4" /> Upgrade to Premium</Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -129,6 +152,11 @@ export default function CourseView() {
         <div className="mt-2 flex gap-2">
           <Badge variant="secondary">{course?.subject}</Badge>
           <Badge variant="outline">{course?.level}</Badge>
+          {course?.is_premium && (
+            <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+              <Crown className="mr-1 h-3 w-3" /> Premium
+            </Badge>
+          )}
         </div>
       </div>
 
