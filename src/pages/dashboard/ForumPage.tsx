@@ -114,6 +114,7 @@ export default function ForumPage() {
   });
 
   const isAdmin = role === 'admin';
+  const activePost = posts?.find((p: any) => p.id === selectedPost);
 
   return (
     <div className="space-y-6">
