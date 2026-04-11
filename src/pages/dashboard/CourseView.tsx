@@ -8,8 +8,9 @@ import { useSubscription, isPremium as checkPremium } from '@/hooks/useSubscript
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { BookOpen, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy, Lock, Crown } from 'lucide-react';
+import { BookOpen, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy, Lock, Crown, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import TextToSpeech from '@/components/TextToSpeech';
 import { toast } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
@@ -191,7 +192,10 @@ export default function CourseView() {
             {selectedLesson ? (
               <motion.div key={selectedLesson.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="rounded-xl border border-border bg-card p-6">
-                  <h2 className="font-display text-2xl font-bold text-foreground">{selectedLesson.title}</h2>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="font-display text-2xl font-bold text-foreground">{selectedLesson.title}</h2>
+                    {selectedLesson.content && <TextToSpeech text={selectedLesson.content} compact />}
+                  </div>
                   <div className="mt-4 prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap">
                     {selectedLesson.content || 'No content available.'}
                   </div>
