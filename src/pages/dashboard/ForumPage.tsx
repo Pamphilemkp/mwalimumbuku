@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/sonner';
-import { MessageSquare, Plus, User, Clock } from 'lucide-react';
+import { MessageSquare, Plus, User, Clock, Trash2, Shield } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const CATEGORIES = ['general', 'homework', 'announcements', 'resources', 'social'];
@@ -88,6 +88,32 @@ export default function ForumPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deletePost = useMutation({
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase.from('forum_posts').delete().eq('id', postId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Post deleted');
+      setSelectedPost(null);
+      qc.invalidateQueries({ queryKey: ['forum-posts'] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteReply = useMutation({
+    mutationFn: async (replyId: string) => {
+      const { error } = await supabase.from('forum_replies').delete().eq('id', replyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Reply deleted');
+      qc.invalidateQueries({ queryKey: ['forum-replies', selectedPost] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const isAdmin = role === 'admin';
   const activePost = posts?.find((p: any) => p.id === selectedPost);
 
   return (
@@ -169,19 +195,36 @@ export default function ForumPage() {
           {activePost ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-card p-6">
-                <Badge variant="secondary" className="mb-2">{activePost.category}</Badge>
+                <div className="flex items-start justify-between">
+                  <Badge variant="secondary" className="mb-2">{activePost.category}</Badge>
+                  {(isAdmin || activePost.user_id === user?.id) && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => deletePost.mutate(activePost.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
                 <h2 className="font-display text-xl font-bold text-foreground">{activePost.title}</h2>
                 <p className="mt-3 whitespace-pre-wrap text-foreground/90">{activePost.content}</p>
                 <p className="mt-3 text-xs text-muted-foreground">
                   by {activePost.profiles?.full_name || 'User'} · {formatDistanceToNow(new Date(activePost.created_at), { addSuffix: true })}
                 </p>
+                {isAdmin && <Badge variant="outline" className="mt-2 text-[10px]"><Shield className="mr-1 h-3 w-3" /> Admin</Badge>}
               </div>
 
               <div className="space-y-3">
                 <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Replies</h3>
                 {replies?.map((r: any) => (
                   <div key={r.id} className="rounded-lg border border-border bg-card p-4">
-                    <p className="text-sm text-foreground/90">{r.content}</p>
+                    <div className="flex items-start justify-between">
+                      <p className="text-sm text-foreground/90 flex-1">{r.content}</p>
+                      {(isAdmin || r.user_id === user?.id) && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-destructive"
+                          onClick={() => deleteReply.mutate(r.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {r.profiles?.full_name || 'User'} · {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                     </p>

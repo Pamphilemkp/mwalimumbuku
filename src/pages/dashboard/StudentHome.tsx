@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Award, BarChart3, Smile, TrendingUp, Target, Flame, Zap, ArrowRight } from 'lucide-react';
+import { BookOpen, Award, BarChart3, Smile, TrendingUp, Target, Flame, Zap, ArrowRight, Gamepad2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserResults, useUserBadges } from '@/hooks/useCourses';
@@ -143,6 +143,7 @@ export default function StudentHome() {
             { label: t.studentHome.browseCourses, href: '/dashboard/courses', icon: BookOpen, desc: t.studentHome.browseCoursesDesc, color: 'from-primary/10 to-primary/5' },
             { label: t.studentHome.myProgress, href: '/dashboard/progress', icon: BarChart3, desc: t.studentHome.myProgressDesc, color: 'from-secondary/10 to-secondary/5' },
             { label: t.studentHome.viewBadges, href: '/dashboard/badges', icon: Award, desc: t.studentHome.viewBadgesDesc, color: 'from-accent/10 to-accent/5' },
+            { label: 'Jeux Éducatifs', href: '/dashboard/games', icon: Gamepad2, desc: 'Apprends en jouant', color: 'from-secondary/10 to-accent/5' },
             { label: t.studentHome.logMood, href: '/dashboard/mood', icon: Smile, desc: t.studentHome.logMoodDesc, color: 'from-primary/10 to-primary/5' },
           ].map((item, i) => (
             <Link key={item.href} to={item.href}>

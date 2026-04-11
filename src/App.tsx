@@ -42,6 +42,7 @@ const ChildProgress = lazy(() => import("./pages/dashboard/ChildProgress"));
 const ForumPage = lazy(() => import("./pages/dashboard/ForumPage"));
 const MessagesPage = lazy(() => import("./pages/dashboard/MessagesPage"));
 const SubscriptionPage = lazy(() => import("./pages/dashboard/SubscriptionPage"));
+const GamesPage = lazy(() => import("./pages/dashboard/GamesPage"));
 
 // Admin pages
 const AdminUsers = lazy(() => import("./pages/dashboard/AdminUsers"));
@@ -118,6 +119,7 @@ const App = () => (
 
                 <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
                 <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
+                <Route path="/dashboard/games" element={<DashboardRoute><GamesPage /></DashboardRoute>} />
                 <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
                 <Route path="/dashboard/docs" element={<DashboardRoute><DocsPage /></DashboardRoute>} />
 
