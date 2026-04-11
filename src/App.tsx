@@ -52,6 +52,7 @@ const AdminAnalytics = lazy(() => import("./pages/dashboard/AdminAnalytics"));
 
 // Docs
 const DocsPage = lazy(() => import("./pages/dashboard/DocsPage"));
+const OnboardingPage = lazy(() => import("./pages/dashboard/OnboardingPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +125,7 @@ const App = () => (
                 <Route path="/dashboard/toolbox" element={<DashboardRoute><ToolboxPage /></DashboardRoute>} />
                 <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
                 <Route path="/dashboard/docs" element={<DashboardRoute><DocsPage /></DashboardRoute>} />
+                <Route path="/dashboard/onboarding" element={<DashboardRoute><OnboardingPage /></DashboardRoute>} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

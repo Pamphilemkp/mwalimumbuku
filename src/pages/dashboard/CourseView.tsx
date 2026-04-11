@@ -196,6 +196,26 @@ export default function CourseView() {
                     <h2 className="font-display text-2xl font-bold text-foreground">{selectedLesson.title}</h2>
                     {selectedLesson.content && <TextToSpeech text={selectedLesson.content} compact />}
                   </div>
+
+                  {/* YouTube video embed */}
+                  {(selectedLesson as any).video_url && (() => {
+                    const url = (selectedLesson as any).video_url as string;
+                    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+                    const videoId = match?.[1];
+                    if (!videoId) return null;
+                    return (
+                      <div className="mb-4 aspect-video rounded-xl overflow-hidden border border-border">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${videoId}`}
+                          title="Video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="w-full h-full"
+                        />
+                      </div>
+                    );
+                  })()}
+
                   <div className="mt-4 prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap">
                     {selectedLesson.content || 'No content available.'}
                   </div>
