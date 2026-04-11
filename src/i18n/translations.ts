@@ -34,6 +34,7 @@ export const translations = {
       myProgress: 'Ma progression',
       badges: 'Badges',
       games: 'Jeux',
+      toolbox: 'Boîte à outils',
       mood: 'Humeur',
       forum: 'Forum',
       subscription: 'Abonnement',
@@ -45,6 +46,7 @@ export const translations = {
       users: 'Utilisateurs',
       manageCourses: 'Gérer les cours',
       analytics: 'Analytique',
+      docs: 'Documentation',
     },
 
     // Landing page
