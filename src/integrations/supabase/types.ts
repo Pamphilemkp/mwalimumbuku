@@ -295,6 +295,53 @@ export type Database = {
           },
         ]
       }
+      homework_submissions: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          file_name: string
+          file_url: string
+          grade: number | null
+          id: string
+          status: string
+          teacher_comment: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          file_name: string
+          file_url: string
+          grade?: number | null
+          id?: string
+          status?: string
+          teacher_comment?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          grade?: number | null
+          id?: string
+          status?: string
+          teacher_comment?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           audio_url: string | null

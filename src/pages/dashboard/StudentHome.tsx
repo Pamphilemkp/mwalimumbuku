@@ -1,18 +1,22 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Award, BarChart3, Smile, TrendingUp, Target, Flame, Zap, ArrowRight, Gamepad2 } from 'lucide-react';
+import { BookOpen, Award, BarChart3, Smile, TrendingUp, Target, Flame, Zap, ArrowRight, Gamepad2, Wrench, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserResults, useUserBadges } from '@/hooks/useCourses';
+import { useUserResults, useUserBadges, usePublishedCourses } from '@/hooks/useCourses';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { useSubscription, isPremium as checkPremium } from '@/hooks/useSubscription';
 
 export default function StudentHome() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { data: results } = useUserResults();
   const { data: badges } = useUserBadges();
+  const { data: allCourses } = usePublishedCourses();
+  const { data: subscription } = useSubscription();
   const { t } = useLanguage();
 
   const { data: enrollments } = useQuery({
@@ -135,6 +139,40 @@ export default function StudentHome() {
         </div>
       )}
 
+      {/* Recommended courses (not enrolled yet) */}
+      {allCourses && enrollments && (() => {
+        const enrolledSet = new Set(enrollments.map((e: any) => e.course_id));
+        const recommended = allCourses.filter(c => !enrolledSet.has(c.id) && !c.is_premium).slice(0, 3);
+        if (recommended.length === 0) return null;
+        return (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-xl font-semibold text-foreground">Cours recommandés</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {recommended.map((c, i) => (
+                <Link key={c.id} to={`/dashboard/courses/${c.id}`}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.02] p-4 hover:shadow-md hover:border-primary/50 transition-all"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="text-[10px]">{c.subject}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{c.level}</Badge>
+                    </div>
+                    <h3 className="font-display text-sm font-semibold text-foreground line-clamp-1">{c.title}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{c.description || 'Découvrez ce cours'}</p>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Quick actions */}
       <div>
         <h2 className="mb-4 font-display text-xl font-semibold text-foreground">{t.studentHome.quickActions}</h2>
@@ -144,6 +182,7 @@ export default function StudentHome() {
             { label: t.studentHome.myProgress, href: '/dashboard/progress', icon: BarChart3, desc: t.studentHome.myProgressDesc, color: 'from-secondary/10 to-secondary/5' },
             { label: t.studentHome.viewBadges, href: '/dashboard/badges', icon: Award, desc: t.studentHome.viewBadgesDesc, color: 'from-accent/10 to-accent/5' },
             { label: 'Jeux Éducatifs', href: '/dashboard/games', icon: Gamepad2, desc: 'Apprends en jouant', color: 'from-secondary/10 to-accent/5' },
+            { label: 'Boîte à outils', href: '/dashboard/toolbox', icon: Wrench, desc: 'Calculatrice, dictée, correcteur', color: 'from-accent/10 to-primary/5' },
             { label: t.studentHome.logMood, href: '/dashboard/mood', icon: Smile, desc: t.studentHome.logMoodDesc, color: 'from-primary/10 to-primary/5' },
           ].map((item, i) => (
             <Link key={item.href} to={item.href}>
