@@ -10,7 +10,7 @@ import logo from '@/assets/logo.png';
 import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2
 } from 'lucide-react';
 
 interface NavItem {
@@ -25,6 +25,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'courses', href: '/dashboard/courses', icon: BookOpen },
     { labelKey: 'myProgress', href: '/dashboard/progress', icon: BarChart3 },
     { labelKey: 'badges', href: '/dashboard/badges', icon: Award },
+    { labelKey: 'games', href: '/dashboard/games', icon: Gamepad2 },
     { labelKey: 'mood', href: '/dashboard/mood', icon: Smile },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'subscription', href: '/dashboard/subscription', icon: CreditCard },
