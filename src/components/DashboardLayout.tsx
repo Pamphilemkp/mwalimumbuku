@@ -10,7 +10,7 @@ import logo from '@/assets/logo.png';
 import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play
 } from 'lucide-react';
 
 interface NavItem {
@@ -32,6 +32,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'subscription', href: '/dashboard/subscription', icon: CreditCard },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
   teacher: [
@@ -42,6 +43,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
   parent: [
@@ -51,6 +53,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
   admin: [
@@ -61,6 +64,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
 };

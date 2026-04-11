@@ -47,6 +47,7 @@ export const translations = {
       manageCourses: 'Gérer les cours',
       analytics: 'Analytique',
       docs: 'Documentation',
+      onboarding: 'Guide',
     },
 
     // Landing page
@@ -299,6 +300,7 @@ export const translations = {
       manageCourses: 'Courses',
       analytics: 'Analytics',
       docs: 'Documentation',
+      onboarding: 'Guide',
     },
 
     landing: {
