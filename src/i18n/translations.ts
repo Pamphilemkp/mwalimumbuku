@@ -294,6 +294,11 @@ export const translations = {
       word: 'Mot',
       typeWord: 'Tapez le mot affiché',
       errors: 'erreurs',
+      startGame: 'Commencer',
+      timeUp: 'Temps écoulé !',
+      timeLeft: 'Temps restant',
+      finalScore: 'Score final',
+      timeTaken: 'Temps',
       list: {
         memory: { label: 'Mémoire', desc: 'Trouvez les paires correspondantes' },
         words: { label: 'Mots mélangés', desc: 'Remettez les lettres en ordre' },
@@ -837,6 +842,11 @@ export const translations = {
       word: 'Word',
       typeWord: 'Type the displayed word',
       errors: 'errors',
+      startGame: 'Start',
+      timeUp: 'Time is up!',
+      timeLeft: 'Time left',
+      finalScore: 'Final score',
+      timeTaken: 'Time',
       list: {
         memory: { label: 'Memory', desc: 'Find matching pairs' },
         words: { label: 'Word Scramble', desc: 'Unscramble the letters' },
