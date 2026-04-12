@@ -43,9 +43,9 @@ export default function StudentHome() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return '🌅 Good morning';
-    if (hour < 17) return '☀️ Good afternoon';
-    return '🌙 Good evening';
+    if (hour < 12) return t.studentHome.goodMorning;
+    if (hour < 17) return t.studentHome.goodAfternoon;
+    return t.studentHome.goodEvening;
   };
 
   return (
@@ -116,7 +116,7 @@ export default function StudentHome() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-semibold text-foreground">{t.studentHome.enrolledCourses}</h2>
             <Link to="/dashboard/courses" className="flex items-center gap-1 text-sm text-primary hover:underline">
-              View all <ArrowRight className="h-3.5 w-3.5" />
+              {t.studentHome.viewAll} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -148,7 +148,7 @@ export default function StudentHome() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-xl font-semibold text-foreground">Cours recommandés</h2>
+              <h2 className="font-display text-xl font-semibold text-foreground">{t.studentHome.recommendedCourses}</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {recommended.map((c, i) => (
@@ -164,7 +164,7 @@ export default function StudentHome() {
                       <Badge variant="outline" className="text-[10px]">{c.level}</Badge>
                     </div>
                     <h3 className="font-display text-sm font-semibold text-foreground line-clamp-1">{c.title}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{c.description || 'Découvrez ce cours'}</p>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{c.description || t.studentHome.discoverCourse}</p>
                   </motion.div>
                 </Link>
               ))}
@@ -181,8 +181,8 @@ export default function StudentHome() {
             { label: t.studentHome.browseCourses, href: '/dashboard/courses', icon: BookOpen, desc: t.studentHome.browseCoursesDesc, color: 'from-primary/10 to-primary/5' },
             { label: t.studentHome.myProgress, href: '/dashboard/progress', icon: BarChart3, desc: t.studentHome.myProgressDesc, color: 'from-secondary/10 to-secondary/5' },
             { label: t.studentHome.viewBadges, href: '/dashboard/badges', icon: Award, desc: t.studentHome.viewBadgesDesc, color: 'from-accent/10 to-accent/5' },
-            { label: 'Jeux Éducatifs', href: '/dashboard/games', icon: Gamepad2, desc: 'Apprends en jouant', color: 'from-secondary/10 to-accent/5' },
-            { label: 'Boîte à outils', href: '/dashboard/toolbox', icon: Wrench, desc: 'Calculatrice, dictée, correcteur', color: 'from-accent/10 to-primary/5' },
+            { label: t.studentHome.educationalGames, href: '/dashboard/games', icon: Gamepad2, desc: t.studentHome.educationalGamesDesc, color: 'from-secondary/10 to-accent/5' },
+            { label: t.studentHome.toolboxLabel, href: '/dashboard/toolbox', icon: Wrench, desc: t.studentHome.toolboxDesc, color: 'from-accent/10 to-primary/5' },
             { label: t.studentHome.logMood, href: '/dashboard/mood', icon: Smile, desc: t.studentHome.logMoodDesc, color: 'from-primary/10 to-primary/5' },
           ].map((item, i) => (
             <Link key={item.href} to={item.href}>
