@@ -1,11 +1,12 @@
 import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, CheckCircle2, BookOpen, User } from 'lucide-react';
+import { GraduationCap, Users, Shield, Sparkles, Globe, ArrowRight, Star, BookOpen, User } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import logo from '@/assets/logo.png';
+import { cn } from '@/lib/utils';
 
 export default function Index() {
   const { t } = useLanguage();
@@ -62,25 +63,16 @@ export default function Index() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{ background: 'var(--gradient-hero)' }} />
         <div className="container relative px-4 py-12 sm:py-20 md:py-36">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="mx-auto max-w-3xl text-center"
-          >
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="mx-auto max-w-3xl text-center">
             <div className="mb-4 sm:mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm text-primary">
               <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
               {t.landing.tagline}
             </div>
             <h1 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight text-foreground">
               {t.landing.heroTitle}{' '}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                {t.landing.heroHighlight}
-              </span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{t.landing.heroHighlight}</span>
             </h1>
-            <p className="mx-auto mt-4 sm:mt-6 max-w-xl text-sm sm:text-lg text-muted-foreground px-2">
-              {t.landing.heroDesc}
-            </p>
+            <p className="mx-auto mt-4 sm:mt-6 max-w-xl text-sm sm:text-lg text-muted-foreground px-2">{t.landing.heroDesc}</p>
             <div className="mt-6 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <Link to="/signup" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto px-6 sm:px-8 text-sm sm:text-base gap-2">
@@ -88,9 +80,7 @@ export default function Index() {
                 </Button>
               </Link>
               <Link to="/login" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto px-6 sm:px-8 text-sm sm:text-base">
-                  {t.landing.haveAccount}
-                </Button>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto px-6 sm:px-8 text-sm sm:text-base">{t.landing.haveAccount}</Button>
               </Link>
             </div>
           </motion.div>
@@ -122,7 +112,7 @@ export default function Index() {
             {features.map((f, i) => (
               <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
                 className="rounded-xl border border-border bg-card p-4 sm:p-6 hover:shadow-md transition-shadow">
-                <div className={cn('mb-3 sm:mb-4 inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary/10', f.color === 'text-secondary' && 'bg-secondary/10', f.color === 'text-accent' && 'bg-accent/10')}>
+                <div className={cn('mb-3 sm:mb-4 inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg', f.color === 'text-primary' && 'bg-primary/10', f.color === 'text-secondary' && 'bg-secondary/10', f.color === 'text-accent' && 'bg-accent/10')}>
                   <f.icon className={cn('h-4 w-4 sm:h-5 sm:w-5', f.color)} />
                 </div>
                 <h3 className="font-display text-base sm:text-lg font-semibold text-foreground">{f.title}</h3>
@@ -161,9 +151,7 @@ export default function Index() {
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{t.landing.ctaTitle}</h2>
             <p className="mt-2 sm:mt-3 text-sm sm:text-base text-muted-foreground">{t.landing.ctaDesc}</p>
             <Link to="/signup">
-              <Button size="lg" className="mt-4 sm:mt-6 px-6 sm:px-8 gap-2">
-                {t.landing.ctaButton} <ArrowRight className="h-4 w-4" />
-              </Button>
+              <Button size="lg" className="mt-4 sm:mt-6 px-6 sm:px-8 gap-2">{t.landing.ctaButton} <ArrowRight className="h-4 w-4" /></Button>
             </Link>
           </div>
         </div>
@@ -176,15 +164,9 @@ export default function Index() {
             <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             <span className="font-display text-sm sm:text-base font-semibold text-foreground">{t.appName}</span>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground text-center">
-            © {new Date().getFullYear()} {t.appName}. {t.landing.footer}
-          </p>
+          <p className="text-xs sm:text-sm text-muted-foreground text-center">© {new Date().getFullYear()} {t.appName}. {t.landing.footer}</p>
         </div>
       </footer>
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
 }

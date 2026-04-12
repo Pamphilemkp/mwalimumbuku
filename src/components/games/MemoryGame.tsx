@@ -2,22 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Trophy, Star, Timer, Zap } from 'lucide-react';
+import { RotateCcw, Trophy, Star, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/sonner';
+import GameTimer from './GameTimer';
 import type { GameProps } from './types';
+import { TIME_LIMITS } from './types';
 
 const ALL_EMOJIS = ['🐘', '🦁', '🐍', '🦒', '🐊', '🦓', '🐆', '🦏', '🦩', '🐢', '🦜', '🐠'];
 
-interface MemoryCard {
-  id: number;
-  emoji: string;
-  flipped: boolean;
-  matched: boolean;
-}
+interface MemoryCard { id: number; emoji: string; flipped: boolean; matched: boolean; }
 
-export default function MemoryGame({ onScore, difficulty }: GameProps) {
+export default function MemoryGame({ onScore, difficulty, onGameEnd }: GameProps) {
   const { t } = useLanguage();
   const pairCount = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 6 : 8;
   const cols = difficulty === 'easy' ? 4 : 4;
@@ -26,8 +23,9 @@ export default function MemoryGame({ onScore, difficulty }: GameProps) {
   const [flippedIds, setFlippedIds] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [matches, setMatches] = useState(0);
-  const [timer, setTimer] = useState(0);
-  const [running, setRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [running, setRunning] = useState(true);
+  const [gameScore, setGameScore] = useState(0);
 
   const initGame = useCallback(() => {
     const emojis = ALL_EMOJIS.slice(0, pairCount);
@@ -38,29 +36,38 @@ export default function MemoryGame({ onScore, difficulty }: GameProps) {
     setFlippedIds([]);
     setMoves(0);
     setMatches(0);
-    setTimer(0);
+    setElapsed(0);
     setRunning(true);
+    setGameScore(0);
   }, [pairCount]);
 
   useEffect(() => { initGame(); }, [initGame]);
 
   useEffect(() => {
     if (!running) return;
-    const iv = setInterval(() => setTimer(t => t + 1), 1000);
+    const iv = setInterval(() => setElapsed(t => t + 1), 1000);
     return () => clearInterval(iv);
   }, [running]);
+
+  const handleTimeUp = useCallback(() => {
+    setRunning(false);
+    onGameEnd?.(gameScore, elapsed);
+  }, [gameScore, elapsed, onGameEnd]);
 
   useEffect(() => {
     if (matches === pairCount && matches > 0) {
       setRunning(false);
       const pts = Math.max(100 - moves * 2, 20);
+      const total = gameScore + pts;
+      setGameScore(total);
       onScore(pts);
       toast.success(`🎉 ${t.games.bravo} ${pts} ${t.games.pointsEarned}`);
+      setTimeout(() => onGameEnd?.(total, elapsed), 1500);
     }
-  }, [matches, pairCount, moves, onScore, t]);
+  }, [matches, pairCount, moves, onScore, t, elapsed, onGameEnd, gameScore]);
 
   const flipCard = (id: number) => {
-    if (flippedIds.length === 2) return;
+    if (!running || flippedIds.length === 2) return;
     const card = cards[id];
     if (card.flipped || card.matched) return;
     const updated = cards.map(c => c.id === id ? { ...c, flipped: true } : c);
@@ -87,20 +94,22 @@ export default function MemoryGame({ onScore, difficulty }: GameProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1"><Zap className="h-4 w-4 text-primary" /> {moves} {t.games.moves}</span>
-          <span className="flex items-center gap-1"><Timer className="h-4 w-4" /> {timer}s</span>
-          <span className="flex items-center gap-1"><Star className="h-4 w-4 text-secondary" /> {matches}/{pairCount}</span>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground flex-wrap">
+          <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" /> {moves} {t.games.moves}</span>
+          <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-secondary" /> {matches}/{pairCount}</span>
         </div>
-        <Button variant="ghost" size="sm" onClick={initGame}><RotateCcw className="mr-1 h-3.5 w-3.5" /> {t.games.reset}</Button>
+        <div className="flex items-center gap-2">
+          <GameTimer duration={TIME_LIMITS[difficulty]} running={running} onTimeUp={handleTimeUp} />
+          <Button variant="ghost" size="sm" onClick={initGame} className="h-8 px-2"><RotateCcw className="h-3.5 w-3.5" /></Button>
+        </div>
       </div>
       <Progress value={(matches / pairCount) * 100} className="h-2" />
-      <div className={cn('grid gap-2 sm:gap-3', `grid-cols-${cols}`)}>
+      <div className={cn('grid gap-2 sm:gap-3', cols === 4 ? 'grid-cols-4' : 'grid-cols-4')}>
         {cards.map(card => (
           <motion.button key={card.id} whileTap={{ scale: 0.95 }} onClick={() => flipCard(card.id)}
             className={cn(
-              'aspect-square rounded-xl border-2 text-2xl sm:text-3xl font-bold flex items-center justify-center transition-all',
+              'aspect-square rounded-xl border-2 text-xl sm:text-3xl font-bold flex items-center justify-center transition-all',
               card.matched ? 'border-primary/40 bg-primary/10' :
               card.flipped ? 'border-primary bg-card' :
               'border-border bg-muted hover:border-primary/30 cursor-pointer'
@@ -109,15 +118,6 @@ export default function MemoryGame({ onScore, difficulty }: GameProps) {
           </motion.button>
         ))}
       </div>
-      {matches === pairCount && (
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 p-6 text-center">
-          <Trophy className="mx-auto h-10 w-10 text-primary mb-2" />
-          <h3 className="font-display text-xl font-bold text-foreground">{t.games.congratulations}</h3>
-          <p className="text-muted-foreground">{moves} {t.games.moves} — {timer}s</p>
-          <Button className="mt-3" onClick={initGame}>{t.games.playAgain}</Button>
-        </motion.div>
-      )}
     </div>
   );
 }

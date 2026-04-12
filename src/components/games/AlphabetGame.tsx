@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Trophy } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import GameTimer from './GameTimer';
 import type { GameProps } from './types';
+import { TIME_LIMITS } from './types';
 
-export default function AlphabetGame({ onScore, difficulty }: GameProps) {
+export default function AlphabetGame({ onScore, difficulty, onGameEnd }: GameProps) {
   const { t } = useLanguage();
   const count = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 8 : 12;
 
@@ -14,6 +16,15 @@ export default function AlphabetGame({ onScore, difficulty }: GameProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [correct, setCorrect] = useState<string[]>([]);
   const [done, setDone] = useState(false);
+  const [running, setRunning] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
+  const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    if (!running) return;
+    const iv = setInterval(() => setElapsed(t => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, [running]);
 
   const newGame = useCallback(() => {
     const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -23,29 +34,50 @@ export default function AlphabetGame({ onScore, difficulty }: GameProps) {
     setLetters([...slice].sort(() => Math.random() - 0.5));
     setSelected([]);
     setDone(false);
+    setRunning(true);
+    setElapsed(0);
+    setScore(0);
   }, [count]);
 
   useEffect(() => { newGame(); }, [newGame]);
 
+  const handleTimeUp = useCallback(() => {
+    setRunning(false);
+    setDone(true);
+    onGameEnd?.(score, elapsed);
+  }, [score, elapsed, onGameEnd]);
+
   const selectLetter = (l: string) => {
-    if (selected.includes(l)) return;
+    if (!running || selected.includes(l)) return;
     const newSel = [...selected, l];
     setSelected(newSel);
     if (newSel.length === correct.length) {
       const isCorrect = newSel.every((s, i) => s === correct[i]);
       setDone(true);
-      if (isCorrect) { onScore(30); toast.success(`🎉 ${t.games.perfectOrder}`); }
-      else { toast.error(`❌ ${t.games.wrongOrder}`); }
+      setRunning(false);
+      if (isCorrect) {
+        const pts = 30;
+        setScore(pts);
+        onScore(pts);
+        toast.success(`🎉 ${t.games.perfectOrder}`);
+        setTimeout(() => onGameEnd?.(pts, elapsed), 1500);
+      } else {
+        toast.error(`❌ ${t.games.wrongOrder}`);
+        setTimeout(() => onGameEnd?.(0, elapsed), 1500);
+      }
     }
   };
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground text-center">{t.games.alphabetInstruction}</p>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-xs sm:text-sm text-muted-foreground">{t.games.alphabetInstruction}</p>
+        <GameTimer duration={TIME_LIMITS[difficulty]} running={running} onTimeUp={handleTimeUp} />
+      </div>
+      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
         {correct.map((_, i) => (
           <div key={i} className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-lg border-2 text-lg font-bold',
+            'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg border-2 text-sm sm:text-lg font-bold',
             selected[i]
               ? (done ? (selected[i] === correct[i] ? 'border-primary bg-primary/10 text-primary' : 'border-destructive bg-destructive/10 text-destructive')
                 : 'border-primary/50 bg-card text-foreground')
@@ -53,11 +85,11 @@ export default function AlphabetGame({ onScore, difficulty }: GameProps) {
           )}>{selected[i] || ''}</div>
         ))}
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
         {letters.map(l => (
           <button key={l} disabled={selected.includes(l) || done} onClick={() => selectLetter(l)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-lg border text-lg font-bold transition-all',
+              'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg border text-sm sm:text-lg font-bold transition-all',
               selected.includes(l) ? 'opacity-30 border-border' : 'border-border bg-card hover:border-primary hover:bg-primary/5 cursor-pointer'
             )}>{l}</button>
         ))}
@@ -68,13 +100,6 @@ export default function AlphabetGame({ onScore, difficulty }: GameProps) {
         </Button>
         <Button variant="outline" size="sm" onClick={newGame}>{t.games.newLetters}</Button>
       </div>
-      {done && selected.every((s, i) => s === correct[i]) && (
-        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 p-6 text-center">
-          <Trophy className="mx-auto h-10 w-10 text-primary mb-2" />
-          <h3 className="font-display text-xl font-bold text-foreground">{t.games.congratulations}</h3>
-          <Button className="mt-3" onClick={newGame}>{t.games.playAgain}</Button>
-        </div>
-      )}
     </div>
   );
 }

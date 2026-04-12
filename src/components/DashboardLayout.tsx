@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <img src={logo} alt="Mwalimu Mbuku" className="h-8 w-8 object-contain" />
           <span className="font-display font-bold text-foreground">Mwalimu</span>
         </header>
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

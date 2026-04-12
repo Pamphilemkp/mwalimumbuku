@@ -294,6 +294,11 @@ export const translations = {
       word: 'Mot',
       typeWord: 'Tapez le mot affiché',
       errors: 'erreurs',
+      startGame: 'Commencer',
+      timeUp: 'Temps écoulé !',
+      timeLeft: 'Temps restant',
+      finalScore: 'Score final',
+      timeTaken: 'Temps',
       list: {
         memory: { label: 'Mémoire', desc: 'Trouvez les paires correspondantes' },
         words: { label: 'Mots mélangés', desc: 'Remettez les lettres en ordre' },
@@ -543,6 +548,13 @@ export const translations = {
       welcomePremium: '🎉 Bienvenue en Premium ! Votre abonnement est actif.',
       checkoutCanceled: 'Paiement annulé.',
       downgradedFree: 'Plan mis à jour vers Gratuit.',
+    },
+
+    // 404
+    notFound: {
+      title: 'Page introuvable',
+      desc: "La page que vous cherchez n'existe pas ou a été déplacée.",
+      home: 'Accueil',
     },
   },
 
@@ -830,6 +842,11 @@ export const translations = {
       word: 'Word',
       typeWord: 'Type the displayed word',
       errors: 'errors',
+      startGame: 'Start',
+      timeUp: 'Time is up!',
+      timeLeft: 'Time left',
+      finalScore: 'Final score',
+      timeTaken: 'Time',
       list: {
         memory: { label: 'Memory', desc: 'Find matching pairs' },
         words: { label: 'Word Scramble', desc: 'Unscramble the letters' },
@@ -1063,6 +1080,12 @@ export const translations = {
       welcomePremium: '🎉 Welcome to Premium! Your subscription is active.',
       checkoutCanceled: 'Checkout was canceled.',
       downgradedFree: 'Plan updated to Free.',
+    },
+
+    notFound: {
+      title: 'Page not found',
+      desc: "The page you're looking for doesn't exist or has been moved.",
+      home: 'Home',
     },
   },
 } as const;
