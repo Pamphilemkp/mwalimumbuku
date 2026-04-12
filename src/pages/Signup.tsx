@@ -19,8 +19,6 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<AppRole>('student');
-  // Teacher signup removed — only admin can add teachers
-  const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { t } = useLanguage();
