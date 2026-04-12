@@ -51,29 +51,34 @@ export default function CourseBrowser() {
 
   const enroll = useMutation({
     mutationFn: async (courseId: string) => {
-      // Check if already enrolled to prevent duplicate key error
       const { data: existing } = await supabase
         .from('course_enrollments')
         .select('id')
         .eq('course_id', courseId)
         .eq('user_id', user!.id)
         .maybeSingle();
-      
-      if (existing) {
-        // Already enrolled, just refresh the cache
-        return;
-      }
-
+      if (existing) return;
       const { error } = await supabase.from('course_enrollments').insert({ course_id: courseId, user_id: user!.id });
       if (error) throw error;
       supabase.functions.invoke('notify-enrollment', { body: { type: 'enrollment', course_id: courseId } }).catch(() => {});
+    },
+    onMutate: async (courseId: string) => {
+      // Optimistic update — instantly show enrolled
+      await qc.cancelQueries({ queryKey: ['enrollments', user?.id] });
+      const prev = qc.getQueryData<string[]>(['enrollments', user?.id]);
+      qc.setQueryData(['enrollments', user?.id], (old: string[] | undefined) => [...(old ?? []), courseId]);
+      return { prev };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['enrollments'] });
       qc.invalidateQueries({ queryKey: ['enrollment-counts'] });
       toast.success(t.courseBrowser.enrolledSuccess);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any, _courseId, context) => {
+      // Rollback optimistic update
+      if (context?.prev) qc.setQueryData(['enrollments', user?.id], context.prev);
+      toast.error(e.message);
+    },
   });
 
   // Extract unique subjects and levels
