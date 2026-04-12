@@ -14,10 +14,12 @@ import TextToSpeech from '@/components/TextToSpeech';
 import { toast } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function CourseView() {
   const { courseId } = useParams();
   const { role } = useAuth();
+  const { t } = useLanguage();
   const { data: subscription } = useSubscription();
   const userIsPremium = checkPremium(subscription) || role === 'admin' || role === 'teacher';
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -83,7 +85,7 @@ export default function CourseView() {
     const result = data as { is_correct: boolean; points_earned: number };
     setSubmitted((prev) => ({ ...prev, [exerciseId]: result }));
     setRetaking((prev) => { const n = new Set(prev); n.delete(exerciseId); return n; });
-    toast(result.is_correct ? '🎉 Correct! Well done!' : '❌ Not quite. Keep trying!');
+    toast(result.is_correct ? t.courseView.correctFeedback : t.courseView.incorrectFeedback);
     // Notify parent (best-effort)
     supabase.functions.invoke('notify-enrollment', {
       body: { type: 'exercise_complete', exercise_id: exerciseId },
@@ -134,12 +136,10 @@ export default function CourseView() {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
           <Lock className="h-8 w-8 text-amber-600" />
         </div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Premium Course</h2>
-        <p className="max-w-md text-muted-foreground">
-          This course requires a Premium subscription. Upgrade your plan to access all premium content.
-        </p>
+        <h2 className="font-display text-2xl font-bold text-foreground">{t.courseView.premiumCourse}</h2>
+        <p className="max-w-md text-muted-foreground">{t.courseView.premiumRequired}</p>
         <Link to="/dashboard/subscription">
-          <Button className="gap-2"><Crown className="h-4 w-4" /> Upgrade to Premium</Button>
+          <Button className="gap-2"><Crown className="h-4 w-4" /> {t.courseView.upgradePremium}</Button>
         </Link>
       </div>
     );
@@ -164,9 +164,9 @@ export default function CourseView() {
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         {/* Lesson list */}
         <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lessons</h3>
+          <h3 className="mb-3 font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t.courseView.lessons}</h3>
           {lessons?.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No lessons yet.</p>
+            <p className="text-sm text-muted-foreground">{t.courseView.noLessons}</p>
           ) : (
             lessons?.map((lesson) => (
               <button
@@ -217,7 +217,7 @@ export default function CourseView() {
                   })()}
 
                   <div className="mt-4 prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap">
-                    {selectedLesson.content || 'No content available.'}
+                    {selectedLesson.content || t.courseView.noContent}
                   </div>
                 </div>
 
@@ -226,11 +226,11 @@ export default function CourseView() {
                   <div className="mt-4 rounded-xl border border-border bg-card p-4">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-muted-foreground">
-                        Exercise Progress: {currentExerciseStats.completed}/{currentExerciseStats.total}
+                        {t.courseView.exerciseProgress}: {currentExerciseStats.completed}/{currentExerciseStats.total}
                       </span>
                       {currentExerciseStats.completed === currentExerciseStats.total && currentExerciseStats.total > 0 && (
                         <div className="flex items-center gap-1 text-primary font-medium">
-                          <Trophy className="h-4 w-4" /> Lesson Complete!
+                          <Trophy className="h-4 w-4" /> {t.courseView.lessonComplete}
                         </div>
                       )}
                     </div>
@@ -239,7 +239,7 @@ export default function CourseView() {
                       className="h-2"
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {currentExerciseStats.correct} correct out of {currentExerciseStats.completed} attempted
+                      {currentExerciseStats.correct} {t.courseView.correct} {currentExerciseStats.completed} {t.courseView.attempted}
                     </p>
                   </div>
                 )}
@@ -247,7 +247,7 @@ export default function CourseView() {
                 {/* Exercises */}
                 {exercises && exercises.length > 0 && (
                   <div className="mt-6 space-y-4">
-                    <h3 className="font-display text-lg font-semibold text-foreground">Exercises</h3>
+                    <h3 className="font-display text-lg font-semibold text-foreground">{t.courseView.exercises}</h3>
                     {exercises.map((ex) => {
                       const options = Array.isArray(ex.options) ? (ex.options as string[]) : [];
                       const currentResult = submitted[ex.id];
@@ -302,17 +302,17 @@ export default function CourseView() {
                               <div className="flex items-center gap-2">
                                 {activeResult?.is_correct ? (
                                   <Badge variant="default" className="bg-primary text-primary-foreground">
-                                    <CheckCircle2 className="mr-1 h-3 w-3" /> Correct
+                                    <CheckCircle2 className="mr-1 h-3 w-3" /> {t.courseView.correctLabel}
                                   </Badge>
                                 ) : (
                                   <Badge variant="destructive">
-                                    <XCircle className="mr-1 h-3 w-3" /> Incorrect
+                                    <XCircle className="mr-1 h-3 w-3" /> {t.courseView.incorrectLabel}
                                   </Badge>
                                 )}
                                 <span className="text-xs text-muted-foreground">+{activeResult?.points_earned} pts</span>
                                 {previousResult && (
                                   <span className="text-xs text-muted-foreground">
-                                    ({previousResult.attempts} attempt{previousResult.attempts !== 1 ? 's' : ''})
+                                    ({previousResult.attempts} {t.courseView.attempts})
                                   </span>
                                 )}
                               </div>
@@ -322,7 +322,7 @@ export default function CourseView() {
                                 onClick={() => handleRetake(ex.id)}
                                 className="text-muted-foreground hover:text-foreground"
                               >
-                                <RotateCcw className="mr-1 h-3 w-3" /> Retake
+                                <RotateCcw className="mr-1 h-3 w-3" /> {t.courseView.retake}
                               </Button>
                             </div>
                           )}
@@ -335,7 +335,7 @@ export default function CourseView() {
             ) : (
               <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20">
                 <BookOpen className="mb-3 h-10 w-10 text-muted-foreground/40" />
-                <p className="text-muted-foreground">Select a lesson to start learning</p>
+                <p className="text-muted-foreground">{t.courseView.selectLesson}</p>
               </div>
             )}
           </AnimatePresence>
