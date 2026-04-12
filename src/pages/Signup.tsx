@@ -19,6 +19,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<AppRole>('student');
+  // Teacher signup removed — only admin can add teachers
   const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -33,26 +34,6 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === 'teacher') {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-teacher-code`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_code: accessCode }),
-          }
-        );
-        const result = await res.json();
-        if (!result.valid) {
-          toast.error(t.auth.invalidTeacherCode);
-          return;
-        }
-      } catch {
-        toast.error('Validation error');
-        return;
-      }
-    }
     if (password.length < 8) {
       toast.error(t.auth.passwordTooShort);
       return;
@@ -136,20 +117,9 @@ export default function Signup() {
                 <SelectContent>
                   <SelectItem value="student">{t.auth.student}</SelectItem>
                   <SelectItem value="parent">{t.auth.parent}</SelectItem>
-                  <SelectItem value="teacher">{t.auth.teacher}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {role === 'teacher' && (
-              <div className="space-y-2">
-                <Label htmlFor="accessCode">{t.auth.teacherAccessCode}</Label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input id="accessCode" placeholder={t.auth.teacherAccessCode} className="pl-10" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} required />
-                </div>
-                <p className="text-xs text-muted-foreground">{t.auth.accessCodeHint}</p>
-              </div>
-            )}
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
               {loading ? t.auth.creatingAccount : t.auth.createAccount}
             </Button>
