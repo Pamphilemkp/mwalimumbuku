@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type AppRole = 'student' | 'parent' | 'teacher' | 'admin';
 
 export async function signUp(email: string, password: string, fullName: string, role: AppRole) {
-  const siteUrl = import.meta.env.PROD ? 'https://mwalimumbuku.lovable.app' : window.location.origin;
+  const siteUrl = import.meta.env.PROD ? 'https://mwalimumbuku.vercel.app' : window.location.origin;
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -36,7 +36,7 @@ export async function getUserRole(userId: string): Promise<AppRole | null> {
 }
 
 export async function resetPassword(email: string) {
-  const siteUrl = import.meta.env.PROD ? 'https://mwalimumbuku.lovable.app' : window.location.origin;
+  const siteUrl = import.meta.env.PROD ? 'https://mwalimumbuku.vercel.app' : window.location.origin;
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl}/reset-password`,
   });
