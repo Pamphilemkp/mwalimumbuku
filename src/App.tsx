@@ -57,13 +57,20 @@ const OnboardingPage = lazy(() => import("./pages/dashboard/OnboardingPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 2, // 2 minutes
-      gcTime: 1000 * 60 * 5, // 5 minutes garbage collection
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 5,
       refetchOnWindowFocus: false,
+      retry: 2,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    },
+    mutations: {
       retry: 1,
     },
   },
 });
+
+// Expose for auth cleanup
+(window as any).__queryClient = queryClient;
 
 function PageLoader() {
   return (
