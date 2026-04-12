@@ -145,7 +145,7 @@ export default function CourseBrowser() {
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
+                {level === 'all' ? t.courseBrowser.allLevels : level.charAt(0).toUpperCase() + level.slice(1)}
               </button>
             ))}
           </div>
@@ -155,7 +155,7 @@ export default function CourseBrowser() {
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground"
             >
-              <option value="all">All Subjects</option>
+              <option value="all">{t.courseBrowser.allSubjects}</option>
               {subjects.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -170,7 +170,7 @@ export default function CourseBrowser() {
                 : 'border-border text-muted-foreground hover:text-foreground'
             )}
           >
-            My Courses
+            {t.courseBrowser.myCourses}
           </button>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function CourseBrowser() {
           <p className="text-lg font-medium text-muted-foreground">{t.courseBrowser.noCourses}</p>
           {search && (
             <Button variant="link" onClick={() => { setSearch(''); setSelectedLevel('all'); setSelectedSubject('all'); }}>
-              Clear filters
+              {t.courseBrowser.clearFilters}
             </Button>
           )}
         </motion.div>
@@ -252,19 +252,19 @@ export default function CourseBrowser() {
                   <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
-                      <span>{studentCount} enrolled</span>
+                      <span>{studentCount} {t.courseBrowser.studentsEnrolled}</span>
                     </div>
 
                     {course.is_premium && !userIsPremium ? (
                       <Link to="/dashboard/subscription">
                         <Button size="sm" variant="outline" className="gap-1.5 text-amber-600 border-amber-500/30 hover:bg-amber-500/5">
-                          <Lock className="h-3 w-3" /> Unlock
+                          <Lock className="h-3 w-3" /> {t.courseBrowser.unlock}
                         </Button>
                       </Link>
                     ) : isEnrolled ? (
                       <Link to={`/dashboard/courses/${course.id}`}>
                         <Button size="sm" variant="outline" className="gap-1.5 text-primary border-primary/30">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Continue
+                          <CheckCircle2 className="h-3.5 w-3.5" /> {t.courseBrowser.continue}
                         </Button>
                       </Link>
                     ) : (
