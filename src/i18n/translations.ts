@@ -544,6 +544,13 @@ export const translations = {
       checkoutCanceled: 'Paiement annulé.',
       downgradedFree: 'Plan mis à jour vers Gratuit.',
     },
+
+    // 404
+    notFound: {
+      title: 'Page introuvable',
+      desc: "La page que vous cherchez n'existe pas ou a été déplacée.",
+      home: 'Accueil',
+    },
   },
 
   en: {
@@ -1063,6 +1070,12 @@ export const translations = {
       welcomePremium: '🎉 Welcome to Premium! Your subscription is active.',
       checkoutCanceled: 'Checkout was canceled.',
       downgradedFree: 'Plan updated to Free.',
+    },
+
+    notFound: {
+      title: 'Page not found',
+      desc: "The page you're looking for doesn't exist or has been moved.",
+      home: 'Home',
     },
   },
 } as const;
