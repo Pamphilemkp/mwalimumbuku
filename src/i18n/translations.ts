@@ -157,6 +157,16 @@ export const translations = {
       logMoodDesc: "Comment vous sentez-vous aujourd'hui ?",
       recentActivity: 'Activité récente',
       exercise: 'Exercice',
+      recommendedCourses: 'Cours recommandés',
+      discoverCourse: 'Découvrez ce cours',
+      viewAll: 'Voir tout',
+      educationalGames: 'Jeux Éducatifs',
+      educationalGamesDesc: 'Apprends en jouant',
+      toolboxLabel: 'Boîte à outils',
+      toolboxDesc: 'Calculatrice, dictée, correcteur',
+      goodMorning: '🌅 Bonjour',
+      goodAfternoon: '☀️ Bon après-midi',
+      goodEvening: '🌙 Bonsoir',
     },
 
     // Teacher Home
@@ -222,6 +232,13 @@ export const translations = {
       noCourses: 'Aucun cours trouvé',
       noDesc: 'Aucune description disponible.',
       enrolledSuccess: 'Inscription réussie !',
+      allLevels: 'Tous',
+      allSubjects: 'Toutes les matières',
+      myCourses: 'Mes cours',
+      clearFilters: 'Effacer les filtres',
+      studentsEnrolled: 'inscrits',
+      unlock: 'Débloquer',
+      continue: 'Continuer',
     },
 
     // Games
