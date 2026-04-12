@@ -677,6 +677,16 @@ export const translations = {
       logMoodDesc: 'How are you feeling today?',
       recentActivity: 'Recent Activity',
       exercise: 'Exercise',
+      recommendedCourses: 'Recommended Courses',
+      discoverCourse: 'Discover this course',
+      viewAll: 'View all',
+      educationalGames: 'Educational Games',
+      educationalGamesDesc: 'Learn by playing',
+      toolboxLabel: 'Toolbox',
+      toolboxDesc: 'Calculator, dictation, spell check',
+      goodMorning: '🌅 Good morning',
+      goodAfternoon: '☀️ Good afternoon',
+      goodEvening: '🌙 Good evening',
     },
 
     teacherHome: {
