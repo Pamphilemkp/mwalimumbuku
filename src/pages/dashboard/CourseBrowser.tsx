@@ -51,29 +51,34 @@ export default function CourseBrowser() {
 
   const enroll = useMutation({
     mutationFn: async (courseId: string) => {
-      // Check if already enrolled to prevent duplicate key error
       const { data: existing } = await supabase
         .from('course_enrollments')
         .select('id')
         .eq('course_id', courseId)
         .eq('user_id', user!.id)
         .maybeSingle();
-      
-      if (existing) {
-        // Already enrolled, just refresh the cache
-        return;
-      }
-
+      if (existing) return;
       const { error } = await supabase.from('course_enrollments').insert({ course_id: courseId, user_id: user!.id });
       if (error) throw error;
       supabase.functions.invoke('notify-enrollment', { body: { type: 'enrollment', course_id: courseId } }).catch(() => {});
+    },
+    onMutate: async (courseId: string) => {
+      // Optimistic update — instantly show enrolled
+      await qc.cancelQueries({ queryKey: ['enrollments', user?.id] });
+      const prev = qc.getQueryData<string[]>(['enrollments', user?.id]);
+      qc.setQueryData(['enrollments', user?.id], (old: string[] | undefined) => [...(old ?? []), courseId]);
+      return { prev };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['enrollments'] });
       qc.invalidateQueries({ queryKey: ['enrollment-counts'] });
       toast.success(t.courseBrowser.enrolledSuccess);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any, _courseId, context) => {
+      // Rollback optimistic update
+      if (context?.prev) qc.setQueryData(['enrollments', user?.id], context.prev);
+      toast.error(e.message);
+    },
   });
 
   // Extract unique subjects and levels
@@ -145,7 +150,7 @@ export default function CourseBrowser() {
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
+                {level === 'all' ? t.courseBrowser.allLevels : level.charAt(0).toUpperCase() + level.slice(1)}
               </button>
             ))}
           </div>
@@ -155,7 +160,7 @@ export default function CourseBrowser() {
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground"
             >
-              <option value="all">All Subjects</option>
+              <option value="all">{t.courseBrowser.allSubjects}</option>
               {subjects.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -170,7 +175,7 @@ export default function CourseBrowser() {
                 : 'border-border text-muted-foreground hover:text-foreground'
             )}
           >
-            My Courses
+            {t.courseBrowser.myCourses}
           </button>
         </div>
       </div>
@@ -193,7 +198,7 @@ export default function CourseBrowser() {
           <p className="text-lg font-medium text-muted-foreground">{t.courseBrowser.noCourses}</p>
           {search && (
             <Button variant="link" onClick={() => { setSearch(''); setSelectedLevel('all'); setSelectedSubject('all'); }}>
-              Clear filters
+              {t.courseBrowser.clearFilters}
             </Button>
           )}
         </motion.div>
@@ -252,19 +257,19 @@ export default function CourseBrowser() {
                   <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
-                      <span>{studentCount} enrolled</span>
+                      <span>{studentCount} {t.courseBrowser.studentsEnrolled}</span>
                     </div>
 
                     {course.is_premium && !userIsPremium ? (
                       <Link to="/dashboard/subscription">
                         <Button size="sm" variant="outline" className="gap-1.5 text-amber-600 border-amber-500/30 hover:bg-amber-500/5">
-                          <Lock className="h-3 w-3" /> Unlock
+                          <Lock className="h-3 w-3" /> {t.courseBrowser.unlock}
                         </Button>
                       </Link>
                     ) : isEnrolled ? (
                       <Link to={`/dashboard/courses/${course.id}`}>
                         <Button size="sm" variant="outline" className="gap-1.5 text-primary border-primary/30">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Continue
+                          <CheckCircle2 className="h-3.5 w-3.5" /> {t.courseBrowser.continue}
                         </Button>
                       </Link>
                     ) : (

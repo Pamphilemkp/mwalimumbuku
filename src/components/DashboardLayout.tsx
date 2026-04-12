@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -70,19 +69,18 @@ const roleNavItems: Record<string, NavItem[]> = {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, role } = useAuth();
+  const { user, role, signOut: handleSignOut } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const { t } = useLanguage();
 
   const navItems = roleNavItems[role ?? 'student'] ?? roleNavItems.student;
   const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : '';
 
-  const handleSignOut = async () => {
-    await signOut();
-    // Clear react-query cache to prevent stale data
-    window.location.href = '/login';
+  const onSignOut = async () => {
+    setSigningOut(true);
+    await handleSignOut();
   };
 
   const roleColor: Record<string, string> = {
@@ -140,8 +138,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {roleLabel}
               </span>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} className="shrink-0" title={t.logout}>
-              <LogOut className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={onSignOut} disabled={signingOut} className="shrink-0" title={t.logout}>
+              <LogOut className={cn("h-4 w-4", signingOut && "animate-spin")} />
             </Button>
           </div>
         </div>
