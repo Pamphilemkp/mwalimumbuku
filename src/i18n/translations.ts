@@ -779,6 +779,27 @@ export const translations = {
       continue: 'Continue',
     },
 
+    courseView: {
+      lessons: 'Lessons',
+      noLessons: 'No lessons yet.',
+      selectLesson: 'Select a lesson to start learning',
+      noContent: 'No content available.',
+      exerciseProgress: 'Exercise Progress',
+      lessonComplete: 'Lesson Complete!',
+      correctLabel: 'Correct',
+      incorrectLabel: 'Incorrect',
+      retake: 'Retake',
+      exercises: 'Exercises',
+      attempts: 'attempt(s)',
+      premiumCourse: 'Premium Course',
+      premiumRequired: 'This course requires a Premium subscription.',
+      upgradePremium: 'Upgrade to Premium',
+      correctFeedback: '🎉 Correct! Well done!',
+      incorrectFeedback: '❌ Not quite. Keep trying!',
+      correct: 'correct out of',
+      attempted: 'attempted',
+    },
+
     games: {
       title: 'Educational Games',
       subtitle: 'Learn while having fun with interactive games',
