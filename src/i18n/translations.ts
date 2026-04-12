@@ -128,6 +128,14 @@ export const translations = {
       empowering: "Donner aux apprenants d'Afrique une éducation accessible et engageante.",
       joinUs: 'Rejoignez Mwalimu Mbuku',
       startJourney: "Commencez votre parcours d'apprentissage — une éducation accessible pour tous.",
+      pwMin8: '8+ caractères',
+      pwUppercase: 'Majuscule (A-Z)',
+      pwLowercase: 'Minuscule (a-z)',
+      pwNumber: 'Chiffre (0-9)',
+      pwWeak: 'Faible',
+      pwFair: 'Moyen',
+      pwGood: 'Bon',
+      pwStrong: 'Fort',
     },
 
     // Student Home
@@ -624,6 +632,14 @@ export const translations = {
       empowering: 'Empowering learners across Africa with accessible, engaging education.',
       joinUs: 'Join Mwalimu Mbuku',
       startJourney: "Start your learning journey today — accessible education for every learner.",
+      pwMin8: '8+ characters',
+      pwUppercase: 'Uppercase (A-Z)',
+      pwLowercase: 'Lowercase (a-z)',
+      pwNumber: 'Number (0-9)',
+      pwWeak: 'Weak',
+      pwFair: 'Fair',
+      pwGood: 'Good',
+      pwStrong: 'Strong',
     },
 
     studentHome: {
