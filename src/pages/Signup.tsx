@@ -11,6 +11,7 @@ import { Mail, Lock, User, Key } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import PasswordStrength from '@/components/PasswordStrength';
 import logo from '@/assets/logo.png';
 
 export default function Signup() {
@@ -126,7 +127,7 @@ export default function Signup() {
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input id="password" type="password" placeholder={t.auth.passwordMin} className="pl-10" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
               </div>
-              <p className="text-xs text-muted-foreground">{t.auth.passwordMin}</p>
+              <PasswordStrength password={password} />
             </div>
             <div className="space-y-2">
               <Label>{t.auth.iAmA}</Label>
