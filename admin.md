@@ -1,31 +1,32 @@
 # Informations d'Administration - Mwalimu Mbuku
 
-## Comptes Administrateurs
+## Compte Administrateur
 
-### Administrateur Principal
-- **Email:** admin@mwalimumbuku.com
-- **Mot de passe:** MwalimuAdmin2026!
-
-### Administrateur Secondaire
-- **Email:** ndrarichchuchu@gmail.com
-- **Mot de passe:** MwalimuAdmin2026!
+### Administrateur Unique
+- **Email:** pamphilelive@gmail.com
+- **Mot de passe:** (défini lors de l'inscription)
 
 ## Accès au Dashboard Admin
 
 1. Allez sur https://mwalimumbuku.lovable.app/login
-2. Entrez l'email et le mot de passe d'un compte admin
+2. Entrez l'email et le mot de passe du compte admin
 3. Vous serez redirigé vers le dashboard administrateur
 
 ## Fonctionnalités Admin
 
 - **Gestion des utilisateurs:** Voir, modifier les rôles, supprimer des utilisateurs
+- **Gestion des enseignants:** Seul l'admin peut créer un compte enseignant
+- **Association parent-élève:** L'admin peut associer un élève à son parent
 - **Gestion des cours:** Créer, modifier, supprimer des cours
 - **Analytics:** Voir les statistiques de la plateforme
 - **Forum:** Modérer les discussions
 
-## Code d'accès Enseignant
+## Inscription
 
-Pour créer un compte enseignant, utiliser le code: `MWALIMU2026`
+- **Élève:** Peut s'inscrire librement
+- **Parent:** Peut s'inscrire librement, peut ajouter ses enfants
+- **Enseignant:** Ne peut PAS s'inscrire seul — seul l'admin l'ajoute
+- **Admin:** Aucune auto-inscription possible
 
 ## Sécurité
 
