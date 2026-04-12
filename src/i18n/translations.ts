@@ -748,6 +748,13 @@ export const translations = {
       noCourses: 'No courses found',
       noDesc: 'No description available.',
       enrolledSuccess: 'Enrolled successfully!',
+      allLevels: 'All',
+      allSubjects: 'All Subjects',
+      myCourses: 'My Courses',
+      clearFilters: 'Clear filters',
+      studentsEnrolled: 'enrolled',
+      unlock: 'Unlock',
+      continue: 'Continue',
     },
 
     games: {
