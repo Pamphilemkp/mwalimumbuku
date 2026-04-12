@@ -241,6 +241,28 @@ export const translations = {
       continue: 'Continuer',
     },
 
+    // Course View
+    courseView: {
+      lessons: 'Leçons',
+      noLessons: 'Aucune leçon pour le moment.',
+      selectLesson: 'Sélectionnez une leçon pour commencer',
+      noContent: 'Aucun contenu disponible.',
+      exerciseProgress: 'Progression des exercices',
+      lessonComplete: 'Leçon terminée !',
+      correctLabel: 'Correct',
+      incorrectLabel: 'Incorrect',
+      retake: 'Reprendre',
+      exercises: 'Exercices',
+      attempts: 'tentative(s)',
+      premiumCourse: 'Cours Premium',
+      premiumRequired: 'Ce cours nécessite un abonnement Premium.',
+      upgradePremium: 'Passer au Premium',
+      correctFeedback: '🎉 Correct ! Bravo !',
+      incorrectFeedback: '❌ Pas tout à fait. Continuez !',
+      correct: 'correct sur',
+      attempted: 'tentés',
+    },
+
     // Games
     games: {
       title: 'Jeux Éducatifs',
