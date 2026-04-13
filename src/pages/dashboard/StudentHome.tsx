@@ -10,6 +10,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription, isPremium as checkPremium } from '@/hooks/useSubscription';
+import StudentAssignments from '@/components/StudentAssignments';
 
 export default function StudentHome() {
   const { user, role } = useAuth();
@@ -109,6 +110,9 @@ export default function StudentHome() {
           <Progress value={accuracy} className="h-2.5" />
         </motion.div>
       )}
+
+      {/* Assignments section */}
+      <StudentAssignments />
 
       {/* Enrolled courses preview */}
       {enrollments && enrollments.length > 0 && (
