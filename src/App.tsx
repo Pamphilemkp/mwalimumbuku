@@ -49,6 +49,7 @@ const ToolboxPage = lazy(() => import("./pages/dashboard/ToolboxPage"));
 const AdminUsers = lazy(() => import("./pages/dashboard/AdminUsers"));
 const AdminCourses = lazy(() => import("./pages/dashboard/AdminCourses"));
 const AdminAnalytics = lazy(() => import("./pages/dashboard/AdminAnalytics"));
+const AdminSettingsPage = lazy(() => import("./pages/dashboard/AdminSettingsPage"));
 
 // Docs
 const DocsPage = lazy(() => import("./pages/dashboard/DocsPage"));
@@ -125,6 +126,7 @@ const App = () => (
                 <Route path="/dashboard/users" element={<DashboardRoute allowedRoles={['admin']}><AdminUsers /></DashboardRoute>} />
                 <Route path="/dashboard/manage-courses" element={<DashboardRoute allowedRoles={['admin']}><AdminCourses /></DashboardRoute>} />
                 <Route path="/dashboard/analytics" element={<DashboardRoute allowedRoles={['admin']}><AdminAnalytics /></DashboardRoute>} />
+                <Route path="/dashboard/settings" element={<DashboardRoute allowedRoles={['admin']}><AdminSettingsPage /></DashboardRoute>} />
 
                 <Route path="/dashboard/forum" element={<DashboardRoute><ForumPage /></DashboardRoute>} />
                 <Route path="/dashboard/messages" element={<DashboardRoute><MessagesPage /></DashboardRoute>} />
