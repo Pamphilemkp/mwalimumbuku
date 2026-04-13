@@ -12,6 +12,8 @@ import { toast } from '@/components/ui/sonner';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { usePagination } from '@/hooks/usePagination';
+import PaginationControls from '@/components/PaginationControls';
 
 export default function AdminCourses() {
   const qc = useQueryClient();
@@ -114,6 +116,8 @@ export default function AdminCourses() {
     return c.title.toLowerCase().includes(s) || c.subject.toLowerCase().includes(s);
   });
 
+  const pagination = usePagination(filtered, 15);
+
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /></div>;
 
   return (
@@ -154,7 +158,7 @@ export default function AdminCourses() {
                 </tr>
               </thead>
               <tbody>
-                {filtered?.map((c, i) => (
+                {pagination.paginated.map((c, i) => (
                   <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
                     className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
@@ -197,6 +201,7 @@ export default function AdminCourses() {
               </tbody>
             </table>
           </div>
+          <PaginationControls {...pagination} />
         </div>
       )}
 
