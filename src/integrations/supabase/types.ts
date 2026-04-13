@@ -457,6 +457,7 @@ export type Database = {
           full_name: string
           id: string
           locale: string
+          student_code: string | null
           updated_at: string
           user_id: string
         }
@@ -467,6 +468,7 @@ export type Database = {
           full_name?: string
           id?: string
           locale?: string
+          student_code?: string | null
           updated_at?: string
           user_id: string
         }
@@ -477,6 +479,7 @@ export type Database = {
           full_name?: string
           id?: string
           locale?: string
+          student_code?: string | null
           updated_at?: string
           user_id?: string
         }
