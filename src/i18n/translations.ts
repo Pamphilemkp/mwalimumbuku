@@ -604,6 +604,7 @@ export const translations = {
       users: 'Users',
       manageCourses: 'Courses',
       analytics: 'Analytics',
+      platformSettings: 'Settings',
       docs: 'Documentation',
       onboarding: 'Guide',
     },
