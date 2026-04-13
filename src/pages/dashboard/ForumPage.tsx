@@ -15,6 +15,8 @@ import { toast } from '@/components/ui/sonner';
 import { MessageSquare, Plus, User, Clock, Trash2, Shield } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import PaginationControls from '@/components/PaginationControls';
 
 const CATEGORIES = ['general', 'homework', 'announcements', 'resources', 'social'] as const;
 
@@ -82,6 +84,8 @@ export default function ForumPage() {
   const isAdmin = role === 'admin';
   const activePost = posts?.find((p: any) => p.id === selectedPost);
   const catLabel = (c: string) => t.forum.categories[c as keyof typeof t.forum.categories] || c;
+  const postsPagination = usePagination(posts, 5);
+  const catLabel = (c: string) => t.forum.categories[c as keyof typeof t.forum.categories] || c;
 
   return (
     <div className="space-y-6">
@@ -117,7 +121,7 @@ export default function ForumPage() {
               <MessageSquare className="mb-3 h-10 w-10 text-muted-foreground/40" />
               <p className="text-muted-foreground">{t.forum.noPosts}</p>
             </div>
-          ) : posts?.map((post: any) => (
+          ) : postsPagination.paginatedItems.map((post: any) => (
             <button key={post.id} onClick={() => setSelectedPost(post.id)}
               className={`w-full text-left rounded-xl border p-4 transition-colors ${selectedPost === post.id ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/30'}`}>
               <div className="flex items-start justify-between gap-2">
@@ -131,6 +135,7 @@ export default function ForumPage() {
               </div>
             </button>
           ))}
+          <PaginationControls {...postsPagination} />
         </div>
 
         <div>
