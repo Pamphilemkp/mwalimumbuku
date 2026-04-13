@@ -523,7 +523,7 @@ export const translations = {
       free: 'Gratuit',
       premium: 'Premium',
       freePriceLabel: '0 CDF',
-      premiumPriceLabel: '5 000 CDF/mois (~$2 USD)',
+      premiumPriceLabel: '5 000 CDF/mois (~$5 USD)',
       freeFeatures: [
         'Accès aux cours publiés',
         'Suivi de progression basique',
@@ -1056,7 +1056,7 @@ export const translations = {
       free: 'Free',
       premium: 'Premium',
       freePriceLabel: '0 CDF',
-      premiumPriceLabel: '5,000 CDF/mo (~$2 USD)',
+      premiumPriceLabel: '5,000 CDF/mo (~$5 USD)',
       freeFeatures: [
         'Access to published courses',
         'Basic progress tracking',
