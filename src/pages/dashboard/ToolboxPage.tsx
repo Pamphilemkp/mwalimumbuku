@@ -8,8 +8,9 @@ import VocalCalculator from '@/components/VocalCalculator';
 import SpeechToText from '@/components/SpeechToText';
 import TextToSpeech from '@/components/TextToSpeech';
 import AudioRecorder from '@/components/AudioRecorder';
+import { useToolboxSettings } from '@/hooks/usePlatformSettings';
 
-const TOOL_IDS = ['calculator', 'spellcheck', 'dictation', 'tts', 'recorder'] as const;
+const ALL_TOOL_IDS = ['calculator', 'spellcheck', 'dictation', 'tts', 'recorder'] as const;
 const TOOL_ICONS: Record<string, React.ElementType> = { calculator: Calculator, spellcheck: SpellCheck, dictation: Mic, tts: Volume2, recorder: FileText };
 const TOOL_GRADIENTS: Record<string, string> = {
   calculator: 'from-primary/15 to-primary/5', spellcheck: 'from-accent/15 to-accent/5',
@@ -21,6 +22,8 @@ export default function ToolboxPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [dictatedText, setDictatedText] = useState('');
   const [ttsText, setTtsText] = useState('');
+  const toolboxSettings = useToolboxSettings();
+  const TOOL_IDS = ALL_TOOL_IDS.filter(id => toolboxSettings[id] !== false);
 
   return (
     <div className="space-y-6">
