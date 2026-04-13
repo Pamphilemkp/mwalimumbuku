@@ -85,7 +85,6 @@ export default function ForumPage() {
   const activePost = posts?.find((p: any) => p.id === selectedPost);
   const catLabel = (c: string) => t.forum.categories[c as keyof typeof t.forum.categories] || c;
   const postsPagination = usePagination(posts, 5);
-  const catLabel = (c: string) => t.forum.categories[c as keyof typeof t.forum.categories] || c;
 
   return (
     <div className="space-y-6">
