@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import NotificationBell from '@/components/NotificationBell';
 import logo from '@/assets/logo.png';
 import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play, Settings
 } from 'lucide-react';
 
 interface NavItem {
@@ -62,6 +63,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'createCourse', href: '/dashboard/create-course', icon: PlusCircle },
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },
     { labelKey: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { labelKey: 'platformSettings', href: '/dashboard/settings', icon: Settings },
     { labelKey: 'courses', href: '/dashboard/courses', icon: BookOpen },
     { labelKey: 'games', href: '/dashboard/games', icon: Gamepad2 },
     { labelKey: 'toolbox', href: '/dashboard/toolbox', icon: Wrench },
