@@ -12,8 +12,6 @@ import { Progress } from '@/components/ui/progress';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { usePagination } from '@/hooks/usePagination';
-import PaginationControls from '@/components/PaginationControls';
 
 export default function TeacherResults() {
   const { data: courses } = useTeacherCourses();
@@ -112,8 +110,6 @@ export default function TeacherResults() {
     return profile?.full_name?.toLowerCase().includes(s) || (profile as any)?.student_code?.toLowerCase().includes(s);
   });
 
-  const studentPagination = usePagination(filteredStudents, 15);
-
   const selectedProfile = selectedStudent ? profileMap.get(selectedStudent) : null;
   const selectedStats = selectedStudent ? getStudentStats(selectedStudent) : null;
   const selectedEnrollments = selectedStudent ? enrollments?.filter(e => e.user_id === selectedStudent) ?? [] : [];
@@ -171,7 +167,7 @@ export default function TeacherResults() {
                 </tr>
               </thead>
               <tbody>
-                {studentPagination.paginated.map((studentId) => {
+                {filteredStudents.map((studentId) => {
                   const profile = profileMap.get(studentId);
                   const stats = getStudentStats(studentId);
                   return (
@@ -197,7 +193,6 @@ export default function TeacherResults() {
               </tbody>
             </table>
           </div>
-          <PaginationControls {...studentPagination} />
         </div>
       )}
 

@@ -176,7 +176,7 @@ export default function AdminUsers() {
     );
   });
 
-  const pagination = usePagination(filtered, 15);
+  const pagination = usePagination(filtered, 5);
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /></div>;
 
@@ -280,7 +280,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {pagination.paginated.map((p) => {
+              {pagination.paginatedItems.map((p) => {
                 const userRole = roleMap.get(p.user_id) ?? 'unknown';
                 const sub = subMap.get(p.user_id);
                 const linkedChildren = parentLinksByParent.get(p.user_id);
