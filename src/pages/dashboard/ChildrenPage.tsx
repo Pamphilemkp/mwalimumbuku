@@ -22,8 +22,16 @@ export default function ChildrenPage() {
   const { data: children, isLoading } = useQuery({
     queryKey: ['parent-children', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('parent_student').select('*, profiles!parent_student_student_id_fkey(full_name, student_code)').eq('parent_id', user!.id);
-      if (error) throw error; return data;
+      const { data, error } = await supabase.from('parent_student').select('*').eq('parent_id', user!.id);
+      if (error) throw error;
+      // Fetch profiles for each child
+      if (!data?.length) return [];
+      const ids = data.map(d => d.student_id);
+      const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, student_code').in('user_id', ids);
+      return data.map(d => ({
+        ...d,
+        profiles: profiles?.find(p => p.user_id === d.student_id) || null,
+      }));
     },
     enabled: !!user,
   });
