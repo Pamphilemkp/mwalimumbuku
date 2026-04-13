@@ -46,6 +46,7 @@ export const translations = {
       users: 'Utilisateurs',
       manageCourses: 'Gérer les cours',
       analytics: 'Analytique',
+      platformSettings: 'Paramètres',
       docs: 'Documentation',
       onboarding: 'Guide',
     },
