@@ -20,13 +20,21 @@ export default function SubscriptionPage() {
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       toast.success(t.subscription.welcomePremium);
-      qc.invalidateQueries({ queryKey: ['subscription'] });
-      qc.invalidateQueries({ queryKey: ['stripe-subscription'] });
+      // Update local subscription to premium
+      if (user) {
+        supabase.from('subscriptions')
+          .update({ tier: 'premium', is_active: true })
+          .eq('user_id', searchParams.get('child_id') || user.id)
+          .then(() => {
+            qc.invalidateQueries({ queryKey: ['subscription'] });
+            qc.invalidateQueries({ queryKey: ['stripe-subscription'] });
+          });
+      }
     }
     if (searchParams.get('canceled') === 'true') {
       toast.info(t.subscription.checkoutCanceled);
     }
-  }, [searchParams, qc, t]);
+  }, [searchParams, qc, t, user]);
 
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['subscription', user?.id],
