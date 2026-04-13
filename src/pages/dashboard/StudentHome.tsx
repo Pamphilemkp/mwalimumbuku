@@ -111,6 +111,9 @@ export default function StudentHome() {
         </motion.div>
       )}
 
+      {/* Assignments section */}
+      <StudentAssignments />
+
       {/* Enrolled courses preview */}
       {enrollments && enrollments.length > 0 && (
         <div>
