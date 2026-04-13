@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 export default function AdminHome() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const { data: userCount } = useQuery({
     queryKey: ['admin-user-count'],
