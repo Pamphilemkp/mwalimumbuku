@@ -12,7 +12,7 @@ import AlphabetGame from '@/components/games/AlphabetGame';
 import ColorMatchGame from '@/components/games/ColorMatchGame';
 import TypingGame from '@/components/games/TypingGame';
 import type { Difficulty } from '@/components/games/types';
-import { TIME_LIMITS } from '@/components/games/types';
+import { useGameSettings } from '@/hooks/usePlatformSettings';
 
 export default function GamesPage() {
   const { t } = useLanguage();
@@ -69,6 +69,12 @@ export default function GamesPage() {
     typing: <TypingGame onScore={handleScore} difficulty={difficulty} onGameEnd={handleGameEnd} />,
   };
 
+  const gameSettings = useGameSettings();
+  const TIME_LIMITS: Record<Difficulty, number> = {
+    easy: gameSettings.easy_time ?? 120,
+    medium: gameSettings.medium_time ?? 90,
+    hard: gameSettings.hard_time ?? 60,
+  };
   const timeLimit = TIME_LIMITS[difficulty];
 
   return (

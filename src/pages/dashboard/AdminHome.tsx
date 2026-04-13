@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 export default function AdminHome() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const { data: userCount } = useQuery({
     queryKey: ['admin-user-count'],
@@ -58,9 +58,10 @@ export default function AdminHome() {
     { label: t.adminHome.manageUsers, href: '/dashboard/users', icon: Users, desc: t.adminHome.manageUsersDesc, color: 'from-primary/10 to-primary/5' },
     { label: t.adminHome.manageCourses, href: '/dashboard/manage-courses', icon: BookOpen, desc: t.adminHome.manageCoursesDesc, color: 'from-accent/10 to-accent/5' },
     { label: t.adminHome.analytics, href: '/dashboard/analytics', icon: BarChart3, desc: t.adminHome.analyticsDesc, color: 'from-secondary/10 to-secondary/5' },
-    { label: 'Messages', href: '/dashboard/messages', icon: MessageCircle, desc: 'View and manage platform messages', color: 'from-primary/10 to-primary/5' },
-    { label: 'Forum', href: '/dashboard/forum', icon: MessageCircle, desc: 'Moderate forum discussions', color: 'from-accent/10 to-accent/5' },
-    { label: 'Documentation', href: '/dashboard/docs', icon: Settings, desc: 'Platform docs & guides', color: 'from-muted to-muted/50' },
+    { label: lang === 'fr' ? 'Paramètres' : 'Settings', href: '/dashboard/settings', icon: Settings, desc: lang === 'fr' ? 'Configurer jeux et boîte à outils' : 'Configure games and toolbox', color: 'from-amber-500/10 to-amber-500/5' },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageCircle, desc: lang === 'fr' ? 'Voir et gérer les messages' : 'View and manage platform messages', color: 'from-primary/10 to-primary/5' },
+    { label: 'Forum', href: '/dashboard/forum', icon: MessageCircle, desc: lang === 'fr' ? 'Modérer les discussions du forum' : 'Moderate forum discussions', color: 'from-accent/10 to-accent/5' },
+    { label: 'Documentation', href: '/dashboard/docs', icon: Settings, desc: lang === 'fr' ? 'Guides et documentation' : 'Platform docs & guides', color: 'from-muted to-muted/50' },
   ];
 
   return (
