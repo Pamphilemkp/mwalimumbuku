@@ -13,6 +13,8 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { usePagination } from '@/hooks/usePagination';
+import PaginationControls from '@/components/PaginationControls';
 
 export default function AdminUsers() {
   const { role } = useAuth();
@@ -174,6 +176,8 @@ export default function AdminUsers() {
     );
   });
 
+  const pagination = usePagination(filtered, 5);
+
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40" /></div>;
 
   const stats = {
@@ -276,7 +280,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {filtered?.map((p) => {
+              {pagination.paginatedItems.map((p) => {
                 const userRole = roleMap.get(p.user_id) ?? 'unknown';
                 const sub = subMap.get(p.user_id);
                 const linkedChildren = parentLinksByParent.get(p.user_id);
@@ -343,6 +347,7 @@ export default function AdminUsers() {
             </tbody>
           </table>
         </div>
+        <PaginationControls {...pagination} />
       </div>
 
       {/* Detail Dialog */}
