@@ -101,6 +101,69 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Mission */}
+      <section className="py-12 sm:py-20">
+        <div className="container px-4">
+          <div className="mx-auto max-w-3xl">
+            <div className="text-center mb-8 sm:mb-12">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-xs sm:text-sm text-accent mb-3">
+                <Heart className="h-3.5 w-3.5" /> {t.landing.missionLabel}
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">{t.landing.missionTitle}</h2>
+            </div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="rounded-2xl border border-border bg-card p-5 sm:p-8">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+                  <AlertCircle className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-accent uppercase tracking-wide">{t.landing.missionProblemLabel}</p>
+                  <p className="mt-2 text-sm sm:text-base text-muted-foreground leading-relaxed">{t.landing.missionProblem}</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Us */}
+      <section className="border-t border-border bg-card py-12 sm:py-20">
+        <div className="container px-4">
+          <div className="mx-auto max-w-4xl">
+            <div className="text-center mb-8 sm:mb-12">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs sm:text-sm text-primary mb-3">
+                <Sparkles className="h-3.5 w-3.5" /> {t.landing.whyUsLabel}
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">{t.landing.whyUsTitle}</h2>
+              <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed">{t.landing.whyUsIntro}</p>
+            </div>
+
+            <h3 className="font-display text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">{t.landing.whyUsPillarsTitle}</h3>
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
+              {[
+                t.landing.whyUsPillar1, t.landing.whyUsPillar2, t.landing.whyUsPillar3, t.landing.whyUsPillar4, t.landing.whyUsPillar5,
+                t.landing.whyUsPillar6, t.landing.whyUsPillar7, t.landing.whyUsPillar8, t.landing.whyUsPillar9, t.landing.whyUsPillar10,
+              ].map((pillar, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 sm:p-4">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-xs sm:text-sm text-foreground leading-relaxed">{pillar}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+              className="mt-8 sm:mt-10 rounded-2xl border border-accent/20 bg-accent/5 p-5 sm:p-6 text-center">
+              <Heart className="mx-auto mb-2 h-5 w-5 text-accent" />
+              <p className="text-sm sm:text-base font-medium text-foreground italic">{t.landing.whyUsNote}</p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="py-12 sm:py-20">
         <div className="container px-4">
