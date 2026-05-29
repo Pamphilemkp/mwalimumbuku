@@ -39,6 +39,8 @@ const CreateCourse = lazy(() => import("./pages/dashboard/CreateCourse"));
 const CourseEditor = lazy(() => import("./pages/dashboard/CourseEditor"));
 const TeacherResults = lazy(() => import("./pages/dashboard/TeacherResults"));
 const TeacherSubmissionsPage = lazy(() => import("./pages/dashboard/TeacherSubmissionsPage"));
+const TeacherLiveSessionsPage = lazy(() => import("./pages/dashboard/TeacherLiveSessionsPage"));
+const TeacherStudentsPage = lazy(() => import("./pages/dashboard/TeacherStudentsPage"));
 
 // Parent pages
 const ChildrenPage = lazy(() => import("./pages/dashboard/ChildrenPage"));
