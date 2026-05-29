@@ -283,6 +283,74 @@ export default function SubscriptionPage() {
           );
         })}
       </div>
+
+      <PaymentHistorySection />
+    </div>
+  );
+}
+
+function PaymentHistorySection() {
+  const { user } = useAuth();
+  const { lang } = useLanguage();
+  const { data: payments } = useQuery({
+    queryKey: ['payment-history', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('payment_history').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(20);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+  const { data: renewals } = useQuery({
+    queryKey: ['renewal-history', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('renewal_history').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(10);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 max-w-5xl">
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="font-display text-lg font-bold text-foreground mb-3">
+          {lang === 'fr' ? 'Historique des paiements' : 'Payment history'}
+        </h3>
+        {!payments?.length ? (
+          <p className="text-sm text-muted-foreground">{lang === 'fr' ? 'Aucun paiement enregistré.' : 'No payments yet.'}</p>
+        ) : (
+          <ul className="space-y-2">
+            {payments.map((p: any) => (
+              <li key={p.id} className="flex items-center justify-between rounded-lg border border-border/60 p-2.5 text-sm">
+                <div>
+                  <p className="font-medium text-foreground">{p.amount} {p.currency}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString()} · {p.provider || '—'}</p>
+                </div>
+                <Badge variant={p.status === 'succeeded' ? 'default' : p.status === 'failed' ? 'destructive' : 'secondary'} className="text-[10px]">{p.status}</Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="font-display text-lg font-bold text-foreground mb-3">
+          {lang === 'fr' ? 'Historique des renouvellements' : 'Renewal history'}
+        </h3>
+        {!renewals?.length ? (
+          <p className="text-sm text-muted-foreground">{lang === 'fr' ? 'Aucun renouvellement.' : 'No renewals yet.'}</p>
+        ) : (
+          <ul className="space-y-2">
+            {renewals.map((r: any) => (
+              <li key={r.id} className="rounded-lg border border-border/60 p-2.5 text-sm">
+                <p className="font-medium text-foreground capitalize">{r.tier}</p>
+                <p className="text-xs text-muted-foreground">
+                  {lang === 'fr' ? 'Actif jusqu’au' : 'Active until'} {new Date(r.new_expires_at).toLocaleDateString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
