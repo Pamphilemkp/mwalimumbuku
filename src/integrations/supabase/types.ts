@@ -682,6 +682,42 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          provider: string | null
+          provider_ref: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          provider?: string | null
+          provider_ref?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          provider?: string | null
+          provider_ref?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           id: string
@@ -771,6 +807,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      renewal_history: {
+        Row: {
+          created_at: string
+          id: string
+          new_expires_at: string
+          payment_id: string | null
+          previous_expires_at: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_expires_at: string
+          payment_id?: string | null
+          previous_expires_at?: string | null
+          tier?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_expires_at?: string
+          payment_id?: string | null
+          previous_expires_at?: string | null
+          tier?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_history_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_history"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       results: {
         Row: {
@@ -1172,7 +1246,10 @@ export type Database = {
         Returns: boolean
       }
       link_parent_child: { Args: { _student_id: string }; Returns: undefined }
+      run_scheduled_notifications: { Args: never; Returns: undefined }
+      send_academic_reminders: { Args: never; Returns: undefined }
       send_assignment_reminders: { Args: never; Returns: undefined }
+      send_subscription_reminders: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "student" | "parent" | "teacher" | "admin"
