@@ -13,6 +13,7 @@ import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Mission from "./pages/Mission";
 import NotFound from "./pages/NotFound";
 
 // Lazy-load everything else
