@@ -48,6 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let ready = false;
+    const markReady = () => {
+      ready = true;
+      setLoading(false);
+      setIsReady(true);
+    };
 
     // 1. Restore session first
     supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
@@ -62,10 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mounted) setRole(null);
         }
       }
-      if (mounted) {
-        setLoading(false);
-        setIsReady(true);
-      }
+      if (mounted) markReady();
     });
 
     // 2. Listen for subsequent changes (non-blocking)
@@ -75,12 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(sess);
         if (event === 'SIGNED_OUT') {
           setRole(null);
-          setLoading(false);
-          setIsReady(true);
+          markReady();
           return;
         }
         if (sess?.user) {
-          // Fire-and-forget role fetch — don't await in callback
           getUserRole(sess.user.id).then(r => {
             if (mounted) setRole(r);
           }).catch(() => {
@@ -89,19 +90,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setRole(null);
         }
-        if (mounted) {
-          setLoading(false);
-          setIsReady(true);
-        }
+        if (mounted) markReady();
       }
     );
 
     // Safety timeout — 4 seconds max
     const timeout = setTimeout(() => {
-      if (mounted && loading) {
+      if (mounted && !ready) {
         console.warn('Auth loading timeout — forcing ready');
-        setLoading(false);
-        setIsReady(true);
+        markReady();
       }
     }, 4000);
 
