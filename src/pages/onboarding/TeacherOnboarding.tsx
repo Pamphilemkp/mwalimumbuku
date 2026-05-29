@@ -33,7 +33,7 @@ export default function TeacherOnboarding() {
         supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('teacher_profiles').select('*').eq('user_id', user.id).maybeSingle(),
       ]);
-      const av = tp?.availability ?? {};
+      const av: any = tp?.availability ?? {};
       setData((d: any) => ({
         ...d, ...(p ?? {}), ...(tp ?? {}),
         subjects_taught: (tp?.subjects_taught ?? []).join(', '),

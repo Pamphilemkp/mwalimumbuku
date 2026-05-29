@@ -40,9 +40,9 @@ export default function StudentOnboarding() {
         date_of_birth: p?.date_of_birth ?? '',
         subjects_of_interest: (sp?.subjects_of_interest ?? []).join(', '),
         weak_subjects: (sp?.weak_subjects ?? []).join(', '),
-        guardian_name: sp?.guardian_info?.name ?? '',
-        guardian_phone: sp?.guardian_info?.phone ?? '',
-        guardian_email: sp?.guardian_info?.email ?? '',
+        guardian_name: (sp?.guardian_info as any)?.name ?? '',
+        guardian_phone: (sp?.guardian_info as any)?.phone ?? '',
+        guardian_email: (sp?.guardian_info as any)?.email ?? '',
       }));
       if (p?.onboarding_step) setStep(Math.min(p.onboarding_step, STEPS.length - 1));
     })();
