@@ -1,0 +1,2 @@
+UPDATE public.profiles SET onboarding_completed = true, onboarding_step = 99 WHERE onboarding_completed IS DISTINCT FROM true;
+ALTER TABLE public.profiles ALTER COLUMN onboarding_completed SET DEFAULT true;
