@@ -28,12 +28,15 @@ const ProgressPage = lazy(() => import("./pages/dashboard/ProgressPage"));
 const BadgesPage = lazy(() => import("./pages/dashboard/BadgesPage"));
 const MoodPage = lazy(() => import("./pages/dashboard/MoodPage"));
 const ProfilePage = lazy(() => import("./pages/dashboard/ProfilePage"));
+const StudentAssignmentsPage = lazy(() => import("./pages/dashboard/StudentAssignmentsPage"));
+const StudentGradesPage = lazy(() => import("./pages/dashboard/StudentGradesPage"));
 
 // Teacher pages
 const TeacherCourses = lazy(() => import("./pages/dashboard/TeacherCourses"));
 const CreateCourse = lazy(() => import("./pages/dashboard/CreateCourse"));
 const CourseEditor = lazy(() => import("./pages/dashboard/CourseEditor"));
 const TeacherResults = lazy(() => import("./pages/dashboard/TeacherResults"));
+const TeacherSubmissionsPage = lazy(() => import("./pages/dashboard/TeacherSubmissionsPage"));
 
 // Parent pages
 const ChildrenPage = lazy(() => import("./pages/dashboard/ChildrenPage"));
