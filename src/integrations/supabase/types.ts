@@ -76,6 +76,54 @@ export type Database = {
         }
         Relationships: []
       }
+      children_info: {
+        Row: {
+          age: number | null
+          behavioral_notes: string | null
+          class_level: string | null
+          created_at: string
+          full_name: string
+          goals: string | null
+          id: string
+          learning_difficulties: string | null
+          linked_student_id: string | null
+          parent_id: string
+          strengths: string | null
+          updated_at: string
+          weaknesses: string | null
+        }
+        Insert: {
+          age?: number | null
+          behavioral_notes?: string | null
+          class_level?: string | null
+          created_at?: string
+          full_name: string
+          goals?: string | null
+          id?: string
+          learning_difficulties?: string | null
+          linked_student_id?: string | null
+          parent_id: string
+          strengths?: string | null
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Update: {
+          age?: number | null
+          behavioral_notes?: string | null
+          class_level?: string | null
+          created_at?: string
+          full_name?: string
+          goals?: string | null
+          id?: string
+          learning_difficulties?: string | null
+          linked_student_id?: string | null
+          parent_id?: string
+          strengths?: string | null
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Relationships: []
+      }
       course_enrollments: {
         Row: {
           course_id: string
@@ -461,6 +509,36 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_profiles: {
+        Row: {
+          communication_language: string | null
+          created_at: string
+          number_of_children: number | null
+          occupation: string | null
+          relationship_to_child: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          communication_language?: string | null
+          created_at?: string
+          number_of_children?: number | null
+          occupation?: string | null
+          relationship_to_child?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          communication_language?: string | null
+          created_at?: string
+          number_of_children?: number | null
+          occupation?: string | null
+          relationship_to_child?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       parent_student: {
         Row: {
           created_at: string
@@ -508,34 +586,64 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          bio: string | null
+          city: string | null
+          country: string | null
           created_at: string
+          date_of_birth: string | null
           dyslexia_mode: boolean
           full_name: string
+          gender: string | null
           id: string
           locale: string
+          onboarding_completed: boolean
+          onboarding_step: number
+          phone: string | null
+          preferred_language: string | null
           student_code: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           dyslexia_mode?: boolean
           full_name?: string
+          gender?: string | null
           id?: string
           locale?: string
+          onboarding_completed?: boolean
+          onboarding_step?: number
+          phone?: string | null
+          preferred_language?: string | null
           student_code?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           dyslexia_mode?: boolean
           full_name?: string
+          gender?: string | null
           id?: string
           locale?: string
+          onboarding_completed?: boolean
+          onboarding_step?: number
+          phone?: string | null
+          preferred_language?: string | null
           student_code?: string | null
           updated_at?: string
           user_id?: string
@@ -587,6 +695,54 @@ export type Database = {
           },
         ]
       }
+      student_profiles: {
+        Row: {
+          academic_goals: string | null
+          class_level: string | null
+          created_at: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          guardian_info: Json | null
+          learning_language: string | null
+          school_name: string | null
+          student_id_external: string | null
+          subjects_of_interest: string[] | null
+          updated_at: string
+          user_id: string
+          weak_subjects: string[] | null
+        }
+        Insert: {
+          academic_goals?: string | null
+          class_level?: string | null
+          created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          guardian_info?: Json | null
+          learning_language?: string | null
+          school_name?: string | null
+          student_id_external?: string | null
+          subjects_of_interest?: string[] | null
+          updated_at?: string
+          user_id: string
+          weak_subjects?: string[] | null
+        }
+        Update: {
+          academic_goals?: string | null
+          class_level?: string | null
+          created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          guardian_info?: Json | null
+          learning_language?: string | null
+          school_name?: string | null
+          student_id_external?: string | null
+          subjects_of_interest?: string[] | null
+          updated_at?: string
+          user_id?: string
+          weak_subjects?: string[] | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -617,6 +773,45 @@ export type Database = {
           tier?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      teacher_profiles: {
+        Row: {
+          availability: Json | null
+          bio: string | null
+          certifications: string[] | null
+          created_at: string
+          levels_handled: string[] | null
+          qualification: string | null
+          subjects_taught: string[] | null
+          updated_at: string
+          user_id: string
+          years_experience: number | null
+        }
+        Insert: {
+          availability?: Json | null
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string
+          levels_handled?: string[] | null
+          qualification?: string | null
+          subjects_taught?: string[] | null
+          updated_at?: string
+          user_id: string
+          years_experience?: number | null
+        }
+        Update: {
+          availability?: Json | null
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string
+          levels_handled?: string[] | null
+          qualification?: string | null
+          subjects_taught?: string[] | null
+          updated_at?: string
+          user_id?: string
+          years_experience?: number | null
         }
         Relationships: []
       }
