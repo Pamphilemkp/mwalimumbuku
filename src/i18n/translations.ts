@@ -635,6 +635,9 @@ export const translations = {
       assignments: 'Assignments',
       grades: 'My Grades',
       submissions: 'Submissions',
+      myRole: 'My Parent Role',
+      announcements: 'Announcements',
+      assignTeachers: 'Teachers',
     },
 
     landing: {
