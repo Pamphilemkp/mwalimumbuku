@@ -13,6 +13,7 @@ import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Mission from "./pages/Mission";
 import NotFound from "./pages/NotFound";
 
 // Lazy-load everything else
@@ -100,6 +101,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/mission" element={<Mission />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

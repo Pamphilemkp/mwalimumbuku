@@ -48,6 +48,9 @@ export default function Index() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher />
+            <Link to="/mission" className="hidden md:inline-flex">
+              <Button variant="ghost" size="sm" className="gap-1.5"><Heart className="h-3.5 w-3.5 text-accent" />{t.landing.missionLabel}</Button>
+            </Link>
             <Link to="/login">
               <Button variant="ghost" size="sm" className="hidden sm:inline-flex">{t.landing.login}</Button>
               <Button variant="ghost" size="icon" className="sm:hidden"><User className="h-4 w-4" /></Button>
@@ -123,6 +126,13 @@ export default function Index() {
                 </div>
               </div>
             </motion.div>
+            <div className="mt-6 text-center">
+              <Link to="/mission">
+                <Button variant="outline" className="gap-2">
+                  {t.landing.missionLabel} — {t.landing.whyUsLabel} <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
