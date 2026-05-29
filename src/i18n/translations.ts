@@ -49,6 +49,9 @@ export const translations = {
       platformSettings: 'Paramètres',
       docs: 'Documentation',
       onboarding: 'Guide',
+      assignments: 'Devoirs',
+      grades: 'Mes notes',
+      submissions: 'Soumissions',
     },
 
     // Landing page
