@@ -11,7 +11,7 @@ import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
   PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play, Settings, NotebookPen, GraduationCap,
-  HeartHandshake, Megaphone, UserCheck,
+  HeartHandshake, Megaphone, UserCheck, LifeBuoy,
 } from 'lucide-react';
 
 interface NavItem {
