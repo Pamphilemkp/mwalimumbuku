@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import OnboardingGuard from "@/components/OnboardingGuard";
 import DashboardLayout from "@/components/DashboardLayout";
 import { lazy, Suspense } from "react";
 
@@ -55,9 +56,14 @@ const AdminCourses = lazy(() => import("./pages/dashboard/AdminCourses"));
 const AdminAnalytics = lazy(() => import("./pages/dashboard/AdminAnalytics"));
 const AdminSettingsPage = lazy(() => import("./pages/dashboard/AdminSettingsPage"));
 
+const AdminAnnouncementsPage = lazy(() => import("./pages/dashboard/AdminAnnouncementsPage"));
+const AdminAssignTeacherPage = lazy(() => import("./pages/dashboard/AdminAssignTeacherPage"));
+const ParentRolePage = lazy(() => import("./pages/dashboard/ParentRolePage"));
+
 // Docs
 const DocsPage = lazy(() => import("./pages/dashboard/DocsPage"));
 const OnboardingPage = lazy(() => import("./pages/dashboard/OnboardingPage"));
+const OnboardingRouter = lazy(() => import("./pages/onboarding/OnboardingRouter"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,7 +94,9 @@ function PageLoader() {
 function DashboardRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: import('@/lib/auth').AppRole[] }) {
   return (
     <ProtectedRoute allowedRoles={allowedRoles}>
-      <DashboardLayout>{children}</DashboardLayout>
+      <OnboardingGuard>
+        <DashboardLayout>{children}</DashboardLayout>
+      </OnboardingGuard>
     </ProtectedRoute>
   );
 }
@@ -109,10 +117,15 @@ const App = () => (
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                
+
+                <Route path="/onboarding/:role" element={<OnboardingRouter />} />
+
                 <Route path="/dashboard" element={<DashboardRoute><Dashboard /></DashboardRoute>} />
 
                 <Route path="/dashboard/profile" element={<DashboardRoute><ProfilePage /></DashboardRoute>} />
+                <Route path="/dashboard/my-role" element={<DashboardRoute allowedRoles={['parent']}><ParentRolePage /></DashboardRoute>} />
+                <Route path="/dashboard/announcements" element={<DashboardRoute allowedRoles={['admin']}><AdminAnnouncementsPage /></DashboardRoute>} />
+                <Route path="/dashboard/assign-teachers" element={<DashboardRoute allowedRoles={['admin']}><AdminAssignTeacherPage /></DashboardRoute>} />
 
                 <Route path="/dashboard/courses" element={<DashboardRoute><CourseBrowser /></DashboardRoute>} />
                 <Route path="/dashboard/courses/:courseId" element={<DashboardRoute><CourseView /></DashboardRoute>} />
