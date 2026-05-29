@@ -42,8 +42,8 @@ export default function Signup() {
     if (error) {
       toast.error(error.message);
     } else if (data?.session) {
-      // Auto-confirmed — redirect to dashboard
-      navigate('/dashboard');
+      // Auto-confirmed — go directly to role onboarding
+      navigate(`/onboarding/${role}`);
     } else {
       setSuccess(true);
     }

@@ -10,7 +10,8 @@ import logo from '@/assets/logo.png';
 import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
-  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play, Settings, NotebookPen, GraduationCap
+  PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play, Settings, NotebookPen, GraduationCap,
+  HeartHandshake, Megaphone, UserCheck,
 } from 'lucide-react';
 
 interface NavItem {
@@ -52,6 +53,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   parent: [
     { labelKey: 'dashboard', href: '/dashboard', icon: Home },
     { labelKey: 'myChildren', href: '/dashboard/children', icon: Users },
+    { labelKey: 'myRole', href: '/dashboard/my-role', icon: HeartHandshake },
     { labelKey: 'progress', href: '/dashboard/child-progress', icon: BarChart3 },
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
@@ -62,6 +64,8 @@ const roleNavItems: Record<string, NavItem[]> = {
   admin: [
     { labelKey: 'dashboard', href: '/dashboard', icon: Home },
     { labelKey: 'users', href: '/dashboard/users', icon: Users },
+    { labelKey: 'assignTeachers', href: '/dashboard/assign-teachers', icon: UserCheck },
+    { labelKey: 'announcements', href: '/dashboard/announcements', icon: Megaphone },
     { labelKey: 'manageCourses', href: '/dashboard/manage-courses', icon: BookOpen },
     { labelKey: 'createCourse', href: '/dashboard/create-course', icon: PlusCircle },
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },

@@ -52,6 +52,9 @@ export const translations = {
       assignments: 'Devoirs',
       grades: 'Mes notes',
       submissions: 'Soumissions',
+      myRole: 'Mon rôle de parent',
+      announcements: 'Annonces',
+      assignTeachers: 'Enseignants',
     },
 
     // Landing page
@@ -632,6 +635,9 @@ export const translations = {
       assignments: 'Assignments',
       grades: 'My Grades',
       submissions: 'Submissions',
+      myRole: 'My Parent Role',
+      announcements: 'Announcements',
+      assignTeachers: 'Teachers',
     },
 
     landing: {
