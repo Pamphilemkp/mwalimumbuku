@@ -629,6 +629,9 @@ export const translations = {
       platformSettings: 'Settings',
       docs: 'Documentation',
       onboarding: 'Guide',
+      assignments: 'Assignments',
+      grades: 'My Grades',
+      submissions: 'Submissions',
     },
 
     landing: {
