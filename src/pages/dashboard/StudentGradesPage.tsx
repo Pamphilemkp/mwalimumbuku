@@ -11,6 +11,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { usePagination } from '@/hooks/usePagination';
 import PaginationControls from '@/components/PaginationControls';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function StudentGradesPage() {
   const { user } = useAuth();
@@ -99,6 +100,40 @@ export default function StudentGradesPage() {
               <span className="text-sm text-primary font-medium">{correct}/{total}</span>
             </div>
             <Progress value={accuracy} className="h-2.5" />
+          </CardContent>
+      </Card>
+      )}
+
+      {graded.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="h-5 w-5 text-primary" /> Évolution des notes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={[...graded].reverse().map((g: any, i) => ({
+                  name: `#${i + 1}`,
+                  note: g.grade,
+                  label: g.assignments?.title?.slice(0, 20) ?? '',
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+                  <Line type="monotone" dataKey="note" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {graded[0].grade > graded[graded.length - 1].grade
+                ? '📈 Vos notes progressent. Continuez ainsi !'
+                : graded[0].grade < graded[graded.length - 1].grade
+                ? '📉 Concentrez-vous sur vos points faibles pour progresser.'
+                : '➡️ Tendance stable. Visez plus haut !'}
+            </p>
           </CardContent>
         </Card>
       )}

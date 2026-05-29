@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { cn } from '@/lib/utils';
 import { Plus, BookOpen, ChevronRight, X, Calendar, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+import CourseMaterialsSection from '@/components/CourseMaterialsSection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
@@ -380,6 +381,10 @@ export default function CourseEditor() {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            <CourseMaterialsSection courseId={courseId!} lessons={lessons ?? []} />
           </div>
         </div>
       </div>

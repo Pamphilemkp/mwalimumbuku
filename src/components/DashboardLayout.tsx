@@ -11,7 +11,7 @@ import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
   PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play, Settings, NotebookPen, GraduationCap,
-  HeartHandshake, Megaphone, UserCheck, LifeBuoy,
+  HeartHandshake, Megaphone, UserCheck, LifeBuoy, Video, UsersRound,
 } from 'lucide-react';
 
 interface NavItem {
@@ -25,6 +25,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'dashboard', href: '/dashboard', icon: Home },
     { labelKey: 'courses', href: '/dashboard/courses', icon: BookOpen },
     { labelKey: 'assignments', href: '/dashboard/assignments', icon: NotebookPen },
+    { labelKey: 'liveSessions', href: '/dashboard/live-sessions', icon: Video },
     { labelKey: 'grades', href: '/dashboard/grades', icon: GraduationCap },
     { labelKey: 'myProgress', href: '/dashboard/progress', icon: BarChart3 },
     { labelKey: 'badges', href: '/dashboard/badges', icon: Award },
@@ -45,6 +46,8 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'createCourse', href: '/dashboard/create-course', icon: PlusCircle },
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },
     { labelKey: 'submissions', href: '/dashboard/submissions', icon: NotebookPen },
+    { labelKey: 'myStudents', href: '/dashboard/my-students', icon: UsersRound },
+    { labelKey: 'liveSessions', href: '/dashboard/live-sessions', icon: Video },
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
@@ -73,6 +76,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'createCourse', href: '/dashboard/create-course', icon: PlusCircle },
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },
     { labelKey: 'submissions', href: '/dashboard/submissions', icon: NotebookPen },
+    { labelKey: 'liveSessions', href: '/dashboard/live-sessions', icon: Video },
     { labelKey: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { labelKey: 'platformSettings', href: '/dashboard/settings', icon: Settings },
     { labelKey: 'courses', href: '/dashboard/courses', icon: BookOpen },

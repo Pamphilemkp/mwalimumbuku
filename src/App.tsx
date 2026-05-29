@@ -39,6 +39,8 @@ const CreateCourse = lazy(() => import("./pages/dashboard/CreateCourse"));
 const CourseEditor = lazy(() => import("./pages/dashboard/CourseEditor"));
 const TeacherResults = lazy(() => import("./pages/dashboard/TeacherResults"));
 const TeacherSubmissionsPage = lazy(() => import("./pages/dashboard/TeacherSubmissionsPage"));
+const TeacherLiveSessionsPage = lazy(() => import("./pages/dashboard/TeacherLiveSessionsPage"));
+const TeacherStudentsPage = lazy(() => import("./pages/dashboard/TeacherStudentsPage"));
 
 // Parent pages
 const ChildrenPage = lazy(() => import("./pages/dashboard/ChildrenPage"));
@@ -143,6 +145,8 @@ const App = () => (
                 <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><CourseEditor /></DashboardRoute>} />
                 <Route path="/dashboard/results" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherResults /></DashboardRoute>} />
                 <Route path="/dashboard/submissions" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherSubmissionsPage /></DashboardRoute>} />
+                <Route path="/dashboard/live-sessions" element={<DashboardRoute allowedRoles={['teacher', 'admin', 'student', 'parent']}><TeacherLiveSessionsPage /></DashboardRoute>} />
+                <Route path="/dashboard/my-students" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherStudentsPage /></DashboardRoute>} />
 
                 <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
                 <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />

@@ -49,6 +49,47 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          course_id: string
+          id: string
+          marked_at: string
+          marked_by: string | null
+          notes: string | null
+          session_id: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          course_id: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          notes?: string | null
+          session_id?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          course_id?: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          notes?: string | null
+          session_id?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           created_at: string
@@ -152,6 +193,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      course_materials: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_url: string
+          id: string
+          lesson_id: string | null
+          material_type: string
+          title: string
+          uploaded_by: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          lesson_id?: string | null
+          material_type?: string
+          title: string
+          uploaded_by: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          lesson_id?: string | null
+          material_type?: string
+          title?: string
+          uploaded_by?: string
+        }
+        Relationships: []
       }
       courses: {
         Row: {
@@ -433,6 +513,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      live_sessions: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          meeting_url: string | null
+          scheduled_at: string
+          status: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          meeting_url?: string | null
+          scheduled_at: string
+          status?: string
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          meeting_url?: string | null
+          scheduled_at?: string
+          status?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -913,6 +1035,42 @@ export type Database = {
           updated_at?: string
           user_id?: string
           years_experience?: number | null
+        }
+        Relationships: []
+      }
+      teacher_recommendations: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          priority: string
+          student_id: string
+          subject: string | null
+          teacher_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          priority?: string
+          student_id: string
+          subject?: string | null
+          teacher_id: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          priority?: string
+          student_id?: string
+          subject?: string | null
+          teacher_id?: string
         }
         Relationships: []
       }
