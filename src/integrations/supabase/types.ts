@@ -718,6 +718,7 @@ export type Database = {
         Returns: boolean
       }
       link_parent_child: { Args: { _student_id: string }; Returns: undefined }
+      send_assignment_reminders: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "student" | "parent" | "teacher" | "admin"
