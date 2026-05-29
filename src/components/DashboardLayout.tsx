@@ -11,7 +11,7 @@ import {
   LogOut, User, Home, Award, Smile,
   Users, BarChart3, MessageSquare, Menu, X,
   PlusCircle, ClipboardList, CreditCard, MessageCircle, BookOpen, FileText, Gamepad2, Wrench, Play, Settings, NotebookPen, GraduationCap,
-  HeartHandshake, Megaphone, UserCheck,
+  HeartHandshake, Megaphone, UserCheck, LifeBuoy,
 } from 'lucide-react';
 
 interface NavItem {
@@ -35,6 +35,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'subscription', href: '/dashboard/subscription', icon: CreditCard },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'support', href: '/dashboard/support', icon: LifeBuoy },
     { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
@@ -47,6 +48,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'support', href: '/dashboard/support', icon: LifeBuoy },
     { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
@@ -58,6 +60,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'messages', href: '/dashboard/messages', icon: MessageCircle },
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'support', href: '/dashboard/support', icon: LifeBuoy },
     { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
@@ -79,6 +82,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'subscription', href: '/dashboard/subscription', icon: CreditCard },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'support', href: '/dashboard/support', icon: LifeBuoy },
     { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],

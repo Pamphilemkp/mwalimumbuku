@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingGuard from "@/components/OnboardingGuard";
 import DashboardLayout from "@/components/DashboardLayout";
+import SupportWidget from "@/components/support/SupportWidget";
 import { lazy, Suspense } from "react";
 
 // Eager-load critical path pages
@@ -64,6 +65,7 @@ const ParentRolePage = lazy(() => import("./pages/dashboard/ParentRolePage"));
 const DocsPage = lazy(() => import("./pages/dashboard/DocsPage"));
 const OnboardingPage = lazy(() => import("./pages/dashboard/OnboardingPage"));
 const OnboardingRouter = lazy(() => import("./pages/onboarding/OnboardingRouter"));
+const SupportPage = lazy(() => import("./pages/dashboard/SupportPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,6 +111,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <SupportWidget />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -156,6 +159,7 @@ const App = () => (
                 <Route path="/dashboard/subscription" element={<DashboardRoute><SubscriptionPage /></DashboardRoute>} />
                 <Route path="/dashboard/docs" element={<DashboardRoute><DocsPage /></DashboardRoute>} />
                 <Route path="/dashboard/onboarding" element={<DashboardRoute><OnboardingPage /></DashboardRoute>} />
+                <Route path="/dashboard/support" element={<DashboardRoute><SupportPage /></DashboardRoute>} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

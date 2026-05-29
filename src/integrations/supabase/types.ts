@@ -776,6 +776,107 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          sender_id: string
+          ticket_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id: string
+          ticket_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["support_category"]
+          created_at: string
+          id: string
+          last_message_at: string
+          priority: Database["public"]["Enums"]["support_priority"]
+          status: Database["public"]["Enums"]["support_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_category"]
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          priority?: Database["public"]["Enums"]["support_priority"]
+          status?: Database["public"]["Enums"]["support_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_category"]
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          priority?: Database["public"]["Enums"]["support_priority"]
+          status?: Database["public"]["Enums"]["support_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_typing: {
+        Row: {
+          ticket_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ticket_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ticket_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       teacher_profiles: {
         Row: {
           availability: Json | null
@@ -917,6 +1018,18 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "parent" | "teacher" | "admin"
+      support_category:
+        | "technical_issue"
+        | "learning_difficulty"
+        | "homework_help"
+        | "subscription_issue"
+        | "teacher_assistance"
+        | "parent_guidance"
+        | "general_inquiry"
+        | "academic_question"
+        | "report_issue"
+      support_priority: "low" | "normal" | "high" | "urgent"
+      support_status: "open" | "pending" | "replied" | "resolved" | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1045,6 +1158,19 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "parent", "teacher", "admin"],
+      support_category: [
+        "technical_issue",
+        "learning_difficulty",
+        "homework_help",
+        "subscription_issue",
+        "teacher_assistance",
+        "parent_guidance",
+        "general_inquiry",
+        "academic_question",
+        "report_issue",
+      ],
+      support_priority: ["low", "normal", "high", "urgent"],
+      support_status: ["open", "pending", "replied", "resolved", "closed"],
     },
   },
 } as const
