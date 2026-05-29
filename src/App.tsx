@@ -145,6 +145,8 @@ const App = () => (
                 <Route path="/dashboard/courses/:courseId/edit" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><CourseEditor /></DashboardRoute>} />
                 <Route path="/dashboard/results" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherResults /></DashboardRoute>} />
                 <Route path="/dashboard/submissions" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherSubmissionsPage /></DashboardRoute>} />
+                <Route path="/dashboard/live-sessions" element={<DashboardRoute allowedRoles={['teacher', 'admin', 'student', 'parent']}><TeacherLiveSessionsPage /></DashboardRoute>} />
+                <Route path="/dashboard/my-students" element={<DashboardRoute allowedRoles={['teacher', 'admin']}><TeacherStudentsPage /></DashboardRoute>} />
 
                 <Route path="/dashboard/children" element={<DashboardRoute><ChildrenPage /></DashboardRoute>} />
                 <Route path="/dashboard/child-progress" element={<DashboardRoute><ChildProgress /></DashboardRoute>} />
