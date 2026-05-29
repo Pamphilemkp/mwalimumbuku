@@ -65,6 +65,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'manageCourses', href: '/dashboard/manage-courses', icon: BookOpen },
     { labelKey: 'createCourse', href: '/dashboard/create-course', icon: PlusCircle },
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },
+    { labelKey: 'submissions', href: '/dashboard/submissions', icon: NotebookPen },
     { labelKey: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { labelKey: 'platformSettings', href: '/dashboard/settings', icon: Settings },
     { labelKey: 'courses', href: '/dashboard/courses', icon: BookOpen },
