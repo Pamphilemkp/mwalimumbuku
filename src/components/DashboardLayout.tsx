@@ -82,6 +82,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { labelKey: 'forum', href: '/dashboard/forum', icon: MessageSquare },
     { labelKey: 'subscription', href: '/dashboard/subscription', icon: CreditCard },
     { labelKey: 'docs', href: '/dashboard/docs', icon: FileText },
+    { labelKey: 'support', href: '/dashboard/support', icon: LifeBuoy },
     { labelKey: 'onboarding', href: '/dashboard/onboarding', icon: Play },
     { labelKey: 'profile', href: '/dashboard/profile', icon: User },
   ],
