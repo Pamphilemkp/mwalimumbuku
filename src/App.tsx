@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingGuard from "@/components/OnboardingGuard";
 import DashboardLayout from "@/components/DashboardLayout";
+import SupportWidget from "@/components/support/SupportWidget";
 import { lazy, Suspense } from "react";
 
 // Eager-load critical path pages
@@ -65,7 +66,6 @@ const DocsPage = lazy(() => import("./pages/dashboard/DocsPage"));
 const OnboardingPage = lazy(() => import("./pages/dashboard/OnboardingPage"));
 const OnboardingRouter = lazy(() => import("./pages/onboarding/OnboardingRouter"));
 const SupportPage = lazy(() => import("./pages/dashboard/SupportPage"));
-import SupportWidget from "@/components/support/SupportWidget";
 
 const queryClient = new QueryClient({
   defaultOptions: {
