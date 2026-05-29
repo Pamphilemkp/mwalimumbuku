@@ -126,6 +126,13 @@ export default function Index() {
                 </div>
               </div>
             </motion.div>
+            <div className="mt-6 text-center">
+              <Link to="/mission">
+                <Button variant="outline" className="gap-2">
+                  {t.landing.missionLabel} — {t.landing.whyUsLabel} <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
