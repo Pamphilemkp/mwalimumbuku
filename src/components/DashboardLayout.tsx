@@ -23,6 +23,8 @@ const roleNavItems: Record<string, NavItem[]> = {
   student: [
     { labelKey: 'dashboard', href: '/dashboard', icon: Home },
     { labelKey: 'courses', href: '/dashboard/courses', icon: BookOpen },
+    { labelKey: 'assignments', href: '/dashboard/assignments', icon: NotebookPen },
+    { labelKey: 'grades', href: '/dashboard/grades', icon: GraduationCap },
     { labelKey: 'myProgress', href: '/dashboard/progress', icon: BarChart3 },
     { labelKey: 'badges', href: '/dashboard/badges', icon: Award },
     { labelKey: 'games', href: '/dashboard/games', icon: Gamepad2 },
