@@ -47,4 +47,18 @@ describe("runSignOut", () => {
     expect(source).toContain("supabase.auth.signOut()");
     expect(source).not.toMatch(/scope:\s*["']local["']/);
   });
+
+  it("returns before navigation when sign-out fails", () => {
+    const source = readFileSync(path.resolve(import.meta.dirname, "logout-button.tsx"), "utf8");
+    const failure = source.indexOf('if (result.status === "failed")');
+    const earlyReturn = source.indexOf("return;", failure);
+    const navigate = source.indexOf('router.push("/login")');
+
+    expect(failure).toBeGreaterThan(-1);
+    expect(earlyReturn).toBeGreaterThan(failure);
+    expect(navigate).toBeGreaterThan(earlyReturn);
+    expect(source.slice(failure, earlyReturn)).not.toContain("router.push");
+    expect(source.slice(failure, earlyReturn)).not.toContain("router.refresh");
+    expect(source.match(/router\.push\(/g)).toHaveLength(1);
+  });
 });
