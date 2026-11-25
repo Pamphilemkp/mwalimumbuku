@@ -50,6 +50,8 @@ export default function MessagesPage() {
       }).sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
     },
     enabled: !!user,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: chatMessages } = useQuery({

@@ -243,6 +243,29 @@ ALTER TABLE public.live_sessions
   ADD CONSTRAINT live_sessions_ends_at_check
   CHECK (ends_at IS NULL OR ends_at >= scheduled_at);
 
+-- A school-scoped course and a class on the same session must share a school.
+-- Course-only sessions stay valid. Catalog courses have no school to compare.
+
+CREATE OR REPLACE FUNCTION public.session_class_in_course_school(target_course uuid, target_class uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT target_class IS NULL
+    OR EXISTS (
+      SELECT 1
+      FROM public.courses AS course
+      JOIN public.classes AS class_row ON class_row.id = target_class
+      WHERE course.id = target_course
+        AND (course.school_id IS NULL OR class_row.school_id = course.school_id)
+    );
+$$;
+
+REVOKE ALL ON FUNCTION public.session_class_in_course_school(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.session_class_in_course_school(uuid, uuid) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.enforce_live_session()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -256,6 +279,9 @@ BEGIN
      AND public.has_role(auth.uid(), 'student'::public.app_role)
      AND NOT public.has_role(auth.uid(), 'teacher'::public.app_role) THEN
     RAISE EXCEPTION 'students cannot create a session';
+  END IF;
+  IF NOT public.session_class_in_course_school(NEW.course_id, NEW.class_id) THEN
+    RAISE EXCEPTION 'session class is outside the course school';
   END IF;
   IF NEW.status NOT IN ('scheduled', 'live', 'ended', 'cancelled') THEN
     RAISE EXCEPTION 'session status is not available';
@@ -276,6 +302,7 @@ CREATE POLICY "Teachers manage own sessions"
   USING (auth.uid() = teacher_id)
   WITH CHECK (
     auth.uid() = teacher_id
+    AND public.session_class_in_course_school(course_id, class_id)
     AND EXISTS (
       SELECT 1
       FROM public.courses AS course
@@ -324,26 +351,26 @@ AS $$
           AND public.active_membership(auth.uid(), class_row.school_id, 'school_admin')
       )
     )
-    OR EXISTS (
+    OR (target_class IS NULL AND EXISTS (
       SELECT 1 FROM public.course_enrollments AS enrollment
       WHERE enrollment.course_id = target_course
         AND enrollment.user_id = auth.uid()
-    )
-    OR EXISTS (
+    ))
+    OR (target_class IS NULL AND EXISTS (
       SELECT 1 FROM public.course_enrollments AS enrollment
       WHERE enrollment.course_id = target_course
         AND public.parent_of(auth.uid(), enrollment.user_id)
-    )
+    ))
     OR (target_class IS NOT NULL AND public.student_in_class(auth.uid(), target_class))
     OR (target_class IS NOT NULL AND public.parent_of_class(auth.uid(), target_class))
-    OR EXISTS (
+    OR (target_class IS NULL AND EXISTS (
       SELECT 1 FROM public.class_subjects AS offering
       WHERE offering.course_id = target_course
         AND (
           public.student_in_class(auth.uid(), offering.class_id)
           OR public.parent_of_class(auth.uid(), offering.class_id)
         )
-    );
+    ));
 $$;
 
 REVOKE ALL ON FUNCTION public.can_read_live_session(uuid, uuid, uuid) FROM PUBLIC;
@@ -372,29 +399,24 @@ BEGIN
     IF auth.uid() IS NOT NULL AND NEW.sender_id IS DISTINCT FROM auth.uid() THEN
       RAISE EXCEPTION 'sender must be the signed-in user';
     END IF;
+    -- active_member_of_school reads memberships as the owner, so a hidden
+    -- recipient row is not treated as "no membership". A school-scoped sender
+    -- is rejected unless a shared school or a parent link is confirmed.
     IF auth.uid() IS NOT NULL
        AND EXISTS (
          SELECT 1 FROM public.school_memberships AS sender_membership
          WHERE sender_membership.user_id = NEW.sender_id
            AND sender_membership.status = 'active'
        )
-       AND EXISTS (
-         SELECT 1 FROM public.school_memberships AS receiver_membership
-         WHERE receiver_membership.user_id = NEW.receiver_id
-           AND receiver_membership.status = 'active'
-       )
+       AND NOT public.parent_of(NEW.sender_id, NEW.receiver_id)
+       AND NOT public.parent_of(NEW.receiver_id, NEW.sender_id)
        AND NOT EXISTS (
          SELECT 1
          FROM public.school_memberships AS sender_membership
-         JOIN public.school_memberships AS receiver_membership
-           ON receiver_membership.school_id = sender_membership.school_id
-          AND receiver_membership.status = 'active'
          WHERE sender_membership.user_id = NEW.sender_id
            AND sender_membership.status = 'active'
-           AND receiver_membership.user_id = NEW.receiver_id
-       )
-       AND NOT public.parent_of(NEW.sender_id, NEW.receiver_id)
-       AND NOT public.parent_of(NEW.receiver_id, NEW.sender_id) THEN
+           AND public.active_member_of_school(NEW.receiver_id, sender_membership.school_id)
+       ) THEN
       RAISE EXCEPTION 'message stays inside a shared school';
     END IF;
     RETURN NEW;
@@ -672,11 +694,38 @@ WHERE profile.user_id = auth.uid()
      WHERE auth.uid() IN (message.sender_id, message.receiver_id)
        AND profile.user_id IN (message.sender_id, message.receiver_id)
    )
+   OR public.parent_of(profile.user_id, auth.uid())
    OR EXISTS (
      SELECT 1
      FROM public.forum_posts AS post
      WHERE post.user_id = profile.user_id
        AND public.forum_visible(post.school_id, post.role_visibility)
+   )
+   OR EXISTS (
+     SELECT 1
+     FROM public.forum_replies AS reply
+     JOIN public.forum_posts AS post ON post.id = reply.post_id
+     WHERE reply.user_id = profile.user_id
+       AND public.forum_visible(post.school_id, post.role_visibility)
+   )
+   OR EXISTS (
+     SELECT 1
+     FROM public.student_enrollments AS viewer_enrollment
+     JOIN public.school_memberships AS viewer_membership
+       ON viewer_membership.id = viewer_enrollment.membership_id
+     JOIN public.student_enrollments AS peer_enrollment
+       ON peer_enrollment.class_id = viewer_enrollment.class_id
+      AND peer_enrollment.status = 'active'
+     JOIN public.school_memberships AS peer_membership
+       ON peer_membership.id = peer_enrollment.membership_id
+     WHERE viewer_enrollment.status = 'active'
+       AND viewer_membership.user_id = auth.uid()
+       AND viewer_membership.status = 'active'
+       AND viewer_membership.membership_role = 'student'
+       AND peer_membership.user_id = profile.user_id
+       AND peer_membership.status = 'active'
+       AND peer_membership.membership_role = 'student'
+       AND peer_membership.user_id <> auth.uid()
    )
    OR EXISTS (
      SELECT 1
@@ -759,7 +808,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'ticket owner is fixed';
   END IF;
-  IF NEW.school_id IS NOT NULL AND NOT public.active_member_of_school(NEW.user_id, NEW.school_id) THEN
+  IF TG_OP = 'INSERT' AND NEW.school_id IS NOT NULL AND NOT public.active_member_of_school(NEW.user_id, NEW.school_id) THEN
     RAISE EXCEPTION 'ticket school is outside the requester membership';
   END IF;
   RETURN NEW;
@@ -777,8 +826,14 @@ LANGUAGE plpgsql
 SET search_path = public
 AS $$
 BEGIN
-  IF auth.uid() IS NOT NULL AND NEW.sender_id IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION 'sender must be the signed-in user';
+  IF TG_OP = 'INSERT' THEN
+    IF auth.uid() IS NOT NULL AND NEW.sender_id IS DISTINCT FROM auth.uid() THEN
+      RAISE EXCEPTION 'sender must be the signed-in user';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.sender_id IS DISTINCT FROM OLD.sender_id THEN
+    RAISE EXCEPTION 'sender is fixed';
   END IF;
   RETURN NEW;
 END;

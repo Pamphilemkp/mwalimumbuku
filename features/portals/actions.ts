@@ -122,7 +122,7 @@ export async function createSupportTicketAction(input: {
     .insert({ user_id: userId, subject, category, priority, school_id: schoolId })
     .select("id")
     .single();
-  if (created.error && missingSchema(created.error)) {
+  if (created.error && missingSchema(created.error) && !schoolId) {
     created = await supabase.from("support_tickets").insert({ user_id: userId, subject, category, priority }).select("id").single();
   }
   const data = created.data;

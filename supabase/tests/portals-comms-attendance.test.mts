@@ -16,21 +16,32 @@ const studentB = "00000000-0000-0000-0000-000000000007";
 const parentA = "00000000-0000-0000-0000-000000000008";
 const outsider = "00000000-0000-0000-0000-000000000009";
 const catalog = "00000000-0000-0000-0000-000000000010";
+const classmate = "00000000-0000-0000-0000-000000000011";
+const studentOnlyC = "00000000-0000-0000-0000-000000000012";
 
 const schoolA = "10000000-0000-0000-0000-00000000000a";
 const schoolB = "10000000-0000-0000-0000-00000000000b";
+const schoolC = "10000000-0000-0000-0000-00000000000c";
 const classA = "20000000-0000-0000-0000-00000000000a";
 const classB = "20000000-0000-0000-0000-00000000000b";
+const classCross = "20000000-0000-0000-0000-00000000000c";
 const offeringA = "40000000-0000-0000-0000-00000000000a";
 const offeringB = "40000000-0000-0000-0000-00000000000b";
+const offeringCross = "40000000-0000-0000-0000-00000000000c";
 const memberTeacherA = "50000000-0000-0000-0000-00000000000a";
 const memberTeacherB = "50000000-0000-0000-0000-00000000000b";
 const memberStudentA = "50000000-0000-0000-0000-00000000000c";
 const memberStudentB = "50000000-0000-0000-0000-00000000000d";
 const memberParentA = "50000000-0000-0000-0000-00000000000e";
+const memberClassmate = "50000000-0000-0000-0000-000000000011";
+const memberStudentC = "50000000-0000-0000-0000-000000000012";
+const memberTeacherCross = "50000000-0000-0000-0000-000000000013";
 const courseA = "60000000-0000-0000-0000-00000000000a";
 const courseCatalog = "60000000-0000-0000-0000-00000000000b";
 const sessionA = "70000000-0000-0000-0000-00000000000a";
+const sessionClass = "70000000-0000-0000-0000-00000000000c";
+const postCatalog = "b1000000-0000-0000-0000-00000000000a";
+const postHidden = "b1000000-0000-0000-0000-00000000000b";
 const assignmentA = "80000000-0000-0000-0000-00000000000a";
 const submissionA = "90000000-0000-0000-0000-00000000000a";
 const ticketA = "a1000000-0000-0000-0000-00000000000a";
@@ -41,7 +52,7 @@ create schema if not exists auth;
 create table auth.users (id uuid primary key);
 insert into auth.users (id) values
   ('${platform}'), ('${teacherA}'), ('${teacherB}'), ('${studentA}'), ('${studentB}'),
-  ('${parentA}'), ('${outsider}'), ('${catalog}');
+  ('${parentA}'), ('${outsider}'), ('${catalog}'), ('${classmate}'), ('${studentOnlyC}');
 
 create or replace function auth.uid()
 returns uuid language sql stable as $$
@@ -104,6 +115,15 @@ returns boolean language sql stable security definer set search_path = public as
     where parent_id = uid and student_id = student_user_id and status = 'active'
   )
 $$;
+alter table public.school_memberships enable row level security;
+create policy "Read visible memberships" on public.school_memberships
+  for select to authenticated
+  using (
+    user_id = auth.uid()
+    or public.is_platform_admin(auth.uid())
+    or public.active_membership(auth.uid(), school_id, 'school_admin')
+    or (membership_role = 'student' and public.parent_of(auth.uid(), user_id))
+  );
 
 create table public.classes (
   id uuid primary key,
@@ -335,7 +355,8 @@ create table public.support_messages (
   id uuid primary key default gen_random_uuid(),
   ticket_id uuid not null,
   sender_id uuid not null,
-  body text
+  body text,
+  is_read boolean not null default false
 );
 alter table public.support_messages enable row level security;
 create table public.support_typing (
@@ -399,28 +420,37 @@ describe("portals, communication, and attendance", { timeout: 120000 }, () => {
         ('${studentB}', 'student'),
         ('${parentA}', 'parent'),
         ('${outsider}', 'student'),
-        ('${catalog}', 'student');
-      insert into public.schools (id, name) values ('${schoolA}', 'School A'), ('${schoolB}', 'School B');
+        ('${catalog}', 'student'),
+        ('${classmate}', 'student'),
+        ('${studentOnlyC}', 'student');
+      insert into public.schools (id, name) values ('${schoolA}', 'School A'), ('${schoolB}', 'School B'), ('${schoolC}', 'School C');
       insert into public.school_memberships (id, school_id, user_id, membership_role, status) values
         ('${memberTeacherA}', '${schoolA}', '${teacherA}', 'teacher', 'active'),
         ('${memberTeacherB}', '${schoolB}', '${teacherB}', 'teacher', 'active'),
+        ('${memberTeacherCross}', '${schoolB}', '${teacherA}', 'teacher', 'active'),
         ('${memberStudentA}', '${schoolA}', '${studentA}', 'student', 'active'),
         ('${memberStudentB}', '${schoolB}', '${studentB}', 'student', 'active'),
-        ('${memberParentA}', '${schoolA}', '${parentA}', 'parent', 'active');
+        ('${memberParentA}', '${schoolA}', '${parentA}', 'parent', 'active'),
+        ('${memberClassmate}', '${schoolA}', '${classmate}', 'student', 'active'),
+        ('${memberStudentC}', '${schoolC}', '${studentOnlyC}', 'student', 'active');
       insert into public.classes (id, school_id, name) values
         ('${classA}', '${schoolA}', 'Class A'),
-        ('${classB}', '${schoolB}', 'Class B');
+        ('${classB}', '${schoolB}', 'Class B'),
+        ('${classCross}', '${schoolB}', 'Class Cross');
       insert into public.courses (id, teacher_id, title, school_id) values
         ('${courseA}', '${teacherA}', 'Numbers', '${schoolA}'),
         ('${courseCatalog}', '${teacherA}', 'Catalog', null);
       insert into public.class_subjects (id, school_id, class_id, course_id) values
         ('${offeringA}', '${schoolA}', '${classA}', '${courseA}'),
-        ('${offeringB}', '${schoolB}', '${classB}', null);
+        ('${offeringB}', '${schoolB}', '${classB}', null),
+        ('${offeringCross}', '${schoolB}', '${classCross}', null);
       insert into public.teacher_assignments (school_id, class_subject_id, membership_id) values
         ('${schoolA}', '${offeringA}', '${memberTeacherA}'),
-        ('${schoolB}', '${offeringB}', '${memberTeacherB}');
+        ('${schoolB}', '${offeringB}', '${memberTeacherB}'),
+        ('${schoolB}', '${offeringCross}', '${memberTeacherCross}');
       insert into public.student_enrollments (school_id, class_id, membership_id, status) values
         ('${schoolA}', '${classA}', '${memberStudentA}', 'active'),
+        ('${schoolA}', '${classA}', '${memberClassmate}', 'active'),
         ('${schoolB}', '${classB}', '${memberStudentB}', 'active');
       insert into public.parent_student (parent_id, student_id, status) values
         ('${parentA}', '${studentA}', 'active'),
@@ -430,11 +460,15 @@ describe("portals, communication, and attendance", { timeout: 120000 }, () => {
         ('${studentB}', 'Bola', '22222222', '088', 'Avenue B'),
         ('${catalog}', 'Catalog Student', '33333333', '077', 'Hidden road'),
         ('${teacherA}', 'Teacher A', null, null, null),
-        ('${parentA}', 'Parent A', null, null, null);
+        ('${parentA}', 'Parent A', null, null, null),
+        ('${classmate}', 'Chantal', '44444444', '066', 'Avenue C');
       insert into public.results (user_id, points_earned) values ('${studentA}', 4), ('${studentB}', 9);
-      insert into public.course_enrollments (course_id, user_id) values ('${courseA}', '${studentA}');
-      insert into public.live_sessions (id, course_id, teacher_id, title, scheduled_at, status) values
-        ('${sessionA}', '${courseA}', '${teacherA}', 'Revision', '2026-11-25 13:00:00+00', 'scheduled');
+      insert into public.course_enrollments (course_id, user_id) values
+        ('${courseA}', '${studentA}'),
+        ('${courseA}', '${studentB}');
+      insert into public.live_sessions (id, course_id, class_id, teacher_id, title, scheduled_at, status) values
+        ('${sessionA}', '${courseA}', null, '${teacherA}', 'Revision', '2026-11-25 13:00:00+00', 'scheduled'),
+        ('${sessionClass}', '${courseA}', '${classA}', '${teacherA}', 'Class revision', '2026-11-25 14:00:00+00', 'scheduled');
       insert into public.assignments (id, course_id, title) values ('${assignmentA}', '${courseA}', 'Homework');
       insert into public.homework_submissions (id, assignment_id, user_id, status) values
         ('${submissionA}', '${assignmentA}', '${studentA}', 'pending');
@@ -442,11 +476,17 @@ describe("portals, communication, and attendance", { timeout: 120000 }, () => {
         ('${teacherA}', '${parentA}', 'Bring the notebook');
       insert into public.notifications (user_id, title, message) values
         ('${parentA}', 'Note', 'A private note');
-      insert into public.forum_posts (user_id, title, content, school_id) values
-        ('${catalog}', 'Hello', 'A catalog question', null);
+      insert into public.forum_posts (id, user_id, title, content, school_id, role_visibility) values
+        ('${postCatalog}', '${catalog}', 'Hello', 'A catalog question', null, '{student,parent,teacher,admin}'),
+        ('${postHidden}', '${catalog}', 'Staff only', 'Hidden', null, '{teacher}');
+      insert into public.forum_replies (post_id, user_id, content) values
+        ('${postCatalog}', '${teacherA}', 'A visible reply'),
+        ('${postHidden}', '${parentA}', 'A hidden reply');
       insert into public.support_tickets (id, user_id, subject, school_id) values
         ('${ticketA}', '${studentA}', 'Help with class', '${schoolA}'),
         ('${ticketCatalog}', '${catalog}', 'Catalog help', null);
+      insert into public.support_messages (ticket_id, sender_id, body) values
+        ('${ticketA}', '${studentA}', 'Need help');
       insert into public.class_attendance (school_id, class_id, membership_id, session_date, status, marked_by) values
         ('${schoolA}', '${classA}', '${memberStudentA}', '2026-11-24', 'present', '${memberTeacherA}');
     `);
@@ -521,6 +561,21 @@ describe("portals, communication, and attendance", { timeout: 120000 }, () => {
         insert into public.live_sessions (course_id, teacher_id, title, scheduled_at)
         values ('${courseA}', '${studentA}', 'Self session', '2026-11-26 13:00:00+00')
       `));
+      const classSession = await db.query(`select id from public.live_sessions where id = '${sessionClass}'`);
+      assert.equal(classSession.rows.length, 1);
+      const peer = await db.query<{ full_name: string }>(`select full_name from public.profile_labels where user_id = '${classmate}'`);
+      assert.equal(peer.rows[0]?.full_name, "Chantal");
+      const parentName = await db.query<{ full_name: string }>(`select full_name from public.profile_labels where user_id = '${parentA}'`);
+      assert.equal(parentName.rows[0]?.full_name, "Parent A");
+    });
+
+    await asUser(db, studentB, async () => {
+      const denied = await db.query(`select id from public.live_sessions where id = '${sessionClass}'`);
+      assert.equal(denied.rows.length, 0);
+      const courseOnly = await db.query(`select id from public.live_sessions where id = '${sessionA}'`);
+      assert.equal(courseOnly.rows.length, 1);
+      const peer = await db.query(`select full_name from public.profile_labels where user_id = '${classmate}'`);
+      assert.equal(peer.rows.length, 0);
     });
 
     const grade = await db.query<{ grade: number | null }>(`select grade from public.homework_submissions where id = '${submissionA}'`);
@@ -549,6 +604,12 @@ describe("portals, communication, and attendance", { timeout: 120000 }, () => {
       const label = await db.query<{ full_name: string }>(`select * from public.profile_labels where user_id = '${catalog}'`);
       assert.equal(label.rows[0]?.full_name, "Catalog Student");
       assert.equal("student_code" in (label.rows[0] ?? {}), false);
+      const replyAuthor = await db.query<{ full_name: string }>(`select full_name from public.profile_labels where user_id = '${teacherA}'`);
+      assert.equal(replyAuthor.rows[0]?.full_name, "Teacher A");
+      const hiddenAuthor = await db.query(`select full_name from public.profile_labels where user_id = '${parentA}'`);
+      assert.equal(hiddenAuthor.rows.length, 0);
+      const classmateLabel = await db.query(`select full_name from public.profile_labels where user_id = '${classmate}'`);
+      assert.equal(classmateLabel.rows.length, 0);
       await expectFail(() => db.query(`
         insert into public.messages (sender_id, receiver_id, content)
         values ('${teacherA}', '${outsider}', 'pretend')
@@ -568,12 +629,44 @@ describe("portals, communication, and attendance", { timeout: 120000 }, () => {
       `));
       await expectFail(() => db.query(`
         insert into public.messages (sender_id, receiver_id, content)
-        values ('${teacherA}', '${teacherB}', 'cross school')
+        values ('${teacherA}', '${studentOnlyC}', 'other school')
       `));
       await db.query(`
         insert into public.messages (sender_id, receiver_id, content)
         values ('${teacherA}', '${parentA}', 'See you in class')
       `);
+      await expectFail(() => db.query(`
+        insert into public.live_sessions (course_id, class_id, teacher_id, title, scheduled_at)
+        values ('${courseA}', '${classCross}', '${teacherA}', 'Cross school', '2026-11-26 13:00:00+00')
+      `));
+      await db.query(`
+        insert into public.live_sessions (course_id, teacher_id, title, scheduled_at)
+        values ('${courseA}', '${teacherA}', 'Course only', '2026-11-26 15:00:00+00')
+      `);
+      const marked = await db.query<{ is_read: boolean }>(`
+        update public.support_messages set is_read = true
+        where ticket_id = '${ticketA}' and sender_id = '${studentA}'
+        returning is_read
+      `);
+      assert.equal(marked.rows[0]?.is_read, true);
+      await expectFail(() => db.query(`
+        update public.support_messages set sender_id = '${teacherA}' where ticket_id = '${ticketA}'
+      `));
+      await expectFail(() => db.query(`
+        insert into public.support_messages (ticket_id, sender_id, body)
+        values ('${ticketA}', '${studentA}', 'spoof')
+      `));
+    });
+
+    await db.exec(`update public.school_memberships set status = 'left' where id = '${memberStudentA}'`);
+    await asUser(db, teacherA, async () => {
+      const resolved = await db.query<{ status: string }>(`
+        update public.support_tickets set status = 'resolved' where id = '${ticketA}' returning status
+      `);
+      assert.equal(resolved.rows[0]?.status, "resolved");
+      await expectFail(() => db.query(`
+        update public.support_tickets set school_id = '${schoolB}' where id = '${ticketA}'
+      `));
     });
 
     const columns = await db.query<{ column_name: string }>(`

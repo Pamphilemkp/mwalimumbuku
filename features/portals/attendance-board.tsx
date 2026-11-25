@@ -61,7 +61,7 @@ export async function AttendanceBoard() {
           .map((row) => (typeof row.user_id === "string" && typeof row.id === "string" ? { membershipId: row.id, userId: row.user_id } : null))
           .filter((row): row is { membershipId: string; userId: string } => Boolean(row));
         const profiles = userIds.length
-          ? await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds.map((row) => row.userId))
+          ? await supabase.from("profile_labels").select("user_id, full_name").in("user_id", userIds.map((row) => row.userId))
           : { data: [] };
         classes.push({
           id: classId,
@@ -77,9 +77,29 @@ export async function AttendanceBoard() {
 
   const history = await supabase
     .from("class_attendance")
-    .select("id, status, session_date, classes(name)")
+    .select("id, status, session_date, membership_id, classes(name)")
     .order("session_date", { ascending: false })
     .limit(40);
+  const historyMembershipIds = Array.from(new Set(
+    (history.data ?? [])
+      .map((row) => row.membership_id)
+      .filter((id): id is string => typeof id === "string"),
+  ));
+  const historyMembers = historyMembershipIds.length
+    ? await supabase.from("school_memberships").select("id, user_id").in("id", historyMembershipIds)
+    : { data: [] };
+  const historyUsers = (historyMembers.data ?? [])
+    .map((row) => (typeof row.user_id === "string" && typeof row.id === "string" ? { membershipId: row.id, userId: row.user_id } : null))
+    .filter((row): row is { membershipId: string; userId: string } => Boolean(row));
+  const historyNames = historyUsers.length
+    ? await supabase.from("profile_labels").select("user_id, full_name").in("user_id", historyUsers.map((row) => row.userId))
+    : { data: [] };
+  const historyStudent = (membershipId: unknown) => {
+    const id = typeof membershipId === "string" ? membershipId : "";
+    const userId = historyUsers.find((row) => row.membershipId === id)?.userId;
+    const name = userId ? historyNames.data?.find((profile) => profile.user_id === userId)?.full_name : null;
+    return name || id || "Élève";
+  };
 
   return (
     <div className="space-y-6">
@@ -114,7 +134,7 @@ export async function AttendanceBoard() {
         <ul className="space-y-2 text-sm">
           {(history.data ?? []).map((row) => (
             <li key={String(row.id)} className="rounded-lg border border-border bg-card px-3 py-2">
-              {label(row.classes, "Classe")} · {String(row.session_date)} · {String(row.status)}
+              {historyStudent(row.membership_id)} · {label(row.classes, "Classe")} · {String(row.session_date)} · {String(row.status)}
             </li>
           ))}
         </ul>
