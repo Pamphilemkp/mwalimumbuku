@@ -1,10 +1,10 @@
 # Mwalimu Mbuku — migration inventory
 
-Phase 1 of the root Next.js transformation. Commit this inventory describes: the working tree after the Vite application was removed and the Next.js app that lived in `apps/web` became the repository root.
+Phase 1 of the root Next.js transformation. The runnable application is the Next.js app at the repository root.
 
 Recovery commit for every file that this phase did not port:
 
-`8afba27b4f5a43b16aa231f8132bf696fcce1452` (`Add Next.js slice 0 foundation in apps/web (#2)`)
+`8afba27b4f5a43b16aa231f8132bf696fcce1452` (the saved product screens this Next.js app now serves)
 
 Show a file from that commit with:
 
@@ -16,7 +16,7 @@ Nothing in this phase changes Supabase schema or data. Nothing here claims offic
 
 ## Migrated in this phase
 
-The runnable application is the Next.js 16.4.6 App Router app at the repository root (`package.json`, `app/`, `next.config.ts`, `proxy.ts`). It is the slice that was in `apps/web` at the recovery commit, moved here and hardened. It is not a port of the Vite screens.
+The runnable application is the Next.js 16.4.6 App Router app at the repository root (`package.json`, `app/`, `next.config.ts`, `proxy.ts`). The original product screens live in `src/` and are served by the App Router.
 
 | Behavior | Where it lives now |
 | --- | --- |
@@ -61,7 +61,7 @@ Edge functions are not moved into Next.js route handlers in this phase. Later pa
 
 ## Removed from the working tree
 
-The Vite application is not runnable from this branch. There is no `vite.config.ts`, no Vite dependency in `package.json`, no `src/`, no `apps/web`, and no `vercel.json` rewrite to `index.html`. `npm run dev` starts Next.js. The root `vercel.json` sets `"framework": "nextjs"`.
+There is no `vite.config.ts`, no Vite dependency in `package.json`, and no `vercel.json` rewrite to `index.html`. `npm run dev` starts Next.js. The root `vercel.json` sets `"framework": "nextjs"`. Product screens are in `src/`.
 
 Also removed, and still present at the recovery commit:
 
@@ -78,7 +78,7 @@ Also removed, and still present at the recovery commit:
 | `package.json`, `package-lock.json` | Vite package `vite_react_shadcn_ts`. Replaced by one Next package and one npm lockfile. |
 | `bun.lock`, `bun.lockb` | Second lockfile from the Lovable/Bun era |
 | `vercel.json` rewrite `/(.*) -> /index.html` | SPA fallback. Replaced by the Next framework config. |
-| `apps/web/**` | The Next slice. Its source now lives at the repository root, not in a second app. |
+| Product screens | `src/`. One Next.js app at the repository root. |
 | `src/**` | Vite UI. Recover file by file from the recovery commit. The feature table below names each one. |
 
 `src/test/example.test.ts` and `src/test/setup.ts` were a placeholder (`true === true`). They were not ported. The root app tests cover the auth gate, role resolution, sign-out, env access, cookie flags, proxy headers, and the toolchain boundary.

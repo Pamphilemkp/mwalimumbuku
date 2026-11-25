@@ -7,7 +7,7 @@ Phase 1 is in the tree. The Next.js app is the repository root, the Vite app is 
 The text below is the 24 November 2026 plan. Where it disagrees with the phase that landed, the phase wins:
 
 - The Vite source was not moved to `legacy/`. It remains at commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`.
-- There is no `apps/web` and no second application directory.
+- There is one application, at the repository root.
 - Session refresh lives in `proxy.ts` (`proxy()`). There is no `middleware.ts`.
 - Public env names are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - Do not add `lib/supabase/admin.ts`. Privileged keys stay in the existing Supabase edge functions.

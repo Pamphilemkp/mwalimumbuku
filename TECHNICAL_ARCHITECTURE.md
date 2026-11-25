@@ -30,7 +30,7 @@ Browser
 
 `proxy.ts` is not the authorization boundary. A page that needs a user loads the session again with `loadAppSession`.
 
-There is one `package.json` and one npm lockfile. `npm run dev` runs `next dev`. There is no `apps/web`, no `src/`, no `vite.config.ts`, and no Vite dependency. `vercel.json` sets the framework to Next.js and does not rewrite paths to `index.html`.
+There is one `package.json` and one npm lockfile. `npm run dev` runs `next dev`. There is no `vite.config.ts` and no Vite dependency. Product screens live in `src/` and are served by the App Router. `vercel.json` sets the framework to Next.js and does not rewrite paths to `index.html`.
 
 | Concern | Implementation |
 | --- | --- |
@@ -245,7 +245,7 @@ Implications:
 
 ## 6. Backend
 
-Supabase project id is recorded in `supabase/config.toml`. The browser reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from `import.meta.env` (`src/integrations/supabase/client.ts`). Generated types say PostgREST 14.1.
+Supabase project id is recorded in `supabase/config.toml`. The browser reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`src/integrations/supabase/client.ts`). Generated types say PostgREST 14.1.
 
 ### What runs in the database
 

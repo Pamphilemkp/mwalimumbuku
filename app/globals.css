@@ -22,7 +22,23 @@
     --input: 210 18% 87%;
     --ring: 160 84% 39%;
     --radius: 0.75rem;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
     --gradient-hero: linear-gradient(135deg, hsl(160, 84%, 39%), hsl(262, 83%, 58%));
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 93%;
+    --sidebar-accent-foreground: 220 25% 10%;
+    --sidebar-border: 210 18% 87%;
+    --sidebar-ring: 160 84% 39%;
+  }
+
+  .dyslexia-mode {
+    letter-spacing: 0.05em;
+    word-spacing: 0.15em;
+    line-height: 1.8;
   }
 
   * {
