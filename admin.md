@@ -8,7 +8,7 @@
 
 ## Accès au Dashboard Admin
 
-1. Allez sur https://mwalimumbuku.lovable.app/login
+1. Allez sur https://mwalimumbuku.vercel.app/login
 2. Entrez l'email et le mot de passe du compte admin
 3. Vous serez redirigé vers le dashboard administrateur
 

@@ -1,6 +1,23 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
+const PRODUCTION_ORIGIN = "https://mwalimumbuku.vercel.app";
+
+function appOrigin(value: string | null): string {
+  if (!value) return PRODUCTION_ORIGIN;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const lovable = host === "lovable.app" || host.endsWith(".lovable.app") || host.endsWith(".lovable.dev");
+    const local = host === "localhost" || host === "127.0.0.1";
+    if (lovable || url.username || url.password) return PRODUCTION_ORIGIN;
+    if (url.protocol === "https:" || (url.protocol === "http:" && local)) return url.origin;
+  } catch {
+    return PRODUCTION_ORIGIN;
+  }
+  return PRODUCTION_ORIGIN;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -39,7 +56,7 @@ Deno.serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || "https://mwalimumbuku.lovable.app";
+    const origin = appOrigin(req.headers.get("origin"));
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

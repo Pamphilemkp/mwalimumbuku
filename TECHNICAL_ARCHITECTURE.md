@@ -206,7 +206,7 @@ Authenticated shell (`ProtectedRoute` → `OnboardingGuard` → `DashboardLayout
 Signup (`src/lib/auth.ts`):
 
 - Sends `full_name` and `role` in `options.data`.
-- `emailRedirectTo` is `window.location.origin` in dev and `https://mwalimumbuku.vercel.app` in production builds.
+- `emailRedirectTo` is `http://localhost:3000/auth/confirmed` in local development and `https://mwalimumbuku.vercel.app/auth/confirmed` in production. A Lovable host is never used.
 - `handle_new_user` (latest definition, migration `20260529160934_...sql`) inserts `profiles`, `user_roles`, `subscriptions` (`free`), and a blank `student_profiles` or `parent_profiles` row.
 - Roles other than `student` and `parent` are stored as `student`. Admin and teacher cannot be self-assigned through metadata. This part is confirmed and is the right control.
 - The client then updates `profiles` and upserts the role profile **only if `signUp` returned a session**. If email confirmation is required, those fields are dropped on the floor and the user sees “check your email”. `onboarding_completed` stays false, but nothing forces the wizard.

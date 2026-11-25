@@ -226,6 +226,6 @@ Port a component only when a screen in the tables needs it. Do not copy the whol
 
 ## Staging and rollback
 
-Staging is a new Vercel project. Root directory is the repository root. Framework is Next.js. Environment names are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Do not point the production domain `https://mwalimumbuku.vercel.app` at this app in this phase.
+The app is deployed from the repository root as Next.js. Environment names are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. The live origin is `https://mwalimumbuku.vercel.app`.
 
 Rollback of this phase is reverting the merge commit. The production domain stays on the previous deployment. Supabase is unchanged, so a revert does not need a database down migration.

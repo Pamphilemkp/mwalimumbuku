@@ -71,9 +71,9 @@ Do not port courses, homework, messages, notifications, or payments until a revi
 
 ## Staging check
 
-1. Create a new Vercel project on the repository root. Do not move `https://mwalimumbuku.vercel.app`.
-2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL` to the staging origin.
-3. Allow `{origin}/auth/callback` in Supabase Auth redirect URLs.
+1. Deploy the repository root to `https://mwalimumbuku.vercel.app`.
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL` to `https://mwalimumbuku.vercel.app`.
+3. Set the Supabase Auth Site URL to `https://mwalimumbuku.vercel.app` and allow `{origin}/auth/callback` and `{origin}/auth/confirmed`. Clear the Lovable SMTP sender.
 4. Sign in with a real student. Confirm `/dashboard` shows that role and `/login?next=https://example.com` returns to `/dashboard`.
 5. Open `/dashboard` in a private window and confirm it lands on `/login`.
 6. Request a reset for a known account and for an unknown address. Both screens should say a link is on its way if the address is valid. Open the link, set a new password, and sign in with it.
