@@ -1,24 +1,48 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { AuthCard } from "@/features/auth/auth-card";
 import { LoginForm } from "@/features/auth/login-form";
-import { decideAuthGate } from "@/services/auth/auth-gate";
+import { loginPageRedirect } from "@/lib/auth/access";
+import { safeInternalPath, singleQueryValue } from "@/lib/auth/redirect";
 import { loadAppSession } from "@/services/auth/session";
+import { redirect } from "next/navigation";
 
-export default async function LoginPage() {
-  const session = await loadAppSession();
-  if (session.hasSession) {
-    redirect(decideAuthGate(true, session.resolution));
+export const metadata: Metadata = {
+  title: "Sign in — Mwalimu Mbuku",
+};
+
+function noticeCopy(value: unknown): string | null {
+  if (value === "password-updated") {
+    return "Your password was updated. Sign in with the new password.";
   }
+  return null;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[]; notice?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const session = await loadAppSession();
+  const requested = singleQueryValue(params.next);
+  const target = loginPageRedirect({
+    hasSession: session.hasSession,
+    resolution: session.resolution,
+    requested,
+  });
+  if (target) redirect(target);
+
+  const nextPath = safeInternalPath(requested);
+  const notice = noticeCopy(singleQueryValue(params.notice));
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-medium text-primary">Mwalimu Mbuku</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Use the email and password for your account.
+    <AuthCard title="Sign in" lede="Use the email and password for your account.">
+      {notice ? (
+        <p role="status" className="mt-4 text-sm leading-relaxed text-muted-foreground">
+          {notice}
         </p>
-        <LoginForm />
-      </div>
-    </main>
+      ) : null}
+      <LoginForm nextPath={nextPath} />
+    </AuthCard>
   );
 }

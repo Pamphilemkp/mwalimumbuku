@@ -36,17 +36,21 @@ Both are public client settings. `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the s
 
 ## Sign-in
 
-Password sign-in uses `signInWithPassword` and `@supabase/ssr` cookies (`getAll` / `setAll`). The browser client does not use `localStorage`.
+Password sign-in, sign-out, and password reset run as server actions. The browser does not send a user id or a role. Sign-in uses `signInWithPassword` and `@supabase/ssr` cookies (`getAll` / `setAll`). The browser client does not use `localStorage`.
 
-`/dashboard` and `/holding` require a session. A session with exactly one of `student`, `parent`, `teacher`, or `admin` sees a short confirmation of that role. Missing, duplicate, unrecognized, or failed role checks stay on a holding page and do not open a role dashboard.
+`/dashboard` and `/holding` require a session. A session with exactly one of `student`, `parent`, `teacher`, or `admin` sees a short confirmation of that role. Missing, duplicate, unrecognized, or failed role checks stay on a holding page and do not open a role dashboard. A role that is not on a page's allow-list stays on the holding page as well.
+
+An expired or invalid session is treated as signed out. Protected pages send the visitor to `/login` with a same-site `next` path. External values are ignored.
+
+Password recovery is `/forgot-password`. The reset link returns to `/auth/callback`, which exchanges a code or a recovery token and then opens `/reset-password`. A failed or expired link does not open the password form. In the Supabase dashboard, add `{origin}/auth/callback` to the redirect allow-list. For a link that works when opened on another device, point the recovery email template at `{origin}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`.
 
 Next.js 16 refreshes the session in `proxy.ts` (the supported replacement for `middleware.ts`) by calling `auth.getClaims()`. The app layout and each protected page verify the user and the role again. `proxy.ts` alone is not the authorization boundary.
 
-Anonymous visitors go to `/login`. Sign-out checks the error and navigates to `/login` only after success.
+`/` is the public homepage. It stays in place for a signed-in visitor and does not send them to the dashboard. Anonymous visitors to `/dashboard` and `/holding` go to `/login`. Sign-out checks the error and navigates to `/login` only after success.
 
-Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store`. Session cookies are readable by the browser client (`httpOnly: false`). The `Secure` flag is on when `NODE_ENV` is `production`.
+Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store`. Auth redirects also send `Referrer-Policy: no-referrer`. Session cookies are readable by the browser client (`httpOnly: false`), `SameSite=Lax`, and `Path=/`. The `Secure` flag is on when `NODE_ENV` is `production`.
 
-This app does not include signup. The current password cookie flow does not use an `/auth/callback` route, so that route is not included.
+There is no public signup and no way to choose a role. The security checklist is [SECURITY.md](SECURITY.md).
 
 ## Staging on Vercel
 
@@ -56,7 +60,9 @@ Create a **new** Vercel project. Do not attach this app to the existing producti
 - Framework: Next.js
 - `vercel.json` sets the framework to Next.js and does not rewrite routes to `index.html`
 - Environment variable names: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- Optional: `NEXT_PUBLIC_SITE_URL` set to the staging origin, including `https`
 - Use the same values as the existing `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`
+- In Supabase Auth, allow the staging URL `{origin}/auth/callback` as a redirect
 
 Deploy the new project on its own URL. Do not cut over the production domain.
 

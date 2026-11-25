@@ -1,6 +1,6 @@
 # Mwalimu Mbuku — Technical Architecture
 
-The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
+The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
 
 The 24 November 2026 audit below the historical heading describes the Vite SPA that used to be this repository. That UI is not the running app. Its source is commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. Supabase migrations, edge functions, and storage were not changed by the move.
 
@@ -9,18 +9,21 @@ The 24 November 2026 audit below the historical heading describes the Vite SPA t
 ```
 Browser
   └─ Next.js 16.4.6 App Router (repository root, Node)
-       ├─ Server Components: /, /login, /dashboard, /holding
-       ├─ Client Components: login form, logout button
+       ├─ Server Components: /, /login, /forgot-password, /reset-password,
+       │                     /dashboard, /holding
+       ├─ Route handler: /auth/callback (recovery code or token only)
+       ├─ Server actions: sign-in, sign-out, password recovery, password update
+       ├─ Client Components: those forms and the logout button
        ├─ proxy.ts: refresh session cookies, send anonymous users
-       │            off /dashboard and /holding to /login
+       │            off /dashboard and /holding to /login. / stays public
        └─ Server authorization (layout and each protected page):
             auth.getClaims() + one user_roles row
-            missing / duplicate / invalid / error → /holding
-            no session → /login
+            missing / duplicate / invalid / error / role mismatch → /holding
+            no session, expired session, or invalid token → /login
 
 @supabase/ssr cookie client, public publishable key
   ├─ PostgREST  (this phase reads user_roles only)
-  ├─ Auth       (password sign-in)
+  ├─ Auth       (password sign-in, recovery, and password update)
   └─ Edge functions, storage, and other tables stay in Supabase
      and are not called by this phase's UI
 ```
@@ -34,15 +37,15 @@ There is one `package.json` and one npm lockfile. `npm run dev` runs `next dev`.
 | Language | TypeScript 5.9, `strict: true` |
 | UI runtime | React 19.2.9 and `react-dom` 19.2.9. `@types/react` 19.2.9. `@types/react-dom` 19.2.7 |
 | Framework | Next.js 16.4.6, `eslint-config-next` 16.4.6. `proxy.ts` exports `proxy()` |
-| Routing | App Router. `/` redirects through the auth gate. `/login` is public. `/dashboard` and `/holding` are protected |
 | Styling | Tailwind 3.4 at the root, `app/globals.css` |
+| Routing | App Router. `/` is a public homepage and does not redirect. `/login`, `/forgot-password`, and `/auth/callback` are public. `/reset-password` shows a form only after a verified session. `/dashboard` and `/holding` are protected |
 | Auth SDK | `@supabase/ssr` 0.12.7 and `@supabase/supabase-js` 2.119.2. Cookies, not `localStorage` |
-| Public env | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (literal `process.env` reads) |
-| Cookies | `httpOnly: false` so the browser client can read them. `secure: true` when `NODE_ENV` is `production` |
-| Cache | Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store` |
-| Headers | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. No content-security policy |
-| Tests | `node --test` on the auth gate, role resolution, sign-out, env access, cookie flags, and proxy headers. No live Supabase calls |
-| Roles | `student`, `parent`, `teacher`, `admin` only |
+| Public env | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, optional `NEXT_PUBLIC_SITE_URL` |
+| Cookies | `httpOnly: false` so the browser client can read them. `sameSite: lax`. `path: /`. `secure: true` when `NODE_ENV` is `production` |
+| Cache | Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store`. Auth redirects also send `Referrer-Policy: no-referrer` |
+| Headers | `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` with camera, microphone, geolocation, and payment disabled. No script content-security policy |
+| Tests | `node --test` on auth decisions, redirects, rate limits, recovery, role checks, env access, cookie flags, and proxy headers. No live Supabase calls |
+| Roles | `student`, `parent`, `teacher`, `admin` only. The signed-in user cannot submit a role |
 
 Educational screens (courses, homework, assessments, games, XP, attendance, messaging, and the rest of the Vite product) are not in this app. The inventory names the recovery path for each one. This architecture does not claim official DRC curriculum compliance.
 

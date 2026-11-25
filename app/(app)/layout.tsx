@@ -2,14 +2,18 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { HoldingView } from "@/features/auth/holding-view";
 import { LogoutButton } from "@/features/auth/logout-button";
-import { decideAuthGate } from "@/services/auth/auth-gate";
+import { APP_ROLES, authorize } from "@/lib/auth/access";
 import { loadAppSession } from "@/services/auth/session";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await loadAppSession();
-  const target = decideAuthGate(session.hasSession, session.resolution);
+  const decision = authorize({
+    hasSession: session.hasSession,
+    resolution: session.resolution,
+    allowedRoles: APP_ROLES,
+  });
 
-  if (target === "/login") {
+  if (decision === "login") {
     redirect("/login");
   }
 
@@ -21,7 +25,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <LogoutButton />
         </div>
       </header>
-      {target === "/holding" ? <HoldingView resolution={session.resolution} /> : children}
+      {decision === "holding" ? <HoldingView resolution={session.resolution} /> : children}
     </div>
   );
 }

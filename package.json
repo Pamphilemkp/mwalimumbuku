@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test features/auth/*.test.mts lib/supabase/*.test.mts lib/http/*.test.mts services/auth/*.test.mts"
+    "test": "node --test features/auth/*.test.mts lib/auth/*.test.mts lib/supabase/*.test.mts lib/http/*.test.mts services/auth/*.test.mts"
   },
   "engines": {
     "node": ">=20.9.0"
@@ -17,6 +17,8 @@
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.2",
+    "framer-motion": "^14.14.0",
+    "lucide-react": "^1.80.0",
     "next": "16.4.6",
     "react": "19.2.9",
     "react-dom": "19.2.9",

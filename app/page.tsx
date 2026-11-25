@@ -1,8 +1,12 @@
-import { redirect } from "next/navigation";
-import { decideAuthGate } from "@/services/auth/auth-gate";
-import { loadAppSession } from "@/services/auth/session";
+import type { Metadata } from "next";
+import { HomePage } from "@/features/landing/home-page";
 
-export default async function HomePage() {
-  const session = await loadAppSession();
-  redirect(decideAuthGate(session.hasSession, session.resolution));
+export const metadata: Metadata = {
+  title: "Mwalimu Mbuku",
+  description:
+    "Une plateforme d'apprentissage accessible et ludique conçue pour les élèves, parents et enseignants en Afrique.",
+};
+
+export default function Page() {
+  return <HomePage />;
 }

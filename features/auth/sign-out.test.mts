@@ -43,10 +43,13 @@ describe("runSignOut", () => {
     });
   });
 
-  it("calls the default global signOut and does not request a local scope", () => {
-    const source = readFileSync(path.resolve(import.meta.dirname, "logout-button.tsx"), "utf8");
-    assert.match(source, /supabase\.auth\.signOut\(\)/);
-    assert.doesNotMatch(source, /scope:\s*["']local["']/);
+  it("calls the default global signOut from the server action and does not request a local scope", () => {
+    const button = readFileSync(path.resolve(import.meta.dirname, "logout-button.tsx"), "utf8");
+    const action = readFileSync(path.resolve(import.meta.dirname, "actions.ts"), "utf8");
+    assert.match(button, /signOutAction\(\)/);
+    assert.match(action, /supabase\.auth\.signOut\(\)/);
+    assert.doesNotMatch(action, /scope:\s*["']local["']/);
+    assert.doesNotMatch(button, /scope:\s*["']local["']/);
   });
 
   it("returns before navigation when sign-out fails", () => {
