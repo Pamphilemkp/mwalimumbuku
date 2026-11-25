@@ -102,7 +102,7 @@ Shared rules for every port below:
 
 | Feature | Source at 8afba27 | Later path |
 | --- | --- | --- |
-| Landing page | `app/page.tsx` | Public homepage. A signed-in visitor stays on `/` and is not redirected to the dashboard. Do not restore the Vite redirect. |
+| Landing page | `app/page.tsx`, `features/landing/home-page.tsx` | Public homepage using the previous Vite landing layout and French/English copy. A signed-in visitor stays on `/` and is not redirected to the dashboard. Do not restore the Vite redirect. |
 | Mission | `src/pages/Mission.tsx` | `app/mission/page.tsx` as a server component. |
 | In-app docs | `src/pages/dashboard/DocsPage.tsx` | `app/(app)/dashboard/docs/page.tsx`. |
 | Not found | `src/pages/NotFound.tsx` | `app/not-found.tsx`. |
