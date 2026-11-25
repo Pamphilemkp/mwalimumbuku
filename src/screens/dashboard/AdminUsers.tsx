@@ -1,5 +1,6 @@
 "use client";
 
+import { authEmailOrigin, SIGNUP_CONFIRM_PATH } from '@/lib/auth/site';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/src/components/ui/badge';
@@ -115,10 +116,18 @@ export default function AdminUsers() {
 
   const createTeacher = useMutation({
     mutationFn: async () => {
+      const emailOrigin = authEmailOrigin({
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+        requestOrigin: window.location.origin,
+        production: process.env.NODE_ENV === 'production',
+      });
       const { data, error } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
-        options: { data: { full_name: newUser.fullName, role: newUser.role } },
+        options: {
+          data: { full_name: newUser.fullName, role: newUser.role },
+          emailRedirectTo: `${emailOrigin}${SIGNUP_CONFIRM_PATH}`,
+        },
       });
       if (error) throw error;
       // Force role if teacher/admin

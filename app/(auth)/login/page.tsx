@@ -13,6 +13,9 @@ function noticeCopy(value: unknown): string | null {
   if (value === "password-updated") {
     return "Votre mot de passe a été mis à jour. Connectez-vous avec le nouveau mot de passe.";
   }
+  if (value === "email-confirmed") {
+    return "Votre adresse e-mail est confirmée. Connectez-vous pour continuer.";
+  }
   return null;
 }
 

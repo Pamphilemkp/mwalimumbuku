@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from '@/src/lib/next-router';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useAuth } from '@/src/hooks/useAuth';
@@ -21,6 +21,7 @@ export default function StudentOnboarding() {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const edited = useRef(false);
   const [data, setData] = useState<any>({
     full_name: '', avatar_url: '', gender: '', date_of_birth: '',
     phone: '', address: '', country: 'RDC', city: '', preferred_language: 'fr',
@@ -31,10 +32,13 @@ export default function StudentOnboarding() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+    if (!userId) return;
+    let cancelled = false;
     (async () => {
-      const { data: p } = await supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle();
-      const { data: sp } = await supabase.from('student_profiles').select('*').eq('user_id', user.id).maybeSingle();
+      const { data: p } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+      const { data: sp } = await supabase.from('student_profiles').select('*').eq('user_id', userId).maybeSingle();
+      if (cancelled || edited.current) return;
       setData((d: any) => ({
         ...d,
         ...(p ?? {}),
@@ -48,9 +52,13 @@ export default function StudentOnboarding() {
       }));
       if (p?.onboarding_step) setStep(Math.min(p.onboarding_step, STEPS.length - 1));
     })();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
-  const set = (k: string, v: any) => setData((d: any) => ({ ...d, [k]: v }));
+  const set = (k: string, v: any) => {
+    edited.current = true;
+    setData((d: any) => ({ ...d, [k]: v }));
+  };
   const computeAge = (dob: string) => {
     if (!dob) return null;
     const d = new Date(dob);

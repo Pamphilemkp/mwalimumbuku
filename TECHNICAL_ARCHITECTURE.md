@@ -1,6 +1,6 @@
 # Mwalimu Mbuku — Technical Architecture
 
-The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md).
+The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md), [MULTI_SCHOOL_MIGRATION.md](MULTI_SCHOOL_MIGRATION.md).
 
 The 24 November 2026 audit below the historical heading describes the Vite SPA that used to be this repository. That UI is not the running app. Its source is commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. Supabase migrations, edge functions, and storage were not changed by the move.
 
@@ -53,11 +53,9 @@ Staging is a separate Vercel project with the root directory set to the reposito
 
 ## Multi-school design
 
-The running schema has no `schools` table. A student's school and class are text on `student_profiles`. `admin` in `user_roles` is a platform-wide role. Parents link to children in `parent_student` with no school. Courses belong to `courses.teacher_id`.
+Schools, memberships, academic years, classes, and the isolation policies are in [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md). The SQL is in `supabase/migrations/20261125143000_multi_school_schema.sql` and `supabase/migrations/20261125143100_multi_school_record_scope.sql`. [MULTI_SCHOOL_MIGRATION.md](MULTI_SCHOOL_MIGRATION.md) describes how to apply and roll them back.
 
-The design keeps `student`, `parent`, `teacher`, and `admin` as the only global roles. School administration is a membership on one school, because one person may administer one school and teach at another. A global school-admin role would grant that power on every school.
-
-Details, the ERD, table definitions, RLS, indexes, the data migration plan, and rollback are in [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md).
+The global roles stay `student`, `parent`, `teacher`, and `admin`. A school administrator is a membership on one school. Existing courses, parent links, and `student_profiles.school_name` are not assigned to a school by the migration. A null `school_id` remains the shared catalog.
 
 ## Historical audit (Vite SPA at 8afba27)
 
@@ -208,7 +206,7 @@ Authenticated shell (`ProtectedRoute` → `OnboardingGuard` → `DashboardLayout
 Signup (`src/lib/auth.ts`):
 
 - Sends `full_name` and `role` in `options.data`.
-- `emailRedirectTo` is `window.location.origin` in dev and `https://mwalimumbuku.vercel.app` in production builds.
+- `emailRedirectTo` is `http://localhost:3000/auth/confirmed` in local development and `https://mwalimumbuku.vercel.app/auth/confirmed` in production. A Lovable host is never used.
 - `handle_new_user` (latest definition, migration `20260529160934_...sql`) inserts `profiles`, `user_roles`, `subscriptions` (`free`), and a blank `student_profiles` or `parent_profiles` row.
 - Roles other than `student` and `parent` are stored as `student`. Admin and teacher cannot be self-assigned through metadata. This part is confirmed and is the right control.
 - The client then updates `profiles` and upserts the role profile **only if `signUp` returned a session**. If email confirmation is required, those fields are dropped on the floor and the user sees “check your email”. `onboarding_completed` stays false, but nothing forces the wizard.

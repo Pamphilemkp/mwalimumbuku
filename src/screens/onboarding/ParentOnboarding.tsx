@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from '@/src/lib/next-router';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useAuth } from '@/src/hooks/useAuth';
@@ -40,6 +40,7 @@ export default function ParentOnboarding() {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const edited = useRef(false);
   const [data, setData] = useState<any>({
     full_name: '', avatar_url: '', phone: '', address: '', country: 'RDC', city: '',
     preferred_language: 'fr', occupation: '', communication_language: 'fr',
@@ -48,24 +49,33 @@ export default function ParentOnboarding() {
   const [children, setChildren] = useState<Child[]>([blankChild()]);
 
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+    if (!userId) return;
+    let cancelled = false;
     (async () => {
       const [{ data: p }, { data: pp }, { data: kids }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('parent_profiles').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('children_info').select('*').eq('parent_id', user.id).order('created_at'),
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('parent_profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('children_info').select('*').eq('parent_id', userId).order('created_at'),
       ]);
+      if (cancelled || edited.current) return;
       setData((d: any) => ({ ...d, ...(p ?? {}), ...(pp ?? {}) }));
       if (kids && kids.length) {
         setChildren(kids.map((k: any) => ({ ...k, age: k.age?.toString() ?? '' })));
       }
       if (p?.onboarding_step) setStep(Math.min(p.onboarding_step, STEPS.length - 1));
     })();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
-  const set = (k: string, v: any) => setData((d: any) => ({ ...d, [k]: v }));
-  const updateChild = (i: number, k: keyof Child, v: string) =>
+  const set = (k: string, v: any) => {
+    edited.current = true;
+    setData((d: any) => ({ ...d, [k]: v }));
+  };
+  const updateChild = (i: number, k: keyof Child, v: string) => {
+    edited.current = true;
     setChildren((cs) => cs.map((c, idx) => (idx === i ? { ...c, [k]: v } : c)));
+  };
 
   const saveStep = async (nextStep: number, complete = false) => {
     if (!user) return;
@@ -187,7 +197,7 @@ export default function ParentOnboarding() {
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">Enfant {i + 1}</h3>
                 {children.length > 1 && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setChildren(cs => cs.filter((_, idx) => idx !== i))}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { edited.current = true; setChildren(cs => cs.filter((_, idx) => idx !== i)); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
@@ -204,7 +214,7 @@ export default function ParentOnboarding() {
               </div>
             </div>
           ))}
-          <Button type="button" variant="outline" onClick={() => setChildren(cs => [...cs, blankChild()])}>
+          <Button type="button" variant="outline" onClick={() => { edited.current = true; setChildren(cs => [...cs, blankChild()]); }}>
             <Plus className="mr-2 h-4 w-4" /> Ajouter un enfant
           </Button>
         </div>

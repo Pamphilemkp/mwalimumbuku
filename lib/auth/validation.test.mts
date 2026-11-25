@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { parseEmail, parseNewPassword, parsePasswordForSignIn } from "./validation.ts";
 import { resolvePublicOrigin } from "./origin.ts";
+import { authEmailOrigin, VERCEL_SITE_ORIGIN } from "./site.ts";
 
 describe("parseEmail", () => {
   it("accepts a normal address and rejects control characters", () => {
@@ -54,6 +55,54 @@ describe("resolvePublicOrigin", () => {
         production: true,
       }),
       null,
+    );
+  });
+});
+
+describe("authEmailOrigin", () => {
+  it("sends production mail to the Vercel domain and drops a Lovable host", () => {
+    assert.equal(
+      authEmailOrigin({
+        siteUrl: "https://mwalimumbuku.lovable.app",
+        requestOrigin: "https://mwalimumbuku.lovable.app",
+        production: true,
+      }),
+      VERCEL_SITE_ORIGIN,
+    );
+    assert.equal(
+      authEmailOrigin({
+        siteUrl: undefined,
+        requestOrigin: "https://mwalimumbuku-git-preview.vercel.app",
+        production: true,
+      }),
+      VERCEL_SITE_ORIGIN,
+    );
+    assert.equal(
+      authEmailOrigin({
+        siteUrl: "https://mwalimumbuku.vercel.app",
+        requestOrigin: "https://evil.example",
+        production: true,
+      }),
+      VERCEL_SITE_ORIGIN,
+    );
+  });
+
+  it("keeps a configured https origin and localhost in development", () => {
+    assert.equal(
+      authEmailOrigin({
+        siteUrl: "https://staging.example",
+        requestOrigin: "https://evil.example",
+        production: true,
+      }),
+      "https://staging.example",
+    );
+    assert.equal(
+      authEmailOrigin({
+        siteUrl: undefined,
+        requestOrigin: "http://localhost:3000",
+        production: false,
+      }),
+      "http://localhost:3000",
     );
   });
 });

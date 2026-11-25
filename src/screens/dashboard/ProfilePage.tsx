@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import { supabase } from '@/src/integrations/supabase/client';
@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const { t } = useLanguage();
   const qc = useQueryClient();
   const [fullName, setFullName] = useState('');
+  const nameEdited = useRef(false);
   const [dyslexiaMode, setDyslexiaMode] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -36,7 +37,11 @@ export default function ProfilePage() {
     enabled: !!user, retry: 1, staleTime: 30000,
   });
 
-  useEffect(() => { if (profile) { setFullName(profile.full_name); setDyslexiaMode(profile.dyslexia_mode); } }, [profile]);
+  useEffect(() => {
+    if (!profile) return;
+    if (!nameEdited.current) setFullName(profile.full_name ?? '');
+    setDyslexiaMode(!!profile.dyslexia_mode);
+  }, [profile]);
   useEffect(() => { document.body.classList.toggle('dyslexia-mode', dyslexiaMode); }, [dyslexiaMode]);
 
   const updateProfile = useMutation({
@@ -147,7 +152,7 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>{t.profilePage.fullName}</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              <Input value={fullName} onChange={(e) => { nameEdited.current = true; setFullName(e.target.value); }} />
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={dyslexiaMode} onCheckedChange={setDyslexiaMode} />

@@ -5,6 +5,7 @@ import { clientAddress } from "@/lib/auth/client-address";
 import { sessionFromClaims } from "@/lib/auth/claims";
 import { authRateLimiter } from "@/lib/auth/limiter";
 import { configuredSiteUrl, resolvePublicOrigin } from "@/lib/auth/origin";
+import { authEmailOrigin } from "@/lib/auth/site";
 import { createClient } from "@/lib/supabase/server";
 import { runRequestPasswordReset } from "@/features/auth/request-password-reset";
 import { runSignIn } from "@/features/auth/sign-in";
@@ -49,12 +50,18 @@ export async function signOutAction() {
 
 export async function requestPasswordResetAction(input: { email?: string }) {
   const headerList = await headers();
-  const origin = resolvePublicOrigin({
-    siteUrl: configuredSiteUrl(),
+  const production = process.env.NODE_ENV === "production";
+  const requestOrigin = resolvePublicOrigin({
+    siteUrl: undefined,
     forwardedHost: headerList.get("x-forwarded-host"),
     forwardedProto: headerList.get("x-forwarded-proto"),
     host: headerList.get("host"),
-    production: process.env.NODE_ENV === "production",
+    production,
+  });
+  const origin = authEmailOrigin({
+    siteUrl: configuredSiteUrl(),
+    requestOrigin,
+    production,
   });
 
   return runRequestPasswordReset(

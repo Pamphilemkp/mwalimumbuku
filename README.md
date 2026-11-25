@@ -42,7 +42,7 @@ Password sign-in, sign-out, and password reset run as server actions. The browse
 
 An expired or invalid session is treated as signed out. Protected pages send the visitor to `/login` with a same-site `next` path. External values are ignored.
 
-Password recovery is `/forgot-password`. The reset link returns to `/auth/callback`, which exchanges a code or a recovery token and then opens `/reset-password`. A failed or expired link does not open the password form. In the Supabase dashboard, add `{origin}/auth/callback` to the redirect allow-list. For a link that works when opened on another device, point the recovery email template at `{origin}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`.
+Password recovery is `/forgot-password`. The reset link returns to `/auth/callback` on `https://mwalimumbuku.vercel.app`, which exchanges a code or a recovery token and then opens `/reset-password`. A failed or expired link does not open the password form. Signup confirmation returns to `/auth/confirmed` on the same host, then to `/login`. In the Supabase dashboard, set the Site URL to `https://mwalimumbuku.vercel.app` and allow `{origin}/auth/callback` and `{origin}/auth/confirmed`. For a link that works when opened on another device, point the recovery email template at `{origin}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`. The Lovable sender `no-reply@md.lovable-app.email` is the hosted Auth SMTP setting; clear that custom SMTP in the same dashboard so mail no longer leaves from the Lovable address.
 
 Next.js 16 refreshes the session in `proxy.ts` (the supported replacement for `middleware.ts`) by calling `auth.getClaims()`. The app layout and each protected page verify the user and the role again. `proxy.ts` alone is not the authorization boundary.
 
@@ -54,17 +54,17 @@ Signup at `/signup` is for students and parents. Teacher and admin accounts are 
 
 ## Staging on Vercel
 
-Create a **new** Vercel project. Do not attach this app to the existing production project, and do not replace `https://mwalimumbuku.vercel.app`.
+The live site is `https://mwalimumbuku.vercel.app`. Confirmation and password-reset links use that origin.
 
 - Root directory: the repository root
 - Framework: Next.js
 - `vercel.json` sets the framework to Next.js and does not rewrite routes to `index.html`
 - Environment variable names: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- Optional: `NEXT_PUBLIC_SITE_URL` set to the staging origin, including `https`
+- `NEXT_PUBLIC_SITE_URL` set to `https://mwalimumbuku.vercel.app`
 - Use the same values as the existing `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`
-- In Supabase Auth, allow the staging URL `{origin}/auth/callback` as a redirect
+- In Supabase Auth, set the Site URL to `https://mwalimumbuku.vercel.app` and allow `{origin}/auth/callback` and `{origin}/auth/confirmed`
 
-Deploy the new project on its own URL. Do not cut over the production domain.
+Deploy on `https://mwalimumbuku.vercel.app`.
 
 ## Roles
 

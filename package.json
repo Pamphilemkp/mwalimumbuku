@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test features/auth/*.test.mts lib/auth/*.test.mts lib/supabase/*.test.mts lib/http/*.test.mts services/auth/*.test.mts"
+    "test": "node --test features/auth/*.test.mts lib/auth/*.test.mts lib/supabase/*.test.mts lib/http/*.test.mts services/auth/*.test.mts supabase/tests/*.test.mts"
   },
   "engines": {
     "node": ">=20.9.0"
@@ -71,6 +71,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
     "@types/node": "22.20.5",
     "@types/react": "19.2.9",
     "@types/react-dom": "19.2.7",

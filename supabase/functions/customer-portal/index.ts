@@ -1,6 +1,23 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
+const PRODUCTION_ORIGIN = "https://mwalimumbuku.vercel.app";
+
+function appOrigin(value: string | null): string {
+  if (!value) return PRODUCTION_ORIGIN;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const lovable = host === "lovable.app" || host.endsWith(".lovable.app") || host.endsWith(".lovable.dev");
+    const local = host === "localhost" || host === "127.0.0.1";
+    if (lovable || url.username || url.password) return PRODUCTION_ORIGIN;
+    if (url.protocol === "https:" || (url.protocol === "http:" && local)) return url.origin;
+  } catch {
+    return PRODUCTION_ORIGIN;
+  }
+  return PRODUCTION_ORIGIN;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -33,7 +50,7 @@ Deno.serve(async (req) => {
     const customers = await stripe.customers.list({ email: userData.user.email, limit: 1 });
     if (customers.data.length === 0) throw new Error("No Stripe customer found");
 
-    const origin = req.headers.get("origin") || "https://mwalimumbuku.lovable.app";
+    const origin = appOrigin(req.headers.get("origin"));
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${origin}/dashboard/subscription`,

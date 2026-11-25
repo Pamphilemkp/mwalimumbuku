@@ -1,5 +1,16 @@
 project_id = "juoyxunkhokvgazqcqah"
 
+[auth]
+site_url = "https://mwalimumbuku.vercel.app"
+additional_redirect_urls = [
+  "https://mwalimumbuku.vercel.app/auth/callback",
+  "https://mwalimumbuku.vercel.app/auth/confirmed",
+  "http://127.0.0.1:3000/auth/callback",
+  "http://127.0.0.1:3000/auth/confirmed",
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/confirmed",
+]
+
 [functions.update-subscription]
 verify_jwt = false
 

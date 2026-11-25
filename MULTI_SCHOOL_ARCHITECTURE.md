@@ -1,8 +1,8 @@
 # Multi-school architecture
 
-Design only. This document does not add a migration, does not change Row Level Security on the live database, and does not add a global role.
+The schema and Row Level Security for this design are in `supabase/migrations/20261125143000_multi_school_schema.sql` and `supabase/migrations/20261125143100_multi_school_record_scope.sql`. Applying them, and rolling them back, is described in [MULTI_SCHOOL_MIGRATION.md](MULTI_SCHOOL_MIGRATION.md). Those files do not assign existing users to a school.
 
-Inspected schema: `supabase/migrations`, from `20260302105135` through `20260529165044`. The app still calls that schema. Nothing below is deployed.
+Inspected schema: `supabase/migrations`, from `20260302105135` through `20260529165044`. Nothing below is deployed until those two migrations are applied on a database.
 
 ## What exists today
 
@@ -276,9 +276,11 @@ This is the class register. It does not replace `attendance`, which remains live
 
 Unique `(class_id, membership_id, session_date)`.
 
-`marked_by` must be an active teacher assignment on a subject of that class, or an active school administrator membership of that school.
+`marked_by` must be an active teacher assignment on a subject of that class. A school administrator can read the register and does not mark it.
 
-### Columns to add later, not in this pull request
+### Columns added with the scope migration
+
+`20261125143100_multi_school_record_scope.sql` adds these columns as null. It does not backfill them.
 
 | Table | Column | Purpose |
 | --- | --- | --- |
@@ -453,34 +455,27 @@ Live-session `attendance` keeps today's teacher-of-the-course rule until `course
 
 ## Existing-data migration plan
 
-Do not run these steps in this pull request. When a later migration is reviewed, apply them in this order. Each step is its own forward migration.
+`20261125143000` adds the tables, checks, triggers, helpers, and policies. `20261125143100` adds the nullable columns and replaces the catalog policies so a row with a school cannot be read through the old open policies. Neither file inserts a school, a membership, or a school id onto an existing course, assignment, or parent link.
 
-1. Add the new tables, checks, triggers, helpers, and RLS. Grant nothing broader than `authenticated` plus the policies. Do not alter `courses`, `assignments`, `homework_submissions`, `attendance`, or `parent_student` in this step.
-2. Create schools from distinct trimmed `student_profiles.school_name` values that are not empty. Do not merge names that differ by case, accent, or abbreviation. Create one additional school named for the existing shared catalog, status `active`, for students whose `school_name` is null or blank and for every current teacher. `created_by` is null on backfilled schools. Write the distinct names into the migration log so a person can merge duplicates afterward.
-3. Insert one active student membership per user who has `user_roles.role = student`, pointed at the school from step 2. If the partial unique index rejects a second row, keep the first and record the user id. Do not invent a second active membership.
-4. Insert one active teacher membership per user who has `user_roles.role = teacher`, pointed at the shared-catalog school from step 2. Do not guess a school from course titles.
-5. For each `parent_student` row, if the student has a membership, set the planned `school_id` in the later column migration and insert an active parent membership at that school. If the student has no membership, leave the link unchanged and list the parent id.
-6. Do not copy `user_roles.admin` into `school_admin`. A person appoints school administrators after this migration.
-7. Leave `student_profiles.school_name` and `class_level` in place. The app reads them until a later UI uses `classes`.
-8. A separate reviewed migration adds nullable `school_id` and `class_subject_id`, backfills a course's `school_id` only when that course's `teacher_id` has exactly one teacher membership, and then replaces the open course, homework, and attendance policies. Skip the backfill when the teacher has zero or several memberships and list those course ids.
+The following backfill is not in those files. It would invent a school for blank names and for every teacher. Do not run it unless a later review accepts that assignment.
 
-The app can keep using the current tables after steps 1 through 7. New screens are out of scope until those steps exist.
+1. Create schools from distinct trimmed `student_profiles.school_name` values that are not empty. Do not merge names that differ by case, accent, or abbreviation. Do not create a school for a null or blank name.
+2. Insert one active student membership per student whose `school_name` matches one of those schools. If the partial unique index rejects a second row, keep the first and record the user id.
+3. Do not invent a teacher membership from a course title. A school administrator appoints teachers.
+4. For each `parent_student` row, leave `school_id` null until the parent calls `link_parent_by_student_code` or the student has an active membership and a reviewed job sets the matching school.
+5. Do not copy `user_roles.admin` into `school_admin`.
+6. Leave `student_profiles.school_name` and `class_level` in place.
+7. Backfill `courses.school_id` only when that course's teacher has exactly one teacher membership. Skip the rest and list those course ids.
 
 ## Rollback
 
-The first migration only adds tables. Roll it back with a new forward migration that drops the new tables and helpers in dependency order: `class_attendance`, `student_enrollments`, `teacher_assignments`, `class_subjects`, `classes`, `terms`, `academic_years`, `subjects`, `grade_levels`, `school_memberships`, `schools`. Do not drop `user_roles`, `parent_student`, `courses`, or `student_profiles`.
-
-If memberships were backfilled and the new screens are not live, delete the backfilled memberships and drop the tables the same way. Do not delete auth users.
-
-If a later migration added nullable columns and they are still null, drop those columns. If it replaced policies, that migration must include the previous policy statements in its own rollback notes. This design does not replace a live policy, so there is nothing to restore yet.
-
-Do not roll back by rewriting git history or by editing a migration that has already run on the shared database.
+Operational steps, including the previous policy statements, are in [MULTI_SCHOOL_MIGRATION.md](MULTI_SCHOOL_MIGRATION.md). Roll back with a new forward migration. Do not edit a migration that has already run, and do not rewrite git history.
 
 ## Out of scope
 
-- Applying any of this SQL.
+- A backfill that assigns existing people or courses to a school.
 - A new global role.
 - Official curriculum lists.
 - Automatic promotion to the next grade.
 - Merging duplicate school names.
-- Closing the existing open `profiles` select policy. That remains a known gap for the migration that introduces school-scoped profile reads.
+- Closing the existing open `profiles` select policy. That remains a known gap.

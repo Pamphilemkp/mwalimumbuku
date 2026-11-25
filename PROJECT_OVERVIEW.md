@@ -76,7 +76,7 @@ The implemented product is a **single global platform**, not a multi-school syst
 - Courses are global catalogs with a free-text subject and level (`beginner` by default), not a classe of 5e année primaire in a named school.
 - Parents link to a child account with a student code, and can also store unstructured notes about children who may not have an account (`children_info`). Those two lists are not the same thing.
 
-Two public URLs are hardcoded: `https://mwalimumbuku.vercel.app` (password-reset redirect in production) and `https://mwalimumbuku.lovable.app` (Stripe return fallback). `vercel.json` is a SPA rewrite to `index.html`.
+Auth mail and the Stripe return fallback use `https://mwalimumbuku.vercel.app`. `vercel.json` sets the framework to Next.js.
 
 ## Repository shape
 
