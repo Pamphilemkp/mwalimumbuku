@@ -12,7 +12,7 @@ export function usePublishedCourses() {
         .eq('is_published', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return (data ?? []).filter((course) => course.archived !== true);
     },
   });
 }
@@ -68,7 +68,14 @@ export function useCreateCourse() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (values: { title: string; subject: string; level: string; description: string; is_premium?: boolean }) => {
+    mutationFn: async (values: {
+      title: string;
+      subject: string;
+      level: string;
+      description: string;
+      is_premium?: boolean;
+      education_stage?: "primary" | "secondary";
+    }) => {
       const { data, error } = await supabase
         .from('courses')
         .insert({ ...values, teacher_id: user!.id })
@@ -84,7 +91,17 @@ export function useCreateCourse() {
 export function useCreateLesson() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (values: { title: string; content: string; course_id: string; sort_order: number }) => {
+    mutationFn: async (values: {
+      title: string;
+      content: string;
+      course_id: string;
+      sort_order: number;
+      video_url?: string;
+      objectives?: string;
+      examples?: string;
+      summary?: string;
+      resource_url?: string;
+    }) => {
       const { data, error } = await supabase
         .from('lessons')
         .insert(values)
@@ -100,7 +117,15 @@ export function useCreateLesson() {
 export function useCreateExercise() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (values: { question: string; correct_answer: string; options: string[]; lesson_id: string; points: number }) => {
+    mutationFn: async (values: {
+      question: string;
+      correct_answer: string;
+      options: string[];
+      lesson_id: string;
+      points: number;
+      exercise_type?: string;
+      partial_credit?: boolean;
+    }) => {
       const { data, error } = await supabase
         .from('exercises')
         .insert({
@@ -109,6 +134,8 @@ export function useCreateExercise() {
           options: values.options,
           lesson_id: values.lesson_id,
           points: values.points,
+          ...(values.exercise_type ? { exercise_type: values.exercise_type } : {}),
+          ...(values.partial_credit ? { partial_credit: true } : {}),
         })
         .select()
         .single();
@@ -128,7 +155,7 @@ export function useSubmitAnswer() {
         _answer: values.answer,
       });
       if (error) throw error;
-      return data as { is_correct: boolean; points_earned: number };
+      return data as { is_correct: boolean; points_earned: number; feedback?: string; attempts_used?: number };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['results'] });

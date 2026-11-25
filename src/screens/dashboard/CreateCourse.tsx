@@ -23,6 +23,7 @@ export default function CreateCourse() {
   const [subject, setSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [level, setLevel] = useState('beginner');
+  const [stage, setStage] = useState<'' | 'primary' | 'secondary'>('');
   const [description, setDescription] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [step, setStep] = useState(1);
@@ -35,7 +36,14 @@ export default function CreateCourse() {
       toast.error('Title and subject are required');
       return;
     }
-    createCourse.mutate({ title, subject: finalSubject, level, description, is_premium: isPremium }, {
+    createCourse.mutate({
+      title,
+      subject: finalSubject,
+      level,
+      description,
+      is_premium: isPremium,
+      ...(stage ? { education_stage: stage } : {}),
+    }, {
       onSuccess: (data) => {
         toast.success('Course created! Now add lessons and exercises.');
         navigate(`/dashboard/courses/${data.id}/edit`);
@@ -111,6 +119,34 @@ export default function CreateCourse() {
                     className="mt-2 h-11"
                   />
                 )}
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  The list is a starting point. Type any subject. This is not an official certified curriculum.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Education stage</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    ['', 'Any'],
+                    ['primary', 'Primary'],
+                    ['secondary', 'Secondary'],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setStage(value)}
+                      className={cn(
+                        'rounded-xl border px-4 py-3 text-sm font-medium transition-all',
+                        stage === value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/30'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">

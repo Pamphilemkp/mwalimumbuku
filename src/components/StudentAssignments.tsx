@@ -14,6 +14,7 @@ import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import HomeworkUpload from '@/src/components/HomeworkUpload';
+import { HomeworkFileButton } from '@/src/components/HomeworkFileButton';
 import { usePagination } from '@/src/hooks/usePagination';
 import PaginationControls from '@/src/components/PaginationControls';
 
@@ -62,9 +63,11 @@ export default function StudentAssignments() {
     enabled: !!user,
   });
 
-  const submissionMap = new Map(
-    submissions?.map(s => [s.assignment_id, s]) ?? []
-  );
+  const submissionMap = new Map<string, NonNullable<typeof submissions>[number]>();
+  for (const row of submissions ?? []) {
+    const current = submissionMap.get(row.assignment_id);
+    if (!current || current.created_at < row.created_at) submissionMap.set(row.assignment_id, row);
+  }
 
   const pagination = usePagination(assignments, 5);
 
@@ -189,13 +192,16 @@ export default function StudentAssignments() {
                       )}
 
                       {sub?.file_name && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <FileText className="h-4 w-4" />
-                          <span>Fichier soumis: {sub.file_name}</span>
+                        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center">
+                          <span className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Fichier soumis: {sub.file_name}
+                          </span>
+                          <HomeworkFileButton submissionId={sub.id} label="Télécharger" />
                         </div>
                       )}
 
-                      {!sub && (
+                      {(!sub || (sub.status === 'returned' && a.allow_resubmit)) && (
                         <div>
                           <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                             <Upload className="h-3 w-3" /> Soumettre votre devoir
