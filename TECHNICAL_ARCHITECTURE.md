@@ -1,6 +1,6 @@
 # Mwalimu Mbuku — Technical Architecture
 
-The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md).
+The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md), [MULTI_SCHOOL_MIGRATION.md](MULTI_SCHOOL_MIGRATION.md).
 
 The 24 November 2026 audit below the historical heading describes the Vite SPA that used to be this repository. That UI is not the running app. Its source is commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. Supabase migrations, edge functions, and storage were not changed by the move.
 
@@ -53,11 +53,9 @@ Staging is a separate Vercel project with the root directory set to the reposito
 
 ## Multi-school design
 
-The running schema has no `schools` table. A student's school and class are text on `student_profiles`. `admin` in `user_roles` is a platform-wide role. Parents link to children in `parent_student` with no school. Courses belong to `courses.teacher_id`.
+Schools, memberships, academic years, classes, and the isolation policies are in [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md). The SQL is in `supabase/migrations/20261125143000_multi_school_schema.sql` and `supabase/migrations/20261125143100_multi_school_record_scope.sql`. [MULTI_SCHOOL_MIGRATION.md](MULTI_SCHOOL_MIGRATION.md) describes how to apply and roll them back.
 
-The design keeps `student`, `parent`, `teacher`, and `admin` as the only global roles. School administration is a membership on one school, because one person may administer one school and teach at another. A global school-admin role would grant that power on every school.
-
-Details, the ERD, table definitions, RLS, indexes, the data migration plan, and rollback are in [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md).
+The global roles stay `student`, `parent`, `teacher`, and `admin`. A school administrator is a membership on one school. Existing courses, parent links, and `student_profiles.school_name` are not assigned to a school by the migration. A null `school_id` remains the shared catalog.
 
 ## Historical audit (Vite SPA at 8afba27)
 
