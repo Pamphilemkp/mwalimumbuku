@@ -35,9 +35,7 @@ describe("root Next.js toolchain", () => {
       "vitest.config.ts",
       "index.html",
       "apps",
-      "apps/web",
       "frontend",
-      "src",
     ]) {
       assert.throws(() => statSync(path.join(ROOT, missing)), `${missing} should not exist`);
     }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DM_Sans, Space_Grotesk } from "next/font/google";
 import { LanguageProvider } from "@/features/landing/language";
+import { ProductProviders } from "@/src/providers";
 import "./globals.css";
 
 const bodyFont = DM_Sans({
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr" className={`${bodyFont.variable} ${displayFont.variable}`}>
       <body className={`${bodyFont.className} min-h-screen`}>
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <ProductProviders>{children}</ProductProviders>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -50,7 +50,7 @@ Next.js 16 refreshes the session in `proxy.ts` (the supported replacement for `m
 
 Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store`. Auth redirects also send `Referrer-Policy: no-referrer`. Session cookies are readable by the browser client (`httpOnly: false`), `SameSite=Lax`, and `Path=/`. The `Secure` flag is on when `NODE_ENV` is `production`.
 
-There is no public signup and no way to choose a role. The security checklist is [SECURITY.md](SECURITY.md).
+Signup at `/signup` is for students and parents. Teacher and admin accounts are not created from that form. The security checklist is [SECURITY.md](SECURITY.md).
 
 ## Staging on Vercel
 
