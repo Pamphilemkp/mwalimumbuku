@@ -46,7 +46,7 @@ Password recovery is `/forgot-password`. The reset link returns to `/auth/callba
 
 Next.js 16 refreshes the session in `proxy.ts` (the supported replacement for `middleware.ts`) by calling `auth.getClaims()`. The app layout and each protected page verify the user and the role again. `proxy.ts` alone is not the authorization boundary.
 
-Anonymous visitors go to `/login`. Sign-out checks the error and navigates to `/login` only after success.
+`/` is the public homepage. It stays in place for a signed-in visitor and does not send them to the dashboard. Anonymous visitors to `/dashboard` and `/holding` go to `/login`. Sign-out checks the error and navigates to `/login` only after success.
 
 Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store`. Auth redirects also send `Referrer-Policy: no-referrer`. Session cookies are readable by the browser client (`httpOnly: false`), `SameSite=Lax`, and `Path=/`. The `Secure` flag is on when `NODE_ENV` is `production`.
 

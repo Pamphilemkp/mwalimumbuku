@@ -10,7 +10,7 @@ export function isProtectedPath(pathname: string): boolean {
 }
 
 export function anonymousMustSignIn(pathname: string): boolean {
-  return pathname === "/" || isProtectedPath(pathname);
+  return isProtectedPath(pathname);
 }
 
 export function loginNextPath(pathname: string): string | null {

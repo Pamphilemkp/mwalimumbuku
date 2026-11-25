@@ -15,7 +15,7 @@ Browser
        ├─ Server actions: sign-in, sign-out, password recovery, password update
        ├─ Client Components: those forms and the logout button
        ├─ proxy.ts: refresh session cookies, send anonymous users
-       │            off /, /dashboard, and /holding to /login
+       │            off /dashboard and /holding to /login. / stays public
        └─ Server authorization (layout and each protected page):
             auth.getClaims() + one user_roles row
             missing / duplicate / invalid / error / role mismatch → /holding
@@ -38,7 +38,7 @@ There is one `package.json` and one npm lockfile. `npm run dev` runs `next dev`.
 | UI runtime | React 19.2.9 and `react-dom` 19.2.9. `@types/react` 19.2.9. `@types/react-dom` 19.2.7 |
 | Framework | Next.js 16.4.6, `eslint-config-next` 16.4.6. `proxy.ts` exports `proxy()` |
 | Styling | Tailwind 3.4 at the root, `app/globals.css` |
-| Routing | App Router. `/` redirects through the auth gate. `/login`, `/forgot-password`, and `/auth/callback` are public. `/reset-password` shows a form only after a verified session. `/dashboard` and `/holding` are protected |
+| Routing | App Router. `/` is a public homepage and does not redirect. `/login`, `/forgot-password`, and `/auth/callback` are public. `/reset-password` shows a form only after a verified session. `/dashboard` and `/holding` are protected |
 | Auth SDK | `@supabase/ssr` 0.12.7 and `@supabase/supabase-js` 2.119.2. Cookies, not `localStorage` |
 | Public env | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, optional `NEXT_PUBLIC_SITE_URL` |
 | Cookies | `httpOnly: false` so the browser client can read them. `sameSite: lax`. `path: /`. `secure: true` when `NODE_ENV` is `production` |

@@ -102,7 +102,7 @@ Shared rules for every port below:
 
 | Feature | Source at 8afba27 | Later path |
 | --- | --- | --- |
-| Landing page | `src/pages/Index.tsx`, `src/main.tsx`, `src/App.tsx`, `src/index.css`, `src/App.css` | Replace the session-only `app/page.tsx` redirect with a server-rendered landing, and redirect a signed-in visitor with `decideAuthGate`. Do not copy the Vite entry or `BrowserRouter`. |
+| Landing page | `app/page.tsx` | Public homepage. A signed-in visitor stays on `/` and is not redirected to the dashboard. Do not restore the Vite redirect. |
 | Mission | `src/pages/Mission.tsx` | `app/mission/page.tsx` as a server component. |
 | In-app docs | `src/pages/dashboard/DocsPage.tsx` | `app/(app)/dashboard/docs/page.tsx`. |
 | Not found | `src/pages/NotFound.tsx` | `app/not-found.tsx`. |

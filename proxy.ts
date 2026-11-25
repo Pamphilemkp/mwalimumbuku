@@ -15,9 +15,9 @@ import { getSupabasePublicEnv } from "@/lib/supabase/env";
  * getAll/setAll, then auth.getClaims() so the access token is verified
  * and refreshed before Server Components read it.
  *
- * An expired or invalid token is treated as no session. proxy.ts is not
- * the authorization boundary. Protected pages load the session and the
- * user_roles row again and fail closed on their own.
+ * An expired or invalid token is treated as no session. The homepage
+ * stays public. proxy.ts is not the authorization boundary. Protected
+ * pages load the session and the user_roles row again and fail closed.
  */
 
 function copySessionHeaders(from: NextResponse, to: NextResponse) {
