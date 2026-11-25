@@ -1,5 +1,7 @@
 "use client";
 
+import { isActiveLink } from '@/lib/portals/access';
+import { missingSchema } from '@/lib/portals/schema';
 import { useAuth } from '@/src/hooks/useAuth';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -17,10 +19,17 @@ export default function ChildProgress() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parent_student')
-        .select('student_id, profiles!parent_student_student_id_fkey(full_name)')
+        .select('student_id, status, profiles!parent_student_student_id_fkey(full_name)')
         .eq('parent_id', user!.id);
+      if (error && missingSchema(error)) {
+        const fallback = await supabase.from('parent_student')
+          .select('student_id, profiles!parent_student_student_id_fkey(full_name)')
+          .eq('parent_id', user!.id);
+        if (fallback.error) throw fallback.error;
+        return fallback.data ?? [];
+      }
       if (error) throw error;
-      return data;
+      return (data ?? []).filter((row) => isActiveLink(row.status));
     },
     enabled: !!user,
   });

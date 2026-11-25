@@ -20,7 +20,7 @@ export default function NotificationBell() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, title, message, type, is_read, created_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(20);
@@ -59,6 +59,7 @@ export default function NotificationBell() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
+        title={lang === 'fr' ? 'La liste se met à jour toutes les 30 secondes' : 'This list refreshes every 30 seconds'}
         className="relative flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted transition-colors"
       >
         <Bell className="h-5 w-5 text-muted-foreground" />

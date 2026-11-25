@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { sendMessageAction } from '@/features/portals/actions';
+import { missingSchema } from '@/lib/portals/schema';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import { supabase } from '@/src/integrations/supabase/client';
@@ -33,8 +35,12 @@ export default function MessagesPage() {
       const contactIds = new Set<string>();
       data.forEach((m: any) => { if (m.sender_id !== user!.id) contactIds.add(m.sender_id); if (m.receiver_id !== user!.id) contactIds.add(m.receiver_id); });
       if (contactIds.size === 0) return [];
-      const { data: profiles, error: pErr } = await supabase.from('profiles').select('user_id, full_name').in('user_id', Array.from(contactIds));
-      if (pErr) throw pErr;
+      const ids = Array.from(contactIds);
+      const labels = await supabase.from('profile_labels').select('user_id, full_name').in('user_id', ids);
+      const profiles = labels.error && missingSchema(labels.error)
+        ? (await supabase.from('profiles').select('user_id, full_name').in('user_id', ids)).data
+        : labels.data;
+      if (labels.error && !missingSchema(labels.error)) throw labels.error;
       return Array.from(contactIds).map((cid) => {
         const msgs = data.filter((m: any) => m.sender_id === cid || m.receiver_id === cid);
         const lastMsg = msgs[0];
@@ -44,6 +50,8 @@ export default function MessagesPage() {
       }).sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
     },
     enabled: !!user,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: chatMessages } = useQuery({
@@ -55,28 +63,32 @@ export default function MessagesPage() {
       if (unreadIds.length > 0) { await supabase.from('messages').update({ is_read: true }).in('id', unreadIds); qc.invalidateQueries({ queryKey: ['conversations'] }); }
       return data;
     },
-    enabled: !!selectedContact, refetchInterval: 5000,
+    enabled: !!selectedContact,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
-
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase.channel('messages-realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-      qc.invalidateQueries({ queryKey: ['messages'] }); qc.invalidateQueries({ queryKey: ['conversations'] });
-    }).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, qc]);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [chatMessages]);
 
   const sendMessage = useMutation({
-    mutationFn: async () => { const { error } = await supabase.from('messages').insert({ sender_id: user!.id, receiver_id: selectedContact!, content: message }); if (error) throw error; },
+    mutationFn: async () => {
+      const result = await sendMessageAction(selectedContact!, message);
+      if (!result.ok) throw new Error(result.message);
+    },
     onSuccess: () => { setMessage(''); qc.invalidateQueries({ queryKey: ['messages'] }); qc.invalidateQueries({ queryKey: ['conversations'] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
   const { data: searchResults } = useQuery({
     queryKey: ['search-users', search],
-    queryFn: async () => { const { data, error } = await supabase.from('profiles').select('user_id, full_name').ilike('full_name', `%${search}%`).neq('user_id', user!.id).limit(5); if (error) throw error; return data; },
+    queryFn: async () => {
+      const labels = await supabase.from('profile_labels').select('user_id, full_name').ilike('full_name', `%${search}%`).neq('user_id', user!.id).limit(5);
+      if (!labels.error) return (labels.data ?? []).filter((row) => row.user_id && row.full_name);
+      if (!missingSchema(labels.error)) return [];
+      const { data, error } = await supabase.from('profiles').select('user_id, full_name').ilike('full_name', `%${search}%`).neq('user_id', user!.id).limit(5);
+      if (error) return [];
+      return data ?? [];
+    },
     enabled: search.length >= 2,
   });
 
@@ -88,6 +100,7 @@ export default function MessagesPage() {
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground">{t.messages.title}</h1>
         <p className="mt-1 text-muted-foreground">{t.messages.subtitle}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{lang === 'fr' ? 'La conversation se met à jour quand vous revenez sur cette page.' : 'The conversation refreshes when you return to this page.'}</p>
       </div>
       <div className="grid h-[calc(100vh-250px)] gap-4 lg:grid-cols-[300px_1fr]">
         <div className="flex flex-col rounded-xl border border-border bg-card">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { isActiveLink } from '@/lib/portals/access';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import { supabase } from '@/src/integrations/supabase/client';
@@ -26,11 +27,12 @@ export default function ChildrenPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from('parent_student').select('*').eq('parent_id', user!.id);
       if (error) throw error;
+      const active = (data ?? []).filter((row) => isActiveLink(row.status));
       // Fetch profiles for each child
-      if (!data?.length) return [];
-      const ids = data.map(d => d.student_id);
+      if (!active.length) return [];
+      const ids = active.map(d => d.student_id);
       const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, student_code').in('user_id', ids);
-      return data.map(d => ({
+      return active.map(d => ({
         ...d,
         profiles: profiles?.find(p => p.user_id === d.student_id) || null,
       }));

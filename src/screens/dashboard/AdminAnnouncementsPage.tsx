@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { supabase } from '@/src/integrations/supabase/client';
+import { publishAnnouncementAction } from '@/features/portals/actions';
 import { Card } from '@/src/components/ui/card';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
@@ -27,22 +27,9 @@ export default function AdminAnnouncementsPage() {
     }
     setSending(true);
     try {
-      let userIds: string[] = [];
-      if (audience === 'all') {
-        const { data } = await supabase.from('user_roles').select('user_id');
-        userIds = (data ?? []).map((r: any) => r.user_id);
-      } else {
-        const { data } = await supabase.from('user_roles').select('user_id').eq('role', audience);
-        userIds = (data ?? []).map((r: any) => r.user_id);
-      }
-      if (!userIds.length) {
-        toast.error('Aucun destinataire');
-        return;
-      }
-      const rows = userIds.map(uid => ({ user_id: uid, title, message, type: 'announcement' }));
-      const { error } = await supabase.from('notifications').insert(rows);
-      if (error) throw error;
-      toast.success(`Annonce envoyée à ${userIds.length} utilisateur(s)`);
+      const result = await publishAnnouncementAction({ title, message, audience });
+      if (!result.ok) throw new Error(result.message);
+      toast.success(result.message);
       setTitle(''); setMessage('');
     } catch (err: any) {
       toast.error(err.message || 'Erreur');

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createSupportTicketAction, sendSupportMessageAction } from '@/features/portals/actions';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useAuth } from '@/src/hooks/useAuth';
 
@@ -52,11 +53,13 @@ export function useTickets(staffMode = false) {
 
   useEffect(() => {
     load();
-    const ch = supabase
-      .channel('support_tickets_rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const timer = window.setInterval(load, 15000);
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [load]);
 
   return { tickets, loading, reload: load };
@@ -86,27 +89,26 @@ export function useTicketMessages(ticketId: string | null) {
     setTypingUsers([]);
     if (!ticketId) return;
     load();
-    const ch = supabase
-      .channel(`support_msgs_${ticketId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages', filter: `ticket_id=eq.${ticketId}` }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_typing', filter: `ticket_id=eq.${ticketId}` }, async () => {
-        const { data } = await (supabase as any).from('support_typing')
-          .select('user_id, updated_at').eq('ticket_id', ticketId)
-          .gte('updated_at', new Date(Date.now() - 5000).toISOString());
-        setTypingUsers(((data ?? []) as any[]).map((r) => r.user_id).filter((id) => id !== user?.id));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const timer = window.setInterval(load, 15000);
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [ticketId, load, user?.id]);
 
   const sendMessage = async (body: string, attachment?: { url: string; type: 'image'|'voice'|'file'; name: string }) => {
     if (!ticketId || !user) return;
-    await (supabase as any).from('support_messages').insert({
-      ticket_id: ticketId, sender_id: user.id, body: body || null,
-      attachment_url: attachment?.url ?? null,
-      attachment_type: attachment?.type ?? null,
-      attachment_name: attachment?.name ?? null,
-    });
+    if (attachment) {
+      await (supabase as any).from('support_messages').insert({
+        ticket_id: ticketId, sender_id: user.id, body: body || null,
+        attachment_url: attachment.url, attachment_type: attachment.type, attachment_name: attachment.name,
+      });
+      return;
+    }
+    const result = await sendSupportMessageAction(ticketId, body);
+    if (!result.ok) throw new Error(result.message);
   };
 
   const setTyping = async () => {
@@ -122,20 +124,23 @@ export async function createTicket(input: {
   subject: string; category: SupportCategory; priority: SupportPriority; firstMessage: string;
   attachment?: { url: string; type: 'image'|'voice'|'file'; name: string };
 }) {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
-  if (!uid) throw new Error('Not authenticated');
-  const { data: ticket, error } = await (supabase as any).from('support_tickets')
-    .insert({ user_id: uid, subject: input.subject, category: input.category, priority: input.priority })
-    .select().single();
-  if (error) throw error;
-  await (supabase as any).from('support_messages').insert({
-    ticket_id: ticket.id, sender_id: uid, body: input.firstMessage,
-    attachment_url: input.attachment?.url ?? null,
-    attachment_type: input.attachment?.type ?? null,
-    attachment_name: input.attachment?.name ?? null,
+  const created = await createSupportTicketAction({
+    subject: input.subject,
+    category: input.category,
+    priority: input.priority,
+    message: input.firstMessage,
   });
-  return ticket as SupportTicket;
+  if (!created.ok || !created.id) throw new Error(created.ok ? 'Demande indisponible' : created.message);
+  if (input.attachment) {
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      await (supabase as any).from('support_messages').insert({
+        ticket_id: created.id, sender_id: auth.user.id, body: null,
+        attachment_url: input.attachment.url, attachment_type: input.attachment.type, attachment_name: input.attachment.name,
+      });
+    }
+  }
+  return { id: created.id, user_id: '', subject: input.subject, category: input.category, priority: input.priority, status: 'open', assigned_to: null, last_message_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as SupportTicket;
 }
 
 export async function uploadSupportFile(file: Blob, userId: string, name: string) {

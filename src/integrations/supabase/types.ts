@@ -365,6 +365,7 @@ export type Database = {
           created_at: string
           id: string
           role_visibility: string[]
+          school_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -375,6 +376,7 @@ export type Database = {
           created_at?: string
           id?: string
           role_visibility?: string[]
+          school_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -385,6 +387,7 @@ export type Database = {
           created_at?: string
           id?: string
           role_visibility?: string[]
+          school_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -564,10 +567,13 @@ export type Database = {
       }
       live_sessions: {
         Row: {
+          access_instructions: string | null
+          class_id: string | null
           course_id: string
           created_at: string
           description: string | null
           duration_minutes: number
+          ends_at: string | null
           id: string
           meeting_url: string | null
           scheduled_at: string
@@ -577,10 +583,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_instructions?: string | null
+          class_id?: string | null
           course_id: string
           created_at?: string
           description?: string | null
           duration_minutes?: number
+          ends_at?: string | null
           id?: string
           meeting_url?: string | null
           scheduled_at: string
@@ -590,10 +599,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_instructions?: string | null
+          class_id?: string | null
           course_id?: string
           created_at?: string
           description?: string | null
           duration_minutes?: number
+          ends_at?: string | null
           id?: string
           meeting_url?: string | null
           scheduled_at?: string
@@ -714,18 +726,27 @@ export type Database = {
           created_at: string
           id: string
           parent_id: string
+          relationship: string | null
+          school_id: string | null
+          status: string
           student_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           parent_id: string
+          relationship?: string | null
+          school_id?: string | null
+          status?: string
           student_id: string
         }
         Update: {
           created_at?: string
           id?: string
           parent_id?: string
+          relationship?: string | null
+          school_id?: string | null
+          status?: string
           student_id?: string
         }
         Relationships: []
@@ -1072,6 +1093,7 @@ export type Database = {
           id: string
           last_message_at: string
           priority: Database["public"]["Enums"]["support_priority"]
+          school_id: string | null
           status: Database["public"]["Enums"]["support_status"]
           subject: string
           updated_at: string
@@ -1084,6 +1106,7 @@ export type Database = {
           id?: string
           last_message_at?: string
           priority?: Database["public"]["Enums"]["support_priority"]
+          school_id?: string | null
           status?: Database["public"]["Enums"]["support_status"]
           subject: string
           updated_at?: string
@@ -1096,6 +1119,7 @@ export type Database = {
           id?: string
           last_message_at?: string
           priority?: Database["public"]["Enums"]["support_priority"]
+          school_id?: string | null
           status?: Database["public"]["Enums"]["support_status"]
           subject?: string
           updated_at?: string
@@ -1245,6 +1269,14 @@ export type Database = {
       }
     }
     Views: {
+      profile_labels: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       student_exercises: {
         Row: {
           created_at: string | null

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from 'react';
+import { createForumPostAction, createForumReplyAction } from '@/features/portals/actions';
+import { missingSchema } from '@/lib/portals/schema';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import { supabase } from '@/src/integrations/supabase/client';
@@ -37,26 +39,42 @@ export default function ForumPage() {
   const { data: posts, isLoading } = useQuery({
     queryKey: ['forum-posts'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('forum_posts').select('*, profiles(full_name)').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('forum_posts').select('id, user_id, title, content, category, created_at').order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      const ids = Array.from(new Set((data ?? []).map((post) => post.user_id)));
+      const labels = ids.length ? await supabase.from('profile_labels').select('user_id, full_name').in('user_id', ids) : { data: [], error: null };
+      const names = labels.error && missingSchema(labels.error)
+        ? (await supabase.from('profiles').select('user_id, full_name').in('user_id', ids)).data
+        : labels.data;
+      return (data ?? []).map((post) => ({
+        ...post,
+        profiles: { full_name: names?.find((name) => name.user_id === post.user_id)?.full_name || '' },
+      }));
     },
   });
 
   const { data: replies } = useQuery({
     queryKey: ['forum-replies', selectedPost],
     queryFn: async () => {
-      const { data, error } = await supabase.from('forum_replies').select('*, profiles(full_name)').eq('post_id', selectedPost!).order('created_at');
+      const { data, error } = await supabase.from('forum_replies').select('id, user_id, content, created_at').eq('post_id', selectedPost!).order('created_at');
       if (error) throw error;
-      return data;
+      const ids = Array.from(new Set((data ?? []).map((reply) => reply.user_id)));
+      const labels = ids.length ? await supabase.from('profile_labels').select('user_id, full_name').in('user_id', ids) : { data: [], error: null };
+      const names = labels.error && missingSchema(labels.error)
+        ? (await supabase.from('profiles').select('user_id, full_name').in('user_id', ids)).data
+        : labels.data;
+      return (data ?? []).map((reply) => ({
+        ...reply,
+        profiles: { full_name: names?.find((name) => name.user_id === reply.user_id)?.full_name || '' },
+      }));
     },
     enabled: !!selectedPost,
   });
 
   const createPost = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('forum_posts').insert({ user_id: user!.id, title, content, category });
-      if (error) throw error;
+      const result = await createForumPostAction({ title, content, category });
+      if (!result.ok) throw new Error(result.message);
     },
     onSuccess: () => { toast.success(t.forum.postCreated); setTitle(''); setContent(''); setCategory('general'); setDialogOpen(false); qc.invalidateQueries({ queryKey: ['forum-posts'] }); },
     onError: (e: any) => toast.error(e.message),
@@ -64,8 +82,8 @@ export default function ForumPage() {
 
   const createReply = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('forum_replies').insert({ post_id: selectedPost!, user_id: user!.id, content: replyContent });
-      if (error) throw error;
+      const result = await createForumReplyAction(selectedPost!, replyContent);
+      if (!result.ok) throw new Error(result.message);
     },
     onSuccess: () => { toast.success(t.forum.replyPosted); setReplyContent(''); qc.invalidateQueries({ queryKey: ['forum-replies', selectedPost] }); },
     onError: (e: any) => toast.error(e.message),
