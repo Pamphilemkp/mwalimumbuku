@@ -37,8 +37,25 @@ returns boolean language sql stable as $$ select false $$;
 
 create table public.parent_student (
   parent_id uuid not null,
-  student_id uuid not null
+  student_id uuid not null,
+  status text not null default 'active'
 );
+create function public.parent_of(uid uuid, student_user_id uuid)
+returns boolean language sql stable as $$
+  select exists (
+    select 1 from public.parent_student
+    where parent_id = uid and student_id = student_user_id and status = 'active'
+  )
+$$;
+
+create schema if not exists storage;
+grant usage on schema storage to authenticated;
+create table storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text,
+  name text
+);
+grant select on storage.objects to authenticated;
 create table public.class_subjects (
   course_id uuid,
   class_id uuid
@@ -161,6 +178,16 @@ async function expectFail(run) {
   throw new Error("expected the database to reject this statement");
 }
 
+async function expectMessage(run, pattern) {
+  try {
+    await run();
+  } catch (error) {
+    assert.match(String(error), pattern);
+    return;
+  }
+  throw new Error("expected the database to reject this statement");
+}
+
 describe("courses and assessment", { timeout: 120000 }, () => {
   it("keeps grades, answers, enrollment, and files on the server", async () => {
     const db = new PGlite();
@@ -182,6 +209,13 @@ describe("courses and assessment", { timeout: 120000 }, () => {
         ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000002', 'Hidden', 'secret-key', 'short_answer', 10);
       insert into public.assignments (id, course_id, title, due_date)
       values ('40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Worksheet', now());
+    `);
+    await db.exec(`
+      create function public.get_lesson_exercises(_lesson_id uuid)
+      returns table(id uuid, question text, options jsonb, exercise_type text, points int, created_at timestamptz)
+      language sql stable as $$
+        select null::uuid, null::text, null::jsonb, null::text, null::int, null::timestamptz where false
+      $$;
     `);
     await db.exec(migrationSql);
     await db.exec(`
@@ -287,43 +321,66 @@ describe("courses and assessment", { timeout: 120000 }, () => {
         `insert into public.lesson_progress (user_id, lesson_id) values ('${student}', '20000000-0000-0000-0000-000000000001')`,
       ),
     );
-    await expectFail(() =>
-      asUser(db, other, () =>
-        db.query(
-          `insert into public.lesson_progress (user_id, lesson_id) values ('${student}', '20000000-0000-0000-0000-000000000001')`,
+    await db.exec(`
+      insert into public.lessons (id, course_id, title)
+      values ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', 'Fresh lesson');
+    `);
+    await expectMessage(
+      () =>
+        asUser(db, other, () =>
+          db.query(
+            `insert into public.lesson_progress (user_id, lesson_id) values ('${student}', '20000000-0000-0000-0000-000000000004')`,
+          ),
         ),
-      ),
+      /row-level security/i,
     );
 
+    const homeworkPath = `${student}/40000000-0000-0000-0000-000000000001/notes.pdf`;
+    await db.exec(`
+      insert into public.assignments (id, course_id, title, due_date)
+      values
+        ('40000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Grade check', now()),
+        ('40000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', 'File check', now());
+      insert into storage.objects (bucket_id, name)
+      values
+        ('homework-files', '${homeworkPath}'),
+        ('homework-files', '${student}/40000000-0000-0000-0000-000000000002/notes.pdf');
+    `);
     await asUser(db, student, () =>
       db.query(
         `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name)
-         values ('40000000-0000-0000-0000-000000000001', '${student}', 'private/notes.pdf', 'notes.pdf')`,
+         values ('40000000-0000-0000-0000-000000000001', '${student}', '${homeworkPath}', 'notes.pdf')`,
       ),
     );
-    await expectFail(() =>
-      asUser(db, student, () =>
-        db.query(
-          `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name, grade)
-           values ('40000000-0000-0000-0000-000000000001', '${student}', 'private/notes.pdf', 'notes.pdf', 20)`,
+    await expectMessage(
+      () =>
+        asUser(db, student, () =>
+          db.query(
+            `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name, grade)
+             values ('40000000-0000-0000-0000-000000000002', '${student}', '${student}/40000000-0000-0000-0000-000000000002/notes.pdf', 'notes.pdf', 20)`,
+          ),
         ),
-      ),
+      /students cannot set a grade/,
     );
-    await expectFail(() =>
-      asUser(db, student, () =>
-        db.query(
-          `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name)
-           values ('40000000-0000-0000-0000-000000000001', '${student}', 'private/notes.pdf', 'notes.pdf')`,
+    await expectMessage(
+      () =>
+        asUser(db, student, () =>
+          db.query(
+            `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name)
+             values ('40000000-0000-0000-0000-000000000001', '${student}', '${homeworkPath}', 'notes.pdf')`,
+          ),
         ),
-      ),
+      /resubmission is closed/,
     );
-    await expectFail(() =>
-      asUser(db, student, () =>
-        db.query(
-          `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name)
-           values ('40000000-0000-0000-0000-000000000001', '${other}', 'private/run.exe', 'run.exe')`,
+    await expectMessage(
+      () =>
+        asUser(db, student, () =>
+          db.query(
+            `insert into public.homework_submissions (assignment_id, user_id, file_url, file_name)
+             values ('40000000-0000-0000-0000-000000000003', '${student}', '${student}/40000000-0000-0000-0000-000000000003/run.exe', 'run.exe')`,
+          ),
         ),
-      ),
+      /file type is not allowed/,
     );
     const grade = await db.query(
       `select grade from public.homework_submissions where user_id = '${student}'`,

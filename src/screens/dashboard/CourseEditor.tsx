@@ -5,6 +5,7 @@ import { useParams } from '@/src/lib/next-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useCourseLessons, useCreateLesson, useCreateExercise } from '@/src/hooks/useCourses';
+import { matchingAnswerIsValid } from '@/lib/assessment/grade';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
@@ -92,7 +93,8 @@ export default function CourseEditor() {
   const createExercise = useCreateExercise();
   const courseStatus = useMutation({
     mutationFn: async (values: { is_published?: boolean; archived?: boolean }) => {
-      const { error } = await supabase.from('courses').update(values).eq('id', courseId!).eq('teacher_id', course?.teacher_id ?? '');
+      if (!courseId || !course?.teacher_id) throw new Error('This course cannot be updated.');
+      const { error } = await supabase.from('courses').update(values).eq('id', courseId).eq('teacher_id', course.teacher_id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['course', courseId] }),
@@ -175,8 +177,8 @@ export default function CourseEditor() {
       toast.error('The answer is true or false');
       return;
     }
-    if (exType === 'matching' && !exCorrect.includes('=')) {
-      toast.error('Write pairs as left=right, separated by |');
+    if (exType === 'matching' && !matchingAnswerIsValid(exCorrect)) {
+      toast.error('Write unique pairs as left=right, separated by |');
       return;
     }
     createExercise.mutate(
@@ -285,12 +287,12 @@ export default function CourseEditor() {
               <DialogContent>
                 <DialogHeader><DialogTitle>Add Lesson</DialogTitle></DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-2"><Label>Title</Label><Input value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} /></div>
-                  <div className="space-y-2"><Label>Learning objectives</Label><Textarea value={lessonObjectives} onChange={(e) => setLessonObjectives(e.target.value)} rows={2} /></div>
-                  <div className="space-y-2"><Label>Explanation</Label><Textarea value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} rows={6} /></div>
-                  <div className="space-y-2"><Label>Examples</Label><Textarea value={lessonExamples} onChange={(e) => setLessonExamples(e.target.value)} rows={3} /></div>
-                  <div className="space-y-2"><Label>Summary</Label><Textarea value={lessonSummary} onChange={(e) => setLessonSummary(e.target.value)} rows={2} /></div>
-                  <div className="space-y-2"><Label>Resource link</Label><Input value={lessonResource} onChange={(e) => setLessonResource(e.target.value)} placeholder="https://" /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-title">Title</Label><Input id="lesson-title" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-objectives">Learning objectives</Label><Textarea id="lesson-objectives" value={lessonObjectives} onChange={(e) => setLessonObjectives(e.target.value)} rows={2} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-explanation">Explanation</Label><Textarea id="lesson-explanation" value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} rows={6} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-examples">Examples</Label><Textarea id="lesson-examples" value={lessonExamples} onChange={(e) => setLessonExamples(e.target.value)} rows={3} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-summary">Summary</Label><Textarea id="lesson-summary" value={lessonSummary} onChange={(e) => setLessonSummary(e.target.value)} rows={2} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-resource">Resource link</Label><Input id="lesson-resource" value={lessonResource} onChange={(e) => setLessonResource(e.target.value)} placeholder="https://" /></div>
                   <div className="space-y-2"><Label>YouTube Video URL (optional)</Label><Input value={lessonVideoUrl} onChange={(e) => setLessonVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></div>
                   <Button onClick={handleAddLesson} disabled={createLesson.isPending}>Add Lesson</Button>
                 </div>
@@ -329,8 +331,9 @@ export default function CourseEditor() {
                     <DialogHeader><DialogTitle>Add Exercise</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Type</Label>
+                        <Label htmlFor="exercise-type">Type</Label>
                         <select
+                          id="exercise-type"
                           value={exType}
                           onChange={(e) => setExType(e.target.value)}
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -409,7 +412,10 @@ export default function CourseEditor() {
                         <Label>Points</Label>
                         <Input type="number" value={exPoints} onChange={(e) => setExPoints(Number(e.target.value))} min={1} />
                       </div>
-                      <Button onClick={handleAddExercise} disabled={createExercise.isPending || !exCorrect || exOptions.length < 2}>
+                      <Button
+                        onClick={handleAddExercise}
+                        disabled={createExercise.isPending || !exQuestion || !exCorrect || (exType === 'multiple_choice' && exOptions.length < 2)}
+                      >
                         Add Exercise
                       </Button>
                     </div>

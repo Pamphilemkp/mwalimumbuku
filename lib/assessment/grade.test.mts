@@ -1,8 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { gradeAnswer } from "./grade.ts";
-import { authorizeHomeworkDownload, HOMEWORK_URL_SECONDS, validateHomeworkFile } from "./files.ts";
+import { gradeAnswer, matchingAnswerIsValid } from "./grade.ts";
+import { authorizeHomeworkDownload, HOMEWORK_URL_SECONDS, resolveHomeworkObjectPath, validateHomeworkFile } from "./files.ts";
 
 const base = {
   points: 10,
@@ -49,6 +49,8 @@ describe("gradeAnswer", () => {
     assert.equal(half.status === "graded" && half.points, 5);
     assert.equal(allOrNothing.status === "graded" && allOrNothing.points, 0);
     assert.deepEqual(rejected, { status: "rejected", reason: "invalid" });
+    assert.equal(matchingAnswerIsValid("cat=chat|dog=chien"), true);
+    assert.equal(matchingAnswerIsValid("cat=chat|CAT=chien"), false);
   });
 
   it("stops another attempt after the limit and does not change an academic grade", () => {
@@ -74,9 +76,18 @@ describe("homework files", () => {
 
   it("issues a short-lived path only for the caller's own file", () => {
     const owner = "11111111-1111-1111-1111-111111111111";
+    const other = "22222222-2222-2222-2222-222222222222";
     const granted = authorizeHomeworkDownload({ path: `${owner}/notes.pdf`, callerId: owner, nowMs: 1_000 });
     assert.equal(granted?.expiresAtMs, 1_000 + HOMEWORK_URL_SECONDS * 1000);
     assert.equal(authorizeHomeworkDownload({ path: "someone/notes.pdf", callerId: owner, nowMs: 1_000 }), null);
     assert.equal(authorizeHomeworkDownload({ path: `${owner}/../notes.pdf`, callerId: owner, nowMs: 1_000 }), null);
+    const origin = "https://example.supabase.co";
+    const stored = `${owner}/33333333-3333-3333-3333-333333333333/notes.pdf`;
+    assert.equal(
+      resolveHomeworkObjectPath(`${origin}/storage/v1/object/public/homework-files/${stored}`, owner, origin),
+      stored,
+    );
+    assert.equal(resolveHomeworkObjectPath(`https://evil.example/storage/v1/object/public/homework-files/${stored}`, owner, origin), null);
+    assert.equal(resolveHomeworkObjectPath(`${other}/33333333-3333-3333-3333-333333333333/notes.pdf`, owner, origin), null);
   });
 });

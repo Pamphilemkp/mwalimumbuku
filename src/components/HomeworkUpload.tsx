@@ -46,7 +46,16 @@ export default function HomeworkUpload({ assignmentId, onUploaded }: HomeworkUpl
         file_url: decision.path,
         file_name: file.name,
       });
-      if (error) throw error;
+      if (error) {
+        const { data: saved } = await supabase
+          .from('homework_submissions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('file_url', decision.path)
+          .maybeSingle();
+        if (!saved) await supabase.storage.from('homework-files').remove([decision.path]);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Devoir soumis avec succès !');

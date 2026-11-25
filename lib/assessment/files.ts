@@ -44,6 +44,32 @@ export function isStoredHomeworkPath(path: string): boolean {
   return extension !== null && EXTENSIONS.has(extension);
 }
 
+export function resolveHomeworkObjectPath(fileUrl: string, studentId: string, storageOrigin: string): string | null {
+  if (!safeSegment(studentId)) return null;
+  const raw = fileUrl.trim();
+  let path = raw;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    let parsed: URL;
+    let origin: URL;
+    try {
+      parsed = new URL(raw);
+      origin = new URL(storageOrigin);
+    } catch {
+      return null;
+    }
+    if (parsed.origin !== origin.origin) return null;
+    const marker = "/storage/v1/object/";
+    const at = parsed.pathname.indexOf(marker);
+    if (at < 0) return null;
+    let rest = decodeURIComponent(parsed.pathname.slice(at + marker.length));
+    if (rest.startsWith("public/")) rest = rest.slice("public/".length);
+    if (!rest.startsWith("homework-files/")) return null;
+    path = rest.slice("homework-files/".length);
+  }
+  if (!isStoredHomeworkPath(path) || !path.startsWith(`${studentId}/`)) return null;
+  return path;
+}
+
 export function authorizeHomeworkDownload(input: {
   path: string;
   callerId: string;

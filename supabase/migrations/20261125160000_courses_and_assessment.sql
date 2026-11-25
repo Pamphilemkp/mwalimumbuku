@@ -84,11 +84,7 @@ CREATE POLICY "Parents read linked lesson progress"
   ON public.lesson_progress
   FOR SELECT TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM public.parent_student AS link
-      WHERE link.parent_id = auth.uid()
-        AND link.student_id = lesson_progress.user_id
-    )
+    public.parent_of(auth.uid(), lesson_progress.user_id)
   );
 
 DROP POLICY IF EXISTS "Teachers read course lesson progress" ON public.lesson_progress;
@@ -236,6 +232,8 @@ $$;
 REVOKE ALL ON FUNCTION public.check_answer(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.check_answer(uuid, text) TO authenticated;
 
+DROP FUNCTION IF EXISTS public.get_lesson_exercises(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_lesson_exercises(_lesson_id uuid)
 RETURNS TABLE(id uuid, question text, options jsonb, exercise_type text, points int, created_at timestamptz, attempt_limit int)
 LANGUAGE sql
@@ -347,9 +345,24 @@ BEGIN
   IF NEW.grade IS NOT NULL OR NEW.teacher_comment IS NOT NULL OR NEW.status IS DISTINCT FROM 'pending' THEN
     RAISE EXCEPTION 'students cannot set a grade';
   END IF;
-  IF NEW.file_name !~* '\.(pdf|jpe?g|png|webp)$' THEN
+  IF NEW.file_name !~* '\.(pdf|jpe?g|png|webp)$'
+     OR NEW.file_url !~* '\.(pdf|jpe?g|png|webp)$' THEN
     RAISE EXCEPTION 'file type is not allowed';
   END IF;
+  IF position('..' in NEW.file_url) > 0
+     OR NEW.file_url !~ ('^' || NEW.user_id::text || '/[^/]+(/[^/]+)?$') THEN
+    RAISE EXCEPTION 'file path is not allowed';
+  END IF;
+  IF to_regclass('storage.objects') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1
+       FROM storage.objects AS object
+       WHERE object.bucket_id = 'homework-files'
+         AND object.name = NEW.file_url
+     ) THEN
+    RAISE EXCEPTION 'file is missing';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext(NEW.user_id::text), hashtext(NEW.assignment_id::text));
   SELECT assignment.allow_resubmit INTO _allowed
   FROM public.assignments AS assignment
   WHERE assignment.id = NEW.assignment_id;
@@ -370,3 +383,13 @@ DROP TRIGGER IF EXISTS homework_submissions_resubmit ON public.homework_submissi
 CREATE TRIGGER homework_submissions_resubmit
   BEFORE INSERT ON public.homework_submissions
   FOR EACH ROW EXECUTE FUNCTION public.enforce_homework_resubmit();
+
+DO $$
+BEGIN
+  IF to_regclass('storage.buckets') IS NOT NULL THEN
+    UPDATE storage.buckets
+    SET file_size_limit = 5242880,
+        allowed_mime_types = ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+    WHERE id = 'homework-files';
+  END IF;
+END $$;

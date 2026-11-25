@@ -40,6 +40,11 @@ function pairs(value: string): Map<string, string> | null {
   return map;
 }
 
+export function matchingAnswerIsValid(value: string): boolean {
+  const parsed = pairs(value);
+  return parsed !== null && parsed.size > 0;
+}
+
 export function gradeAnswer(input: GradeInput): GradeResult {
   if (!EXERCISE_TYPES.includes(input.type as ExerciseType)) return { status: "rejected", reason: "invalid" };
   if (!Number.isInteger(input.points) || input.points < 0 || input.points > 100) return { status: "rejected", reason: "invalid" };

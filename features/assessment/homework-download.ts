@@ -1,7 +1,8 @@
 "use server";
 
-import { HOMEWORK_URL_SECONDS, isStoredHomeworkPath } from "@/lib/assessment/files";
+import { HOMEWORK_URL_SECONDS, resolveHomeworkObjectPath } from "@/lib/assessment/files";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabasePublicEnv } from "@/lib/supabase/env";
 import { loadAppSession } from "@/services/auth/session";
 
 export async function homeworkDownloadAction(submissionId: string): Promise<{ url: string | null }> {
@@ -14,13 +15,14 @@ export async function homeworkDownloadAction(submissionId: string): Promise<{ ur
     .select("file_url, user_id")
     .eq("id", submissionId)
     .maybeSingle();
-  if (error || !data || typeof data.file_url !== "string" || !isStoredHomeworkPath(data.file_url)) {
-    return { url: null };
-  }
+  const studentId = typeof data?.user_id === "string" ? data.user_id : "";
+  const fileUrl = typeof data?.file_url === "string" ? data.file_url : "";
+  const path = error || !data ? null : resolveHomeworkObjectPath(fileUrl, studentId, getSupabasePublicEnv().url);
+  if (!path) return { url: null };
 
   const { data: signed, error: signError } = await supabase.storage
     .from("homework-files")
-    .createSignedUrl(data.file_url, HOMEWORK_URL_SECONDS);
+    .createSignedUrl(path, HOMEWORK_URL_SECONDS);
   if (signError || !signed?.signedUrl) return { url: null };
   return { url: signed.signedUrl };
 }

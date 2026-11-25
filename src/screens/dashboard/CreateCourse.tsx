@@ -124,30 +124,36 @@ export default function CreateCourse() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Education stage</Label>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-semibold">Education stage</legend>
                 <div className="grid grid-cols-3 gap-2">
                   {([
                     ['', 'Any'],
                     ['primary', 'Primary'],
                     ['secondary', 'Secondary'],
                   ] as const).map(([value, label]) => (
-                    <button
+                    <label
                       key={label}
-                      type="button"
-                      onClick={() => setStage(value)}
                       className={cn(
-                        'rounded-xl border px-4 py-3 text-sm font-medium transition-all',
+                        'rounded-xl border px-4 py-3 text-center text-sm font-medium transition-all',
                         stage === value
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border text-muted-foreground hover:border-primary/30'
                       )}
                     >
+                      <input
+                        type="radio"
+                        name="education-stage"
+                        value={value}
+                        checked={stage === value}
+                        onChange={() => setStage(value)}
+                        className="sr-only"
+                      />
                       {label}
-                    </button>
+                    </label>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Level</Label>
