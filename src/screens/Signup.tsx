@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, Navigate } from '@/src/lib/next-router';
 import { motion } from 'framer-motion';
 import { signUp, AppRole } from '@/src/lib/auth';
@@ -11,7 +11,7 @@ import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
-import { Mail, Lock, User, Phone, MapPin, GraduationCap, Briefcase, Users } from 'lucide-react';
+import { Mail, Lock, User, Phone, MapPin, GraduationCap, Briefcase, Users, type LucideIcon } from 'lucide-react';
 import { toast } from '@/src/components/ui/sonner';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import LanguageSwitcher from '@/src/components/LanguageSwitcher';
@@ -19,7 +19,16 @@ import PasswordStrength from '@/src/components/PasswordStrength';
 import AvatarUpload from '@/src/components/AvatarUpload';
 const logo = "/logo.png";
 
-type Section = { icon: any; title: string };
+function SignupSection({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3 rounded-lg border border-border/60 bg-card/50 p-4">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <Icon className="h-4 w-4 text-primary" /> {title}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
 
 export default function Signup() {
   const { t } = useLanguage();
@@ -175,15 +184,6 @@ export default function Signup() {
     );
   }
 
-  const Section = ({ icon: Icon, title, children }: any) => (
-    <div className="space-y-3 rounded-lg border border-border/60 bg-card/50 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Icon className="h-4 w-4 text-primary" /> {title}
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
-
   return (
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-2/5 items-center justify-center p-12 sticky top-0 h-screen" style={{ background: 'var(--gradient-hero)' }}>
@@ -207,7 +207,7 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <Section icon={User} title="Type de compte">
+            <SignupSection icon={User} title="Type de compte">
               <div className="space-y-2">
                 <Label>{t.auth.iAmA}</Label>
                 <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
@@ -219,9 +219,9 @@ export default function Signup() {
                 </Select>
                 <p className="text-xs text-muted-foreground">Les comptes Enseignant sont créés par un administrateur.</p>
               </div>
-            </Section>
+            </SignupSection>
 
-            <Section icon={Lock} title="Identifiants de connexion">
+            <SignupSection icon={Lock} title="Identifiants de connexion">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="email">{t.auth.email} *</Label>
@@ -239,9 +239,9 @@ export default function Signup() {
                   <PasswordStrength password={password} />
                 </div>
               </div>
-            </Section>
+            </SignupSection>
 
-            <Section icon={User} title="Identité">
+            <SignupSection icon={User} title="Identité">
               <AvatarUpload value={avatarUrl} onChange={setAvatarUrl} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2 space-y-2">
@@ -269,9 +269,9 @@ export default function Signup() {
                   </>
                 )}
               </div>
-            </Section>
+            </SignupSection>
 
-            <Section icon={MapPin} title="Coordonnées">
+            <SignupSection icon={MapPin} title="Coordonnées">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Téléphone *</Label>
@@ -305,11 +305,11 @@ export default function Signup() {
                   <Input value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
               </div>
-            </Section>
+            </SignupSection>
 
             {role === 'student' && (
               <>
-                <Section icon={GraduationCap} title="Scolarité">
+                <SignupSection icon={GraduationCap} title="Scolarité">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2 sm:col-span-2">
                       <Label>Nom de l'école *</Label>
@@ -344,9 +344,9 @@ export default function Signup() {
                       <Textarea rows={2} value={academicGoals} onChange={(e) => setAcademicGoals(e.target.value)} />
                     </div>
                   </div>
-                </Section>
+                </SignupSection>
 
-                <Section icon={Users} title="Parent / Tuteur">
+                <SignupSection icon={Users} title="Parent / Tuteur">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2 sm:col-span-2">
                       <Label>Nom du tuteur</Label>
@@ -361,12 +361,12 @@ export default function Signup() {
                       <Input type="email" value={guardianEmail} onChange={(e) => setGuardianEmail(e.target.value)} />
                     </div>
                   </div>
-                </Section>
+                </SignupSection>
               </>
             )}
 
             {role === 'parent' && (
-              <Section icon={Briefcase} title="Informations parent">
+              <SignupSection icon={Briefcase} title="Informations parent">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Profession</Label>
@@ -391,7 +391,7 @@ export default function Signup() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">Vous pourrez ajouter les détails de chaque enfant depuis votre tableau de bord.</p>
-              </Section>
+              </SignupSection>
             )}
 
             <Button type="submit" className="w-full" size="lg" disabled={loading}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from '@/src/lib/next-router';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useAuth } from '@/src/hooks/useAuth';
@@ -20,6 +20,7 @@ export default function TeacherOnboarding() {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const edited = useRef(false);
   const [data, setData] = useState<any>({
     full_name: '', avatar_url: '', phone: '', address: '', country: 'RDC', city: '',
     preferred_language: 'fr', qualification: '', years_experience: 0,
@@ -29,12 +30,15 @@ export default function TeacherOnboarding() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+    if (!userId) return;
+    let cancelled = false;
     (async () => {
       const [{ data: p }, { data: tp }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('teacher_profiles').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('teacher_profiles').select('*').eq('user_id', userId).maybeSingle(),
       ]);
+      if (cancelled || edited.current) return;
       const av: any = tp?.availability ?? {};
       setData((d: any) => ({
         ...d, ...(p ?? {}), ...(tp ?? {}),
@@ -46,9 +50,13 @@ export default function TeacherOnboarding() {
       }));
       if (p?.onboarding_step) setStep(Math.min(p.onboarding_step, STEPS.length - 1));
     })();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
-  const set = (k: string, v: any) => setData((d: any) => ({ ...d, [k]: v }));
+  const set = (k: string, v: any) => {
+    edited.current = true;
+    setData((d: any) => ({ ...d, [k]: v }));
+  };
 
   const saveStep = async (nextStep: number, complete = false) => {
     if (!user) return;
