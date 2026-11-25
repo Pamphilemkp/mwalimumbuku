@@ -1,8 +1,24 @@
 # Mwalimu Mbuku — Next.js Migration Plan
 
+## Status after the root transformation
+
+Phase 1 is in the tree. The Next.js app is the repository root, the Vite app is gone, and `vercel.json` no longer rewrites every route to `index.html`. Staging notes are in [README.md](README.md). What moved and what did not is [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md).
+
+The text below is the 24 November 2026 plan. Where it disagrees with the phase that landed, the phase wins:
+
+- The Vite source was not moved to `legacy/`. It remains at commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`.
+- There is no `apps/web` and no second application directory.
+- Session refresh lives in `proxy.ts` (`proxy()`). There is no `middleware.ts`.
+- Public env names are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Do not add `lib/supabase/admin.ts`. Privileged keys stay in the existing Supabase edge functions.
+- Roles remain `student`, `parent`, `teacher`, and `admin`.
+- The production domain is unchanged.
+
+Route steps 1–8 in the table below are not done. Removing Vite (the old step 9) happened before those routes were ported. Recover screens from the commit above. Do not recreate a Vite app to do it.
+
 Audit date: 24 November 2026 (Asia/Nicosia).
 
-This plan does not migrate anything. It says whether a move is justified, how to keep the data, and in what order to move the UI.
+This plan, as written on that date, did not migrate anything. It said whether a move was justified, how to keep the data, and in what order to move the UI.
 
 ## 1. Recommendation
 
@@ -52,9 +68,9 @@ Next.js (App Router) on Vercel
   ├─ app/auth/callback/        Supabase session exchange
   ├─ app/api/stripe/webhook/   service role, signature checked
   └─ lib/supabase/
-       client.ts               browser, anon key
-       server.ts               cookies, anon key, user session
-       admin.ts                service role, server-only, never imported by client
+       client.ts               browser, publishable key, cookies
+       server.ts               cookies, publishable key, user session
+       (no admin client)       privileged keys stay in Supabase edge functions
 
 Supabase (unchanged project)
   Postgres + RLS + triggers + RPCs
@@ -183,7 +199,7 @@ The games can stay a client chunk. They are already local after download. Do not
 
 | Risk | Why it happens | Mitigation |
 | --- | --- | --- |
-| Service role imported into a client component | `admin.ts` looks convenient | ESLint `no-restricted-imports` on `server-only` modules. `import 'server-only'` at the top of `admin.ts` |
+| Privileged key imported into a client component | A server-only helper looks convenient | Do not add `lib/supabase/admin.ts`. Keep privileged keys in the existing edge functions. `import 'server-only'` stays on `lib/supabase/server.ts` |
 | Two sources of grading | A server action reimplements `check_answer` | Call the RPC |
 | Session split-brain | Vite localStorage and Next cookies on one origin | One origin, one storage, cut over per route group |
 | Broken reset emails | Hardcoded Vercel and Lovable origins | Centralize the site URL in one env var, used by signup, reset, and Stripe return URLs |

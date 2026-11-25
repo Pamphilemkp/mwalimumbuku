@@ -1,5 +1,7 @@
 # Mwalimu Mbuku — Database and Backend Audit
 
+The root Next.js transformation did not modify `supabase/migrations`, edge functions, or data. Generated types cited as `src/integrations/supabase/types.ts` are in commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`.
+
 Audit date: 24 November 2026 (Asia/Nicosia).
 
 This report describes the database **as the SQL migrations define it**, applied in filename order. The live Supabase project was not queried. Dashboard edits that were never committed would not appear here.

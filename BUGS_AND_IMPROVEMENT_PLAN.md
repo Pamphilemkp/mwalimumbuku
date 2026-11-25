@@ -1,5 +1,7 @@
 # Mwalimu Mbuku — Bugs and Improvement Plan
 
+The defects below were found in the Vite client and in Postgres policies. Moving the Next.js shell to the repository root did not fix them and did not change schema. The Vite files named here are at commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`.
+
 Audit date: 24 November 2026 (Asia/Nicosia).
 
 Each item says whether it is **confirmed** (read in source or measured) or **likely** (follows from the source, not executed against the hosted project). No exploit steps are included. Fixes are described as outcomes, not as patches, because this audit does not change the application.

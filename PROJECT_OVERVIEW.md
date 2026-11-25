@@ -1,7 +1,9 @@
 # Mwalimu Mbuku — Project Overview
 
+The running application is the Next.js app at the repository root. See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) and [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md). This overview is the 24 November 2026 audit of the Vite product. The Vite source it cites is commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. Schema and data were not changed by the root transformation.
+
 Audit date: 24 November 2026 (Asia/Nicosia).  
-Scope: the repository as it exists on `main` at the time of this audit. No application code, schema, or data was changed.
+Scope: the repository as it existed on `main` at the time of this audit. No application code, schema, or data was changed by the audit.
 
 This file is the entry point. The other reports are:
 

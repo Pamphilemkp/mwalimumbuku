@@ -1,5 +1,7 @@
 # Mwalimu Mbuku — Features and Modules
 
+The paths below are the Vite tree at commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. They are not in the working tree. What is running, and the later port for each feature, is [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md). This catalog does not claim official DRC curriculum compliance.
+
 Audit date: 24 November 2026 (Asia/Nicosia).
 
 Status labels mean:

@@ -1,8 +1,56 @@
 # Mwalimu Mbuku — Technical Architecture
 
-Audit date: 24 November 2026 (Asia/Nicosia). Companion to [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
+The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
 
-Findings below are from the repository. “Confirmed” means the source says this. The hosted project was not queried.
+The 24 November 2026 audit below the historical heading describes the Vite SPA that used to be this repository. That UI is not the running app. Its source is commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. Supabase migrations, edge functions, and storage were not changed by the move.
+
+## Current system
+
+```
+Browser
+  └─ Next.js 16.4.6 App Router (repository root, Node)
+       ├─ Server Components: /, /login, /dashboard, /holding
+       ├─ Client Components: login form, logout button
+       ├─ proxy.ts: refresh session cookies, send anonymous users
+       │            off /dashboard and /holding to /login
+       └─ Server authorization (layout and each protected page):
+            auth.getClaims() + one user_roles row
+            missing / duplicate / invalid / error → /holding
+            no session → /login
+
+@supabase/ssr cookie client, public publishable key
+  ├─ PostgREST  (this phase reads user_roles only)
+  ├─ Auth       (password sign-in)
+  └─ Edge functions, storage, and other tables stay in Supabase
+     and are not called by this phase's UI
+```
+
+`proxy.ts` is not the authorization boundary. A page that needs a user loads the session again with `loadAppSession`.
+
+There is one `package.json` and one npm lockfile. `npm run dev` runs `next dev`. There is no `apps/web`, no `src/`, no `vite.config.ts`, and no Vite dependency. `vercel.json` sets the framework to Next.js and does not rewrite paths to `index.html`.
+
+| Concern | Implementation |
+| --- | --- |
+| Language | TypeScript 5.9, `strict: true` |
+| UI runtime | React 19.2.9 and `react-dom` 19.2.9. `@types/react` 19.2.9. `@types/react-dom` 19.2.7 |
+| Framework | Next.js 16.4.6, `eslint-config-next` 16.4.6. `proxy.ts` exports `proxy()` |
+| Routing | App Router. `/` redirects through the auth gate. `/login` is public. `/dashboard` and `/holding` are protected |
+| Styling | Tailwind 3.4 at the root, `app/globals.css` |
+| Auth SDK | `@supabase/ssr` 0.12.7 and `@supabase/supabase-js` 2.119.2. Cookies, not `localStorage` |
+| Public env | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (literal `process.env` reads) |
+| Cookies | `httpOnly: false` so the browser client can read them. `secure: true` when `NODE_ENV` is `production` |
+| Cache | Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store` |
+| Headers | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. No content-security policy |
+| Tests | `node --test` on the auth gate, role resolution, sign-out, env access, cookie flags, and proxy headers. No live Supabase calls |
+| Roles | `student`, `parent`, `teacher`, `admin` only |
+
+Educational screens (courses, homework, assessments, games, XP, attendance, messaging, and the rest of the Vite product) are not in this app. The inventory names the recovery path for each one. This architecture does not claim official DRC curriculum compliance.
+
+Staging is a separate Vercel project with the root directory set to the repository root. The production domain is unchanged.
+
+## Historical audit (Vite SPA at 8afba27)
+
+Audit date: 24 November 2026 (Asia/Nicosia). Findings in this historical section are from that tree. “Confirmed” means the source said this. The hosted project was not queried. Do not read the present tense below as a description of the current repository layout.
 
 ## 1. System shape
 
