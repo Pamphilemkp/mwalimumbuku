@@ -44,6 +44,7 @@ export default function TeacherHome() {
     { label: t.teacherHome.createCourse, href: '/dashboard/create-course', icon: PlusCircle, desc: t.teacherHome.createCourseDesc, color: 'from-accent/10 to-accent/5' },
     { label: t.teacherHome.studentResults, href: '/dashboard/results', icon: ClipboardList, desc: t.teacherHome.studentResultsDesc, color: 'from-secondary/10 to-secondary/5' },
     { label: t.teacherHome.messagesAction, href: '/dashboard/messages', icon: MessageCircle, desc: t.teacherHome.messagesDesc, color: 'from-primary/10 to-primary/5' },
+    { label: t.nav.attendance, href: '/dashboard/attendance', icon: ClipboardList, desc: t.teacherHome.attendanceDesc, color: 'from-secondary/10 to-secondary/5' },
   ];
 
   return (

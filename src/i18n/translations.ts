@@ -52,6 +52,7 @@ export const translations = {
       support: 'Contactez-nous',
       myStudents: 'Mes élèves',
       liveSessions: 'Sessions live',
+      attendance: 'Présences',
       assignments: 'Devoirs',
       grades: 'Mes notes',
       submissions: 'Soumissions',
@@ -214,6 +215,7 @@ export const translations = {
       studentResultsDesc: 'Voir les performances',
       messagesAction: 'Messages',
       messagesDesc: 'Communiquer avec les parents',
+      attendanceDesc: 'Enregistrer les présences de vos classes',
       recentCourses: 'Cours récents',
     },
 
@@ -639,6 +641,7 @@ export const translations = {
       support: 'Contact Us',
       myStudents: 'My Students',
       liveSessions: 'Live Sessions',
+      attendance: 'Attendance',
       assignments: 'Assignments',
       grades: 'My Grades',
       submissions: 'Submissions',
@@ -797,6 +800,7 @@ export const translations = {
       studentResultsDesc: 'View student performance',
       messagesAction: 'Messages',
       messagesDesc: 'Communicate with parents',
+      attendanceDesc: 'Record attendance for your classes',
       recentCourses: 'Recent Courses',
     },
 

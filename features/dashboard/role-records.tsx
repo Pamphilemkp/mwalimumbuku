@@ -1,3 +1,5 @@
+import { isActiveLink } from "@/lib/portals/access";
+import { missingSchema } from "@/lib/portals/schema";
 import { createClient } from "@/lib/supabase/server";
 import { loadAppSession } from "@/services/auth/session";
 
@@ -68,9 +70,15 @@ export async function RoleRecords() {
     );
   }
 
-  const links = await supabase.from("parent_student").select("student_id").eq("parent_id", session.userId);
-  if (links.error) return null;
-  const studentIds = (links.data ?? []).map((row) => row.student_id).filter((id): id is string => typeof id === "string");
+  const links = await supabase.from("parent_student").select("student_id, status").eq("parent_id", session.userId);
+  const linkRows = links.error && missingSchema(links.error)
+    ? (await supabase.from("parent_student").select("student_id").eq("parent_id", session.userId)).data
+    : links.data;
+  if (links.error && !missingSchema(links.error)) return null;
+  const studentIds = (linkRows ?? [])
+    .filter((row) => isActiveLink("status" in row ? (row.status as string | null) : null))
+    .map((row) => row.student_id)
+    .filter((id): id is string => typeof id === "string");
   if (studentIds.length === 0) return null;
   const memberships = await supabase
     .from("school_memberships")

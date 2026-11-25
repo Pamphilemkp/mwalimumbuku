@@ -52,7 +52,7 @@ export default function SupportPage() {
             <LifeBuoy className="h-6 w-6 text-primary" /> Contactez-nous
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isStaff ? 'Centre de modération du support' : 'Posez vos questions, signalez un problème, obtenez de l\'aide'}
+            {isStaff ? 'Les demandes de votre périmètre. La liste se met à jour quand vous revenez sur cette page.' : 'Posez vos questions. La liste se met à jour quand vous revenez sur cette page.'}
           </p>
         </div>
         {!isStaff && (

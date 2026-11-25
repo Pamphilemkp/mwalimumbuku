@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from 'react';
+import { scheduleLiveSessionAction, updateLiveSessionStatusAction } from '@/features/portals/actions';
+import { formatNicosia } from '@/lib/portals/time';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useAuth } from '@/src/hooks/useAuth';
@@ -13,20 +15,18 @@ import { Badge } from '@/src/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/src/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Video, Plus, Trash2, ExternalLink, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from '@/src/components/ui/sonner';
 
 export default function TeacherLiveSessionsPage() {
   const { user, role } = useAuth();
   const qc = useQueryClient();
-  const isStaff = role === 'teacher' || role === 'admin';
+  const isTeacher = role === 'teacher';
   const [open, setOpen] = useState(false);
   const [courseId, setCourseId] = useState('');
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [link, setLink] = useState('');
   const [when, setWhen] = useState('');
-  const [duration, setDuration] = useState(60);
 
   const { data: courses } = useQuery({
     queryKey: ['my-courses-for-sessions', user?.id],
@@ -34,7 +34,7 @@ export default function TeacherLiveSessionsPage() {
       const { data } = await supabase.from('courses').select('id,title').eq('teacher_id', user!.id);
       return data ?? [];
     },
-    enabled: !!user && isStaff,
+    enabled: !!user && isTeacher,
   });
 
   const { data: sessions } = useQuery({
@@ -46,20 +46,20 @@ export default function TeacherLiveSessionsPage() {
       return data ?? [];
     },
     enabled: !!user,
+    refetchOnWindowFocus: true,
   });
 
   const create = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any).from('live_sessions').insert({
-        course_id: courseId, teacher_id: user!.id, title, description: desc || null,
-        meeting_url: link || null, scheduled_at: new Date(when).toISOString(),
-        duration_minutes: duration,
+      const result = await scheduleLiveSessionAction({
+        courseId, title, description: desc, instructions: desc, link,
+        startsAt: when, status: 'scheduled',
       });
-      if (error) throw error;
+      if (!result.ok) throw new Error(result.message);
     },
     onSuccess: () => {
       toast.success('Session programmée');
-      setOpen(false); setTitle(''); setDesc(''); setLink(''); setWhen(''); setDuration(60); setCourseId('');
+      setOpen(false); setTitle(''); setDesc(''); setLink(''); setWhen(''); setCourseId('');
       qc.invalidateQueries({ queryKey: ['live-sessions'] });
     },
     onError: (e: any) => toast.error(e.message),
@@ -80,9 +80,9 @@ export default function TeacherLiveSessionsPage() {
           <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-foreground">
             <Video className="h-6 w-6 text-primary" /> Sessions en direct
           </h1>
-          <p className="text-sm text-muted-foreground">Programmez et gérez vos sessions live avec vos élèves</p>
+          <p className="text-sm text-muted-foreground">{"Enregistrez l'horaire et les instructions d'accès. La liste se met à jour quand vous revenez sur cette page. Les heures sont affichées pour Nicosie."}</p>
         </div>
-        {isStaff && (
+        {isTeacher && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="mr-1 h-4 w-4" /> Programmer</Button></DialogTrigger>
             <DialogContent>
@@ -98,11 +98,11 @@ export default function TeacherLiveSessionsPage() {
                   </Select>
                 </div>
                 <div><Label>Titre</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-                <div><Label>Description</Label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} /></div>
-                <div><Label>Lien de réunion (Zoom, Google Meet…)</Label><Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" /></div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label>Date & heure</Label><Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></div>
-                  <div><Label>Durée (min)</Label><Input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} /></div>
+                <div><Label>{"Instructions d'accès"}</Label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} placeholder="Écrivez comment les élèves rejoignent la séance." /></div>
+                <div><Label>Lien facultatif</Label><Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" /></div>
+                <div>
+                  <Label>Début (Nicosie)</Label>
+                  <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
                 </div>
                 <Button className="w-full" onClick={() => create.mutate()}
                   disabled={create.isPending || !courseId || !title || !when}>
@@ -126,8 +126,8 @@ export default function TeacherLiveSessionsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base">{s.title}</CardTitle>
-                  <Badge variant={upcoming ? 'default' : 'secondary'} className="text-[10px]">
-                    {upcoming ? 'À venir' : 'Passée'}
+                  <Badge variant={s.status === 'live' ? 'default' : 'secondary'} className="text-[10px]">
+                    {s.status || (upcoming ? 'scheduled' : 'ended')}
                   </Badge>
                 </div>
               </CardHeader>
@@ -136,7 +136,8 @@ export default function TeacherLiveSessionsPage() {
                 {s.description && <p className="text-sm">{s.description}</p>}
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  {format(dt, 'PPP p')} · {s.duration_minutes} min
+                  {formatNicosia(s.scheduled_at)} · {s.duration_minutes} min
+                  {s.access_instructions || s.description ? <span className="block text-muted-foreground">{s.access_instructions || s.description}</span> : null}
                 </div>
                 <div className="flex gap-2 pt-1">
                   {s.meeting_url && (
@@ -146,10 +147,17 @@ export default function TeacherLiveSessionsPage() {
                       </a>
                     </Button>
                   )}
-                  {isStaff && (
-                    <Button size="sm" variant="ghost" onClick={() => del.mutate(s.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                  {isTeacher && (
+                    <>
+                      {(['scheduled', 'live', 'ended', 'cancelled'] as const).map((status) => (
+                        <Button key={status} size="sm" variant="outline" onClick={() => updateLiveSessionStatusAction(s.id, status).then(() => qc.invalidateQueries({ queryKey: ['live-sessions'] }))}>
+                          {status}
+                        </Button>
+                      ))}
+                      <Button size="sm" variant="ghost" onClick={() => del.mutate(s.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
