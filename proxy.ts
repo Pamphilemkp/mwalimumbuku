@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sessionFromClaims } from "@/lib/auth/claims";
+import { anonymousMustSignIn, loginNextPath } from "@/lib/auth/routes";
 import { applyProxyResponseHeaders } from "@/lib/http/security-headers";
 import { supabaseCookieOptions } from "@/lib/supabase/cookie-options";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
@@ -13,17 +15,10 @@ import { getSupabasePublicEnv } from "@/lib/supabase/env";
  * getAll/setAll, then auth.getClaims() so the access token is verified
  * and refreshed before Server Components read it.
  *
- * proxy.ts is not the authorization boundary. Protected pages load the
- * session and the user_roles row again and fail closed on their own.
+ * An expired or invalid token is treated as no session. proxy.ts is not
+ * the authorization boundary. Protected pages load the session and the
+ * user_roles row again and fail closed on their own.
  */
-
-function isProtectedPath(pathname: string): boolean {
-  return pathname === "/dashboard" || pathname.startsWith("/dashboard/") || pathname === "/holding" || pathname.startsWith("/holding/");
-}
-
-function sendsAnonymousVisitorToLogin(pathname: string): boolean {
-  return pathname === "/" || isProtectedPath(pathname);
-}
 
 function copySessionHeaders(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((cookie) => {
@@ -40,6 +35,16 @@ function seal(response: NextResponse): NextResponse {
   return response;
 }
 
+function loginRedirect(request: NextRequest): NextResponse {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  const next = loginNextPath(request.nextUrl.pathname);
+  if (next) loginUrl.searchParams.set("next", next);
+  const redirectResponse = NextResponse.redirect(loginUrl);
+  return redirectResponse;
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -48,10 +53,8 @@ export async function proxy(request: NextRequest) {
   try {
     ({ url, publishableKey } = getSupabasePublicEnv());
   } catch {
-    if (sendsAnonymousVisitorToLogin(request.nextUrl.pathname)) {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      return seal(NextResponse.redirect(loginUrl));
+    if (anonymousMustSignIn(request.nextUrl.pathname)) {
+      return seal(loginRedirect(request));
     }
     return seal(supabaseResponse);
   }
@@ -78,12 +81,10 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data, error } = await supabase.auth.getClaims();
-  const hasUser = !error && typeof data?.claims?.sub === "string" && data.claims.sub.length > 0;
+  const hasUser = sessionFromClaims(error, data?.claims?.sub).hasUser;
 
-  if (!hasUser && sendsAnonymousVisitorToLogin(request.nextUrl.pathname)) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    const redirectResponse = NextResponse.redirect(loginUrl);
+  if (!hasUser && anonymousMustSignIn(request.nextUrl.pathname)) {
+    const redirectResponse = loginRedirect(request);
     copySessionHeaders(supabaseResponse, redirectResponse);
     return seal(redirectResponse);
   }

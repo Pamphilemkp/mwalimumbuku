@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { applyProxyResponseHeaders, BASELINE_SECURITY_HEADERS, PROXY_CACHE_CONTROL } from "./security-headers.ts";
+import {
+  applyAuthNavigationHeaders,
+  applyProxyResponseHeaders,
+  BASELINE_SECURITY_HEADERS,
+  PROXY_CACHE_CONTROL,
+} from "./security-headers.ts";
 
 describe("proxy response headers", () => {
   it("sets private no-store and the baseline security headers", () => {
@@ -18,6 +23,16 @@ describe("proxy response headers", () => {
     assert.equal(headers.get("X-Frame-Options"), "DENY");
     assert.equal(headers.get("X-Content-Type-Options"), "nosniff");
     assert.equal(headers.get("Referrer-Policy"), "strict-origin-when-cross-origin");
+    assert.equal(headers.get("Content-Security-Policy"), "frame-ancestors 'none'");
+    assert.equal(headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=(), payment=()");
+  });
+
+  it("stops auth redirects from sending the one-time code in Referer", () => {
+    const headers = new Headers();
+    applyAuthNavigationHeaders(headers);
+    assert.equal(headers.get("Cache-Control"), "private, no-store");
+    assert.equal(headers.get("Referrer-Policy"), "no-referrer");
+    assert.equal(headers.get("X-Frame-Options"), "DENY");
   });
 
   it("seals every proxy return, including the anonymous redirect", () => {

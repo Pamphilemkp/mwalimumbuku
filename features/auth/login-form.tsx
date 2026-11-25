@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { signInAction } from "@/features/auth/actions";
+import { safeInternalPath } from "@/lib/auth/redirect";
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: { nextPath: string | null }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,35 +16,24 @@ export function LoginForm() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setError("Enter both an email and a password.");
-      return;
-    }
-
     setPending(true);
+
     try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
+      const result = await signInAction({
+        email,
         password,
+        next: nextPath ?? undefined,
       });
 
-      if (signInError) {
-        const unreachable =
-          signInError.name === "AuthRetryableFetchError" || signInError.status === 0;
-        setError(
-          unreachable
-            ? "We could not reach the sign-in service. Try again in a few minutes."
-            : "Those details were not accepted. Check the email and password and try again.",
-        );
+      if (result.status === "failed") {
+        setError(result.message);
         setPending(false);
         return;
       }
 
+      const destination = safeInternalPath(result.redirectTo) ?? "/dashboard";
       router.refresh();
-      router.push("/dashboard");
+      router.push(destination);
     } catch {
       setError("Sign-in is unavailable right now. Try again in a few minutes.");
       setPending(false);
@@ -61,6 +52,7 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           inputMode="email"
+          maxLength={254}
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -76,6 +68,7 @@ export function LoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
+          maxLength={72}
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -94,6 +87,11 @@ export function LoginForm() {
       >
         {pending ? "Signing in…" : "Sign in"}
       </button>
+      <p className="text-sm">
+        <Link href="/forgot-password" className="font-medium text-primary underline-offset-2 hover:underline">
+          Forgot your password?
+        </Link>
+      </p>
     </form>
   );
 }

@@ -112,8 +112,8 @@ Shared rules for every port below:
 | Feature | Source at 8afba27 | Later path |
 | --- | --- | --- |
 | Signup (student and parent only) | `src/pages/Signup.tsx`, `src/lib/auth.ts` (`signUp`) | `app/(auth)/signup/page.tsx`. Send the same `full_name` and `role` metadata `handle_new_user` expects. Offer only `student` and `parent`. Do not add teacher or admin self-serve. Do not hardcode the production domain in a new redirect; use the request origin. |
-| Forgot password | `src/pages/ForgotPassword.tsx`, `src/lib/auth.ts` (`resetPassword`) | `app/(auth)/forgot-password/page.tsx`. |
-| Reset password | `src/pages/ResetPassword.tsx` | `app/(auth)/reset-password/page.tsx`. |
+| Forgot password | `app/(auth)/forgot-password/page.tsx` | Implemented in phase 2. Do not port `src/pages/ForgotPassword.tsx`. The server action calls `resetPasswordForEmail` and always returns the same acceptance message. |
+| Reset password | `app/(auth)/reset-password/page.tsx`, `app/auth/callback/route.ts` | Implemented in phase 2. Do not port `src/pages/ResetPassword.tsx`. The form is shown only after `auth.getClaims()` succeeds. |
 | Vite login | `src/pages/Login.tsx`, `src/lib/auth.ts` (`signIn`) | Already replaced by the root login. Do not port `localStorage` from `src/integrations/supabase/client.ts` or `src/hooks/useAuth.tsx`. |
 | Vite sign-out | `src/lib/auth.ts` (`signOut`), `src/hooks/useAuth.tsx` | Already replaced. Do not port `window.__queryClient`. |
 | Role lookup that treats a missing role as usable | `src/lib/auth.ts` (`getUserRole` uses `maybeSingle`), `src/components/ProtectedRoute.tsx` | Do not port. The root `resolveRole` fails closed on missing, duplicate, invalid, and error. |

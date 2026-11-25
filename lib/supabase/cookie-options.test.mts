@@ -14,13 +14,28 @@ afterEach(() => {
 describe("supabaseCookieOptions", () => {
   it("sets secure only in production and leaves httpOnly false", () => {
     env.NODE_ENV = "production";
-    assert.deepEqual(supabaseCookieOptions(), { secure: true, httpOnly: false });
+    assert.deepEqual(supabaseCookieOptions(), {
+      secure: true,
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+    });
 
     env.NODE_ENV = "development";
-    assert.deepEqual(supabaseCookieOptions(), { secure: false, httpOnly: false });
+    assert.deepEqual(supabaseCookieOptions(), {
+      secure: false,
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+    });
 
     env.NODE_ENV = "test";
-    assert.deepEqual(supabaseCookieOptions(), { secure: false, httpOnly: false });
+    assert.deepEqual(supabaseCookieOptions(), {
+      secure: false,
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+    });
   });
 
   it("passes the same cookie options to the browser, server, and proxy clients", () => {

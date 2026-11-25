@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Role } from "@/services/auth/get-role";
-import { decideAuthGate } from "@/services/auth/auth-gate";
+import { APP_ROLES, authorize } from "@/lib/auth/access";
 import { loadAppSession } from "@/services/auth/session";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -12,9 +12,13 @@ const ROLE_LABEL: Record<Role, string> = {
 
 export default async function DashboardPage() {
   const session = await loadAppSession();
-  const target = decideAuthGate(session.hasSession, session.resolution);
-  if (target !== "/dashboard" || session.resolution?.status !== "ok") {
-    redirect(target);
+  const decision = authorize({
+    hasSession: session.hasSession,
+    resolution: session.resolution,
+    allowedRoles: APP_ROLES,
+  });
+  if (decision !== "allow" || session.resolution?.status !== "ok") {
+    redirect(decision === "login" ? "/login" : "/holding");
   }
 
   const role = session.resolution.role;

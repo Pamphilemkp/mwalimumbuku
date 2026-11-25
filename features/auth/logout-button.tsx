@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { runSignOut } from "@/features/auth/sign-out";
+import { signOutAction } from "@/features/auth/actions";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -14,19 +13,19 @@ export function LogoutButton() {
     setError(null);
     setPending(true);
 
-    const result = await runSignOut(() => {
-      const supabase = createClient();
-      return supabase.auth.signOut();
-    });
-
-    if (result.status === "failed") {
-      setError(result.message);
+    try {
+      const result = await signOutAction();
+      if (result.status === "failed") {
+        setError(result.message);
+        setPending(false);
+        return;
+      }
+      router.refresh();
+      router.push("/login");
+    } catch {
+      setError("Sign-out is unavailable right now. Try again in a few minutes.");
       setPending(false);
-      return;
     }
-
-    router.refresh();
-    router.push("/login");
   }
 
   return (
