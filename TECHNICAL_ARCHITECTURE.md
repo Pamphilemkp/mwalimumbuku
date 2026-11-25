@@ -1,6 +1,6 @@
 # Mwalimu Mbuku — Technical Architecture
 
-The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
+The repository root is the Next.js application. Companion documents: [README.md](README.md), [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md), [SECURITY.md](SECURITY.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md).
 
 The 24 November 2026 audit below the historical heading describes the Vite SPA that used to be this repository. That UI is not the running app. Its source is commit `8afba27b4f5a43b16aa231f8132bf696fcce1452`. Supabase migrations, edge functions, and storage were not changed by the move.
 
@@ -47,9 +47,17 @@ There is one `package.json` and one npm lockfile. `npm run dev` runs `next dev`.
 | Tests | `node --test` on auth decisions, redirects, rate limits, recovery, role checks, env access, cookie flags, and proxy headers. No live Supabase calls |
 | Roles | `student`, `parent`, `teacher`, `admin` only. The signed-in user cannot submit a role |
 
-Educational screens (courses, homework, assessments, games, XP, attendance, messaging, and the rest of the Vite product) are not in this app. The inventory names the recovery path for each one. This architecture does not claim official DRC curriculum compliance.
+Educational screens (courses, homework, assessments, games, XP, attendance, messaging, and the rest of the product) are served from `src/screens`. The database behind them is still one shared tenant. [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md) is the design for schools, classes, and isolation. It is not applied: there is no migration and no new table in this change. This architecture does not claim official DRC curriculum compliance.
 
 Staging is a separate Vercel project with the root directory set to the repository root. The production domain is unchanged.
+
+## Multi-school design
+
+The running schema has no `schools` table. A student's school and class are text on `student_profiles`. `admin` in `user_roles` is a platform-wide role. Parents link to children in `parent_student` with no school. Courses belong to `courses.teacher_id`.
+
+The design keeps `student`, `parent`, `teacher`, and `admin` as the only global roles. School administration is a membership on one school, because one person may administer one school and teach at another. A global school-admin role would grant that power on every school.
+
+Details, the ERD, table definitions, RLS, indexes, the data migration plan, and rollback are in [MULTI_SCHOOL_ARCHITECTURE.md](MULTI_SCHOOL_ARCHITECTURE.md).
 
 ## Historical audit (Vite SPA at 8afba27)
 
