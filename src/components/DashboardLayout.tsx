@@ -44,6 +44,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   ],
   teacher: [
     { labelKey: 'dashboard', href: '/dashboard', icon: Home },
+    { labelKey: 'academic', href: '/dashboard/academic', icon: GraduationCap },
     { labelKey: 'myCourses', href: '/dashboard/my-courses', icon: BookOpen },
     { labelKey: 'createCourse', href: '/dashboard/create-course', icon: PlusCircle },
     { labelKey: 'studentResults', href: '/dashboard/results', icon: ClipboardList },
@@ -72,6 +73,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   admin: [
     { labelKey: 'dashboard', href: '/dashboard', icon: Home },
     { labelKey: 'users', href: '/dashboard/users', icon: Users },
+    { labelKey: 'academic', href: '/dashboard/academic', icon: GraduationCap },
     { labelKey: 'assignTeachers', href: '/dashboard/assign-teachers', icon: UserCheck },
     { labelKey: 'announcements', href: '/dashboard/announcements', icon: Megaphone },
     { labelKey: 'manageCourses', href: '/dashboard/manage-courses', icon: BookOpen },
