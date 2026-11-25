@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, Link } from '@/src/lib/next-router';
 import { useCourseLessons, useLessonExercises, useUserResults } from '@/src/hooks/useCourses';
 import { supabase } from '@/src/integrations/supabase/client';
@@ -20,7 +20,7 @@ import { useLanguage } from '@/src/i18n/LanguageContext';
 
 export default function CourseView() {
   const { courseId } = useParams();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { t } = useLanguage();
   const { data: subscription } = useSubscription();
   const userIsPremium = checkPremium(subscription) || role === 'admin' || role === 'teacher';
@@ -70,8 +70,13 @@ export default function CourseView() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<Record<string, { is_correct: boolean; points_earned: number }>>({});
   const [retaking, setRetaking] = useState<Set<string>>(new Set());
+  const gradingRef = useRef(new Set<string>());
+  const [, setGradingTick] = useState(0);
 
   const handleAnswer = async (exerciseId: string, answer: string) => {
+    if (gradingRef.current.has(exerciseId)) return;
+    gradingRef.current.add(exerciseId);
+    setGradingTick((value) => value + 1);
     setAnswers((prev) => ({ ...prev, [exerciseId]: answer }));
 
     const { data, error } = await supabase.rpc('check_answer', {
@@ -79,12 +84,14 @@ export default function CourseView() {
       _answer: answer,
     });
 
+    gradingRef.current.delete(exerciseId);
+    setGradingTick((value) => value + 1);
     if (error) {
       toast.error(error.message);
       return;
     }
 
-    const result = data as { is_correct: boolean; points_earned: number };
+    const result = data as { is_correct: boolean; points_earned: number; feedback?: string };
     setSubmitted((prev) => ({ ...prev, [exerciseId]: result }));
     setRetaking((prev) => { const n = new Set(prev); n.delete(exerciseId); return n; });
     toast(result.is_correct ? t.courseView.correctFeedback : t.courseView.incorrectFeedback);
@@ -101,6 +108,20 @@ export default function CourseView() {
   };
 
   const selectedLesson = lessons?.find((l) => l.id === selectedLessonId);
+
+  useEffect(() => {
+    if (!user || !selectedLessonId) return;
+    let cancelled = false;
+    void supabase
+      .from('lesson_progress')
+      .insert({ user_id: user.id, lesson_id: selectedLessonId })
+      .then(({ error }) => {
+        if (cancelled || !error || error.code === '23505') return;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, selectedLessonId]);
 
   // Calculate lesson completion
   const lessonCompletion = useMemo(() => {
@@ -218,9 +239,23 @@ export default function CourseView() {
                     );
                   })()}
 
+                  {selectedLesson.objectives && (
+                    <p className="mt-3 text-sm text-foreground/90 whitespace-pre-wrap"><span className="font-semibold">Objectives. </span>{selectedLesson.objectives}</p>
+                  )}
                   <div className="mt-4 prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap">
                     {selectedLesson.content || t.courseView.noContent}
                   </div>
+                  {selectedLesson.examples && (
+                    <p className="mt-4 text-sm text-foreground/90 whitespace-pre-wrap"><span className="font-semibold">Examples. </span>{selectedLesson.examples}</p>
+                  )}
+                  {selectedLesson.summary && (
+                    <p className="mt-4 text-sm text-foreground/90 whitespace-pre-wrap"><span className="font-semibold">Summary. </span>{selectedLesson.summary}</p>
+                  )}
+                  {selectedLesson.resource_url?.startsWith('https://') && (
+                    <a href={selectedLesson.resource_url} className="mt-4 inline-block text-sm text-primary underline" target="_blank" rel="noreferrer">
+                      Learning resource
+                    </a>
+                  )}
                 </div>
 
                 {/* Exercise progress bar */}
@@ -257,6 +292,7 @@ export default function CourseView() {
                       const isRetaking = retaking.has(ex.id);
                       const activeResult = currentResult || (!isRetaking && previousResult ? { is_correct: previousResult.is_correct, points_earned: previousResult.points_earned } : null);
                       const isSubmitted = !!activeResult;
+                      const isGrading = gradingRef.current.has(ex.id);
                       const userAnswer = answers[ex.id] || (!isRetaking && previousResult?.answer);
 
                       return (
@@ -283,7 +319,7 @@ export default function CourseView() {
                               return (
                                 <button
                                   key={opt}
-                                  disabled={isSubmitted}
+                                  disabled={isSubmitted || isGrading}
                                   onClick={() => handleAnswer(ex.id, opt)}
                                   className={cn(
                                     'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-all',
@@ -299,6 +335,27 @@ export default function CourseView() {
                               );
                             })}
                           </div>
+                          {ex.exercise_type !== 'multiple_choice' && (
+                            <form
+                              className="mt-3 flex flex-col gap-2 sm:flex-row"
+                              onSubmit={(event) => {
+                                event.preventDefault();
+                                const value = answers[ex.id]?.trim();
+                                if (value && !isSubmitted && !isGrading) void handleAnswer(ex.id, value);
+                              }}
+                            >
+                              <input
+                                value={answers[ex.id] ?? ''}
+                                disabled={isSubmitted || isGrading}
+                                onChange={(event) => setAnswers((prev) => ({ ...prev, [ex.id]: event.target.value }))}
+                                placeholder={ex.exercise_type === 'matching' ? 'cat=chat|dog=chien' : 'Answer'}
+                                className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
+                              />
+                              <Button type="submit" size="sm" disabled={isSubmitted || isGrading || !answers[ex.id]?.trim()}>
+                                Check
+                              </Button>
+                            </form>
+                          )}
                           {isSubmitted && (
                             <div className="mt-3 flex items-center justify-between">
                               <div className="flex items-center gap-2">

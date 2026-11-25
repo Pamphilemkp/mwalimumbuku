@@ -5,6 +5,7 @@ import { useParams } from '@/src/lib/next-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useCourseLessons, useCreateLesson, useCreateExercise } from '@/src/hooks/useCourses';
+import { matchingAnswerIsValid } from '@/lib/assessment/grade';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
@@ -26,6 +27,10 @@ export default function CourseEditor() {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonContent, setLessonContent] = useState('');
+  const [lessonObjectives, setLessonObjectives] = useState('');
+  const [lessonExamples, setLessonExamples] = useState('');
+  const [lessonSummary, setLessonSummary] = useState('');
+  const [lessonResource, setLessonResource] = useState('');
   const [lessonVideoUrl, setLessonVideoUrl] = useState('');
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
@@ -37,11 +42,14 @@ export default function CourseEditor() {
   const [exOptions, setExOptions] = useState<string[]>([]);
   const [exOptionInput, setExOptionInput] = useState('');
   const [exPoints, setExPoints] = useState(10);
+  const [exType, setExType] = useState('multiple_choice');
+  const [exPartial, setExPartial] = useState(false);
 
   // Assignment form
   const [assignTitle, setAssignTitle] = useState('');
   const [assignDesc, setAssignDesc] = useState('');
   const [assignDueDate, setAssignDueDate] = useState<Date | undefined>();
+  const [allowResubmit, setAllowResubmit] = useState(false);
 
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
@@ -83,9 +91,17 @@ export default function CourseEditor() {
 
   const createLesson = useCreateLesson();
   const createExercise = useCreateExercise();
+  const courseStatus = useMutation({
+    mutationFn: async (values: { is_published?: boolean; archived?: boolean }) => {
+      if (!courseId || !course?.teacher_id) throw new Error('This course cannot be updated.');
+      const { error } = await supabase.from('courses').update(values).eq('id', courseId).eq('teacher_id', course.teacher_id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['course', courseId] }),
+  });
 
   const createAssignment = useMutation({
-    mutationFn: async (values: { title: string; description: string; due_date: string; course_id: string }) => {
+    mutationFn: async (values: { title: string; description: string; due_date: string; course_id: string; allow_resubmit?: boolean }) => {
       const { data, error } = await supabase.from('assignments').insert(values).select().single();
       if (error) throw error;
       return data;
@@ -120,12 +136,26 @@ export default function CourseEditor() {
   const handleAddLesson = () => {
     if (!lessonTitle) return;
     createLesson.mutate(
-      { title: lessonTitle, content: lessonContent, course_id: courseId!, sort_order: (lessons?.length ?? 0) + 1, video_url: lessonVideoUrl || undefined } as any,
+      {
+        title: lessonTitle,
+        content: lessonContent,
+        course_id: courseId!,
+        sort_order: (lessons?.length ?? 0) + 1,
+        ...(lessonVideoUrl ? { video_url: lessonVideoUrl } : {}),
+        ...(lessonObjectives ? { objectives: lessonObjectives } : {}),
+        ...(lessonExamples ? { examples: lessonExamples } : {}),
+        ...(lessonSummary ? { summary: lessonSummary } : {}),
+        ...(lessonResource ? { resource_url: lessonResource } : {}),
+      },
       {
         onSuccess: () => {
           toast.success('Lesson added!');
           setLessonTitle('');
           setLessonContent('');
+          setLessonObjectives('');
+          setLessonExamples('');
+          setLessonSummary('');
+          setLessonResource('');
           setLessonVideoUrl('');
           setLessonDialogOpen(false);
         },
@@ -136,13 +166,31 @@ export default function CourseEditor() {
 
   const handleAddExercise = () => {
     if (!exQuestion || !exCorrect || !selectedLessonId) return;
-    const finalOptions = exOptions.includes(exCorrect) ? exOptions : [...exOptions, exCorrect];
-    if (finalOptions.length < 2) {
+    const finalOptions = exType === 'multiple_choice'
+      ? (exOptions.includes(exCorrect) ? exOptions : [...exOptions, exCorrect])
+      : exOptions;
+    if (exType === 'multiple_choice' && finalOptions.length < 2) {
       toast.error('Add at least 2 options');
       return;
     }
+    if (exType === 'true_false' && !['true', 'false'].includes(exCorrect.trim().toLowerCase())) {
+      toast.error('The answer is true or false');
+      return;
+    }
+    if (exType === 'matching' && !matchingAnswerIsValid(exCorrect)) {
+      toast.error('Write unique pairs as left=right, separated by |');
+      return;
+    }
     createExercise.mutate(
-      { question: exQuestion, correct_answer: exCorrect, options: finalOptions, lesson_id: selectedLessonId, points: exPoints },
+      {
+        question: exQuestion,
+        correct_answer: exCorrect,
+        options: finalOptions,
+        lesson_id: selectedLessonId,
+        points: exPoints,
+        ...(exType !== 'multiple_choice' ? { exercise_type: exType } : {}),
+        ...(exPartial && exType === 'matching' ? { partial_credit: true } : {}),
+      },
       {
         onSuccess: () => {
           toast.success('Exercise added!');
@@ -161,7 +209,13 @@ export default function CourseEditor() {
   const handleAddAssignment = () => {
     if (!assignTitle || !assignDueDate) return;
     createAssignment.mutate(
-      { title: assignTitle, description: assignDesc, due_date: assignDueDate.toISOString(), course_id: courseId! },
+      {
+        title: assignTitle,
+        description: assignDesc,
+        due_date: assignDueDate.toISOString(),
+        course_id: courseId!,
+        ...(allowResubmit ? { allow_resubmit: true } : {}),
+      },
       {
         onSuccess: () => {
           toast.success('Assignment added!');
@@ -187,6 +241,31 @@ export default function CourseEditor() {
           <Badge variant={course?.is_published ? 'default' : 'outline'}>
             {course?.is_published ? 'Published' : 'Draft'}
           </Badge>
+          {course?.archived && <Badge variant="outline">Archived</Badge>}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={courseStatus.isPending}
+            onClick={() => courseStatus.mutate(
+              { is_published: !course?.is_published },
+              { onError: (e: Error) => toast.error(e.message) },
+            )}
+          >
+            {course?.is_published ? 'Unpublish' : 'Publish'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={courseStatus.isPending}
+            onClick={() => courseStatus.mutate(
+              { archived: !course?.archived },
+              { onError: (e: Error) => toast.error(e.message) },
+            )}
+          >
+            {course?.archived ? 'Restore' : 'Archive'}
+          </Button>
           {(course as any)?.deadline && (
             <Badge variant="outline" className="gap-1">
               <Calendar className="h-3 w-3" />
@@ -208,8 +287,12 @@ export default function CourseEditor() {
               <DialogContent>
                 <DialogHeader><DialogTitle>Add Lesson</DialogTitle></DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-2"><Label>Title</Label><Input value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} /></div>
-                  <div className="space-y-2"><Label>Content</Label><Textarea value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} rows={6} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-title">Title</Label><Input id="lesson-title" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-objectives">Learning objectives</Label><Textarea id="lesson-objectives" value={lessonObjectives} onChange={(e) => setLessonObjectives(e.target.value)} rows={2} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-explanation">Explanation</Label><Textarea id="lesson-explanation" value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} rows={6} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-examples">Examples</Label><Textarea id="lesson-examples" value={lessonExamples} onChange={(e) => setLessonExamples(e.target.value)} rows={3} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-summary">Summary</Label><Textarea id="lesson-summary" value={lessonSummary} onChange={(e) => setLessonSummary(e.target.value)} rows={2} /></div>
+                  <div className="space-y-2"><Label htmlFor="lesson-resource">Resource link</Label><Input id="lesson-resource" value={lessonResource} onChange={(e) => setLessonResource(e.target.value)} placeholder="https://" /></div>
                   <div className="space-y-2"><Label>YouTube Video URL (optional)</Label><Input value={lessonVideoUrl} onChange={(e) => setLessonVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></div>
                   <Button onClick={handleAddLesson} disabled={createLesson.isPending}>Add Lesson</Button>
                 </div>
@@ -248,9 +331,34 @@ export default function CourseEditor() {
                     <DialogHeader><DialogTitle>Add Exercise</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
+                        <Label htmlFor="exercise-type">Type</Label>
+                        <select
+                          id="exercise-type"
+                          value={exType}
+                          onChange={(e) => setExType(e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="multiple_choice">Multiple choice</option>
+                          <option value="true_false">True or false</option>
+                          <option value="short_answer">Short answer</option>
+                          <option value="fill_blank">Fill in the blank</option>
+                          <option value="matching">Matching</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
                         <Label>Question</Label>
                         <Input value={exQuestion} onChange={(e) => setExQuestion(e.target.value)} placeholder="What is 2+2?" />
                       </div>
+                      {exType !== 'multiple_choice' && (
+                        <div className="space-y-2">
+                          <Label>Correct answer</Label>
+                          <Input
+                            value={exCorrect}
+                            onChange={(e) => setExCorrect(e.target.value)}
+                            placeholder={exType === 'matching' ? 'cat=chat|dog=chien' : exType === 'true_false' ? 'true' : 'Answer'}
+                          />
+                        </div>
+                      )}
 
                       {/* Options builder */}
                       <div className="space-y-2">
@@ -292,13 +400,22 @@ export default function CourseEditor() {
                             <span className="text-primary font-medium">Correct: {exCorrect}</span>
                           )}
                         </p>
+                        {exType === 'matching' && (
+                          <label className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={exPartial} onChange={(e) => setExPartial(e.target.checked)} />
+                            Give partial credit for each correct pair
+                          </label>
+                        )}
                       </div>
 
                       <div className="space-y-2">
                         <Label>Points</Label>
                         <Input type="number" value={exPoints} onChange={(e) => setExPoints(Number(e.target.value))} min={1} />
                       </div>
-                      <Button onClick={handleAddExercise} disabled={createExercise.isPending || !exCorrect || exOptions.length < 2}>
+                      <Button
+                        onClick={handleAddExercise}
+                        disabled={createExercise.isPending || !exQuestion || !exCorrect || (exType === 'multiple_choice' && exOptions.length < 2)}
+                      >
                         Add Exercise
                       </Button>
                     </div>
@@ -361,6 +478,10 @@ export default function CourseEditor() {
                         </PopoverContent>
                       </Popover>
                     </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={allowResubmit} onChange={(e) => setAllowResubmit(e.target.checked)} />
+                      Allow a new submission after the work is returned
+                    </label>
                     <Button onClick={handleAddAssignment} disabled={createAssignment.isPending || !assignTitle || !assignDueDate}>Add Assignment</Button>
                   </div>
                 </DialogContent>

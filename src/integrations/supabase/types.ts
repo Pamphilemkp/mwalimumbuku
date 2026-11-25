@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       assignments: {
         Row: {
+          allow_resubmit: boolean
           course_id: string
           created_at: string
           description: string | null
@@ -24,6 +25,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          allow_resubmit?: boolean
           course_id: string
           created_at?: string
           description?: string | null
@@ -32,6 +34,7 @@ export type Database = {
           title: string
         }
         Update: {
+          allow_resubmit?: boolean
           course_id?: string
           created_at?: string
           description?: string | null
@@ -235,9 +238,11 @@ export type Database = {
       }
       courses: {
         Row: {
+          archived: boolean
           created_at: string
           deadline: string | null
           description: string | null
+          education_stage: string | null
           id: string
           is_open_enrollment: boolean
           is_premium: boolean
@@ -249,9 +254,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           deadline?: string | null
           description?: string | null
+          education_stage?: string | null
           id?: string
           is_open_enrollment?: boolean
           is_premium?: boolean
@@ -263,9 +270,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
           created_at?: string
           deadline?: string | null
           description?: string | null
+          education_stage?: string | null
           id?: string
           is_open_enrollment?: boolean
           is_premium?: boolean
@@ -304,32 +313,38 @@ export type Database = {
       }
       exercises: {
         Row: {
+          attempt_limit: number
           correct_answer: string
           created_at: string
           exercise_type: string
           id: string
           lesson_id: string
           options: Json | null
+          partial_credit: boolean
           points: number
           question: string
         }
         Insert: {
+          attempt_limit?: number
           correct_answer: string
           created_at?: string
           exercise_type?: string
           id?: string
           lesson_id: string
           options?: Json | null
+          partial_credit?: boolean
           points?: number
           question: string
         }
         Update: {
+          attempt_limit?: number
           correct_answer?: string
           created_at?: string
           exercise_type?: string
           id?: string
           lesson_id?: string
           options?: Json | null
+          partial_credit?: boolean
           points?: number
           question?: string
         }
@@ -476,8 +491,12 @@ export type Database = {
           content: string | null
           course_id: string
           created_at: string
+          examples: string | null
           id: string
+          objectives: string | null
+          resource_url: string | null
           sort_order: number
+          summary: string | null
           title: string
           updated_at: string
           video_url: string | null
@@ -487,8 +506,12 @@ export type Database = {
           content?: string | null
           course_id: string
           created_at?: string
+          examples?: string | null
           id?: string
+          objectives?: string | null
+          resource_url?: string | null
           sort_order?: number
+          summary?: string | null
           title: string
           updated_at?: string
           video_url?: string | null
@@ -498,8 +521,12 @@ export type Database = {
           content?: string | null
           course_id?: string
           created_at?: string
+          examples?: string | null
           id?: string
+          objectives?: string | null
+          resource_url?: string | null
           sort_order?: number
+          summary?: string | null
           title?: string
           updated_at?: string
           video_url?: string | null
@@ -513,6 +540,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lesson_progress: {
+        Row: {
+          completed_at: string
+          id: string
+          lesson_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          lesson_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          lesson_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       live_sessions: {
         Row: {
@@ -1230,6 +1278,7 @@ export type Database = {
       get_lesson_exercises: {
         Args: { _lesson_id: string }
         Returns: {
+          attempt_limit: number
           created_at: string
           exercise_type: string
           id: string

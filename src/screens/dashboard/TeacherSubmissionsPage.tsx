@@ -13,13 +13,14 @@ import { Label } from '@/src/components/ui/label';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/src/components/ui/dialog';
-import { NotebookPen, FileText, CheckCircle2, Clock, Download, User as UserIcon, Filter } from 'lucide-react';
+import { NotebookPen, FileText, CheckCircle2, Clock, User as UserIcon, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { usePagination } from '@/src/hooks/usePagination';
 import PaginationControls from '@/src/components/PaginationControls';
 import { cn } from '@/src/lib/utils';
+import { HomeworkFileButton } from '@/src/components/HomeworkFileButton';
 
 export default function TeacherSubmissionsPage() {
   const { user, role } = useAuth();
@@ -36,7 +37,7 @@ export default function TeacherSubmissionsPage() {
       // Admins can see all; teachers see their courses' submissions via RLS
       const { data, error } = await supabase
         .from('homework_submissions')
-        .select('*, assignments(title, due_date, course_id, courses(title, subject, teacher_id)), profiles:user_id(full_name, student_code)')
+        .select('*, assignments(title, due_date, course_id, allow_resubmit, courses(title, subject, teacher_id)), profiles:user_id(full_name, student_code)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -77,6 +78,21 @@ export default function TeacherSubmissionsPage() {
     },
     onError: (e: any) => toast.error(e?.message || 'Échec de l\'enregistrement.'),
     onSettled: () => setSaving(false),
+  });
+
+  const returnWork = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('homework_submissions')
+        .update({ status: 'returned' })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Devoir renvoyé. L\'élève peut soumettre une nouvelle version.');
+      qc.invalidateQueries({ queryKey: ['teacher-submissions'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Le renvoi a échoué.'),
   });
 
   const counts = {
@@ -151,9 +167,17 @@ export default function TeacherSubmissionsPage() {
                   )}
                 </div>
                 <div className="flex flex-col gap-2 shrink-0">
-                  <a href={s.file_url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" className="gap-1.5 w-full"><Download className="h-3.5 w-3.5" /> {s.file_name}</Button>
-                  </a>
+                  <HomeworkFileButton submissionId={s.id} label={s.file_name} />
+                  {s.assignments?.allow_resubmit && s.status !== 'returned' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={returnWork.isPending}
+                      onClick={() => returnWork.mutate(s.id)}
+                    >
+                      Renvoyer
+                    </Button>
+                  )}
                   <Button size="sm" onClick={() => openGrade(s)} className="gap-1.5">
                     <FileText className="h-3.5 w-3.5" /> {s.status === 'graded' ? 'Modifier la note' : 'Noter'}
                   </Button>
@@ -185,11 +209,8 @@ export default function TeacherSubmissionsPage() {
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Retour pédagogique pour l'élève…" />
             </div>
-            {selected?.file_url && (
-              <a href={selected.file_url} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline flex items-center gap-1.5">
-                <Download className="h-3.5 w-3.5" /> Télécharger la soumission
-              </a>
+            {selected?.id && (
+              <HomeworkFileButton submissionId={selected.id} label="Télécharger la soumission" />
             )}
           </div>
           <DialogFooter>

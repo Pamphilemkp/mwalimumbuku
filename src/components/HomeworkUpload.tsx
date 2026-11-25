@@ -8,6 +8,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Upload, FileText, Loader2 } from 'lucide-react';
 import { toast } from '@/src/components/ui/sonner';
+import { validateHomeworkFile } from '@/lib/assessment/files';
 
 interface HomeworkUploadProps {
   assignmentId: string;
@@ -23,25 +24,38 @@ export default function HomeworkUpload({ assignmentId, onUploaded }: HomeworkUpl
     mutationFn: async () => {
       if (!file || !user) throw new Error('No file selected');
 
-      const ext = file.name.split('.').pop();
-      const path = `${user.id}/${assignmentId}/${Date.now()}.${ext}`;
+      const extension = file.name.split('.').pop()?.toLowerCase() ?? 'pdf';
+      const decision = validateHomeworkFile({
+        fileName: file.name,
+        size: file.size,
+        ownerId: user.id,
+        callerId: user.id,
+        assignmentId,
+        objectName: `${Date.now()}.${extension}`,
+      });
+      if (!decision.ok) throw new Error('Choose a PDF or image under 5 MB.');
 
       const { error: uploadErr } = await supabase.storage
         .from('homework-files')
-        .upload(path, file);
+        .upload(decision.path, file);
       if (uploadErr) throw uploadErr;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('homework-files')
-        .getPublicUrl(path);
 
       const { error } = await supabase.from('homework_submissions').insert({
         assignment_id: assignmentId,
         user_id: user.id,
-        file_url: publicUrl,
+        file_url: decision.path,
         file_name: file.name,
       });
-      if (error) throw error;
+      if (error) {
+        const { data: saved } = await supabase
+          .from('homework_submissions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('file_url', decision.path)
+          .maybeSingle();
+        if (!saved) await supabase.storage.from('homework-files').remove([decision.path]);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Devoir soumis avec succès !');
@@ -57,7 +71,7 @@ export default function HomeworkUpload({ assignmentId, onUploaded }: HomeworkUpl
       <div className="relative flex-1">
         <Input
           type="file"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="cursor-pointer"
         />
