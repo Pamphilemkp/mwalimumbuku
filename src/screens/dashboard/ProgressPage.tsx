@@ -5,6 +5,7 @@ import { useUserResults } from '@/src/hooks/useCourses';
 import { Progress } from '@/src/components/ui/progress';
 import { BarChart3, CheckCircle2, XCircle } from 'lucide-react';
 import { Skeleton } from '@/src/components/ui/skeleton';
+import { StudentRewardPanel } from '@/features/rewards/panels';
 
 export default function ProgressPage() {
   const { t } = useLanguage();
@@ -23,6 +24,7 @@ export default function ProgressPage() {
         <h1 className="font-display text-3xl font-bold text-foreground">{t.progress.title}</h1>
         <p className="mt-1 text-muted-foreground">{t.progress.subtitle}</p>
       </div>
+      <StudentRewardPanel showBoard />
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-5">
           <BarChart3 className="mb-2 h-5 w-5 text-primary" />

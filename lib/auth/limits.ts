@@ -13,4 +13,5 @@ export const AUTH_LIMITS = {
   attendance: { limit: 40, windowMs: FIFTEEN_MINUTES },
   session: { limit: 12, windowMs: FIFTEEN_MINUTES },
   announcement: { limit: 5, windowMs: FIFTEEN_MINUTES },
+  game: { limit: 40, windowMs: FIFTEEN_MINUTES },
 } as const;

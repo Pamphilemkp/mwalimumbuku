@@ -1,122 +1,116 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { useLanguage } from '@/src/i18n/LanguageContext';
-import { cn } from '@/src/lib/utils';
-import { Star, Zap, Check } from 'lucide-react';
-import { Button } from '@/src/components/ui/button';
-import { Progress } from '@/src/components/ui/progress';
-import { toast } from '@/src/components/ui/sonner';
-import GameTimer from './GameTimer';
-import type { GameProps } from './types';
-import { TIME_LIMITS } from './types';
+import { useRef, useState } from "react";
+import { useLanguage } from "@/src/i18n/LanguageContext";
+import { cn } from "@/src/lib/utils";
+import { Check, Star, Zap } from "lucide-react";
+import { Button } from "@/src/components/ui/button";
+import { Progress } from "@/src/components/ui/progress";
+import { MIN_GAP_MS, mathValue, type Round } from "@/lib/games/engine";
+import GameTimer from "./GameTimer";
+import { useStamps } from "./useStamps";
 
-export default function MathGame({ onScore, difficulty, onGameEnd }: GameProps) {
+export default function MathGame({
+  round,
+  deadlineMs,
+  onComplete,
+}: {
+  round: Extract<Round, { game: "math" }>;
+  deadlineMs: number;
+  onComplete: (events: { game: "math"; answers: string[]; atMs: number[] }) => void;
+}) {
   const { t } = useLanguage();
-  const [num1, setNum1] = useState(0);
-  const [num2, setNum2] = useState(0);
-  const [op, setOp] = useState<'+' | '-' | '×' | '÷'>('+');
-  const [answer, setAnswer] = useState('');
-  const [score, setScore] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>([]);
   const [streak, setStreak] = useState(0);
-  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const [round, setRound] = useState(1);
-  const [running, setRunning] = useState(true);
-  const [elapsed, setElapsed] = useState(0);
-  const totalRounds = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 15;
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const done = useRef(false);
+  const busy = useRef(false);
+  const answersRef = useRef<string[]>([]);
+  const { mark, stamps } = useStamps(MIN_GAP_MS.math);
+  const problem = round.problems[index];
 
-  useEffect(() => {
-    if (!running) return;
-    const iv = setInterval(() => setElapsed(t => t + 1), 1000);
-    return () => clearInterval(iv);
-  }, [running]);
+  function finish(finalAnswers: string[]) {
+    if (done.current) return;
+    done.current = true;
+    onComplete({ game: "math", answers: finalAnswers, atMs: stamps.current.slice(0, finalAnswers.length) });
+  }
 
-  const newProblem = useCallback(() => {
-    const easyOps: ('+' | '-')[] = ['+', '-'];
-    const medOps: ('+' | '-' | '×')[] = ['+', '-', '×'];
-    const hardOps: ('+' | '-' | '×' | '÷')[] = ['+', '-', '×', '÷'];
-    const ops = difficulty === 'easy' ? easyOps : difficulty === 'medium' ? medOps : hardOps;
-    const o = ops[Math.floor(Math.random() * ops.length)];
-    const maxN = difficulty === 'easy' ? 10 : difficulty === 'medium' ? 20 : 50;
-    let a = Math.floor(Math.random() * maxN) + 1;
-    let b = Math.floor(Math.random() * (maxN / 2)) + 1;
-    if (o === '-' && b > a) [a, b] = [b, a];
-    if (o === '×') { a = Math.floor(Math.random() * 12) + 1; b = Math.floor(Math.random() * 10) + 1; }
-    if (o === '÷') { b = Math.floor(Math.random() * 10) + 1; a = b * (Math.floor(Math.random() * 10) + 1); }
-    setNum1(a); setNum2(b); setOp(o);
-    setAnswer(''); setFeedback(null);
-  }, [difficulty]);
-
-  useEffect(() => { newProblem(); }, [newProblem]);
-
-  const correctAnswer = useMemo(() => {
-    switch (op) {
-      case '+': return num1 + num2;
-      case '-': return num1 - num2;
-      case '×': return num1 * num2;
-      case '÷': return Math.floor(num1 / num2);
-    }
-  }, [num1, num2, op]);
-
-  const handleTimeUp = useCallback(() => {
-    setRunning(false);
-    onGameEnd?.(score, elapsed);
-  }, [score, elapsed, onGameEnd]);
-
-  const checkAnswer = () => {
-    if (!running) return;
-    let newScore = score;
-    if (parseInt(answer) === correctAnswer) {
-      const pts = 10 + streak * 2;
-      newScore = score + pts;
-      setScore(newScore); setStreak(s => s + 1); setFeedback('correct');
-      onScore(pts);
-      toast.success(`🎉 +${pts} ${t.points}!`);
+  function checkAnswer() {
+    if (done.current || busy.current || !problem) return;
+    if (mark() === null) return;
+    busy.current = true;
+    const expected = mathValue(problem);
+    const text = answer.trim();
+    const correct = /^-?\d+$/.test(text) && Number(text) === expected;
+    const nextAnswers = [...answersRef.current, text];
+    answersRef.current = nextAnswers;
+    setAnswers(nextAnswers);
+    if (correct) {
+      const gained = 10 + streak * 2;
+      setScore((current) => current + gained);
+      setStreak((current) => current + 1);
+      setFeedback("correct");
     } else {
-      setFeedback('wrong'); setStreak(0);
-      toast.error(`❌ ${t.games.answer}: ${correctAnswer}`);
+      setStreak(0);
+      setFeedback("wrong");
     }
-    setTimeout(() => {
-      if (round < totalRounds) { setRound(r => r + 1); newProblem(); }
-      else { setRunning(false); onGameEnd?.(newScore, elapsed); }
-    }, 1200);
-  };
+    window.setTimeout(() => {
+      if (nextAnswers.length >= round.problems.length) finish(nextAnswers);
+      else {
+        setIndex((current) => current + 1);
+        setAnswer("");
+        setFeedback(null);
+        busy.current = false;
+      }
+    }, 700);
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground flex-wrap gap-2">
-        <span>{t.games.round} {round}/{totalRounds}</span>
-        <div className="flex gap-3 items-center">
-          {streak > 0 && <span className="flex items-center gap-1 text-secondary"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> {streak}x</span>}
-          <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-secondary" /> {score}</span>
-          <GameTimer duration={TIME_LIMITS[difficulty]} running={running} onTimeUp={handleTimeUp} />
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground sm:text-sm">
+        <span>{t.games.round} {Math.min(index + 1, round.problems.length)}/{round.problems.length}</span>
+        <div className="flex items-center gap-3">
+          {streak > 0 ? <span className="flex items-center gap-1 text-secondary"><Zap className="h-4 w-4" /> {streak} {t.games.streak}</span> : null}
+          <span className="flex items-center gap-1"><Star className="h-4 w-4 text-secondary" /> {score}</span>
+          <GameTimer deadlineMs={deadlineMs} onTimeUp={() => finish(answersRef.current)} />
         </div>
       </div>
-      <Progress value={(round / totalRounds) * 100} className="h-2" />
-      {round <= totalRounds && running ? (
-        <div className="rounded-2xl border border-border bg-card p-4 sm:p-8 text-center space-y-4 sm:space-y-6">
+      <Progress value={(index / round.problems.length) * 100} className="h-2" />
+      {problem && !done.current ? (
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-4 text-center sm:p-8">
           <div className="flex items-center justify-center gap-2 sm:gap-3">
-            <span className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-primary/10 text-lg sm:text-2xl font-bold text-primary">{num1}</span>
-            <span className="text-lg sm:text-2xl font-bold text-foreground">{op}</span>
-            <span className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-accent/10 text-lg sm:text-2xl font-bold text-accent">{num2}</span>
-            <span className="text-lg sm:text-2xl font-bold text-foreground">=</span>
-            <span className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-muted text-lg sm:text-2xl font-bold text-foreground">?</span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-xl font-bold text-primary">{problem.a}</span>
+            <span className="text-2xl font-bold">{problem.op}</span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-xl font-bold text-accent">{problem.b}</span>
+            <span className="text-2xl font-bold">=</span>
           </div>
-          <div className="flex gap-2 max-w-xs mx-auto">
-            <input type="number" value={answer} onChange={e => setAnswer(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && checkAnswer()} placeholder="="
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-center text-lg font-bold text-foreground" />
-            <Button onClick={checkAnswer} disabled={!answer.trim()}><Check className="h-4 w-4" /></Button>
+          <div className="mx-auto flex max-w-xs gap-2">
+            <label className="sr-only" htmlFor="math-answer">{t.games.answer}</label>
+            <input
+              id="math-answer"
+              inputMode="numeric"
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") checkAnswer();
+              }}
+              className="h-11 flex-1 rounded-lg border border-border bg-background px-3 text-center text-lg font-bold"
+            />
+            <Button type="button" className="h-11 w-11" onClick={checkAnswer} disabled={answer.trim().length === 0 || busy.current} aria-label={t.games.answer}>
+              <Check className="h-4 w-4" />
+            </Button>
           </div>
-          {feedback && (
-            <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-              className={cn('text-base sm:text-lg font-bold', feedback === 'correct' ? 'text-primary' : 'text-destructive')}>
-              {feedback === 'correct' ? `✓ ${t.games.correctAnswer}` : `✗ ${correctAnswer}`}
-            </motion.p>
-          )}
+          {feedback ? (
+            <p className={cn("text-lg font-bold", feedback === "correct" ? "text-primary" : "text-destructive")} aria-live="polite">
+              {feedback === "correct" ? t.games.correctAnswer : `${t.games.answer}: ${mathValue(problem)}`}
+            </p>
+          ) : null}
         </div>
       ) : null}
+      <p className="sr-only">{answers.length}</p>
     </div>
   );
 }

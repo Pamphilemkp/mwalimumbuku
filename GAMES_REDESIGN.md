@@ -37,7 +37,7 @@ Reject the payload when any of these is true:
 - a timestamp is missing, not an integer, or negative
 - a timestamp is greater than `durationSeconds * 1000`
 - two timestamps are closer than the game minimum gap
-- the last timestamp is greater than `serverElapsedMs + 1500` (the claim is ahead of the server clock)
+- the last timestamp is greater than `serverElapsedMs + 250` (the claim is ahead of the server clock by more than a small skew)
 - `serverElapsedMs` is negative or greater than 36 hours
 
 Minimum gaps: math 300ms, colors 250ms, words 400ms, alphabet 120ms, memory 180ms, typing 40ms per key.
@@ -169,7 +169,7 @@ Calculations:
 Timing:
 
 - Gaps below the minimum are rejected.
-- A last event later than `serverElapsedMs + 1500` is rejected.
+- A last event later than `serverElapsedMs + 250` is rejected, including a fast script that stamps a 2 second answer onto a 100ms request.
 - A submit 2 hours after start is still gradable when the events fit in the duration. WPM uses `min(serverElapsedMs, durationMs)`, so the late submit does not invent a 2-second clock.
 - The deadline callback fires once.
 

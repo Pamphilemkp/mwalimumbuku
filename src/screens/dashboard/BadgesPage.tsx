@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/src/components/ui/button';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/src/components/ui/skeleton';
+import { StudentRewardPanel } from '@/features/rewards/panels';
 
 export default function BadgesPage() {
   const { t } = useLanguage();
@@ -34,13 +35,15 @@ export default function BadgesPage() {
         <h1 className="font-display text-3xl font-bold text-foreground">{t.badges.title}</h1>
         <p className="mt-1 text-muted-foreground">{t.badges.yourPoints} {totalPoints}</p>
       </div>
+      <StudentRewardPanel />
       {allBadges?.length === 0 ? (
         <p className="text-muted-foreground">{t.badges.noBadges}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {allBadges?.map((badge, i) => {
             const earned = earnedIds.has(badge.id);
-            const eligible = totalPoints >= badge.points_required && !earned;
+            const achievement = Boolean(badge.achievement_code);
+            const eligible = !achievement && totalPoints >= badge.points_required && !earned;
             return (
               <motion.div key={badge.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
                 className={`rounded-xl border p-5 ${earned ? 'border-primary bg-primary/5' : 'border-border bg-card opacity-60'}`}>

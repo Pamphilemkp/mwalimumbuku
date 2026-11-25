@@ -101,6 +101,7 @@ export type Database = {
           id: string
           name: string
           points_required: number
+          achievement_code: string | null
         }
         Insert: {
           created_at?: string
@@ -109,6 +110,7 @@ export type Database = {
           id?: string
           name: string
           points_required?: number
+          achievement_code?: string | null
         }
         Update: {
           created_at?: string
@@ -117,6 +119,7 @@ export type Database = {
           id?: string
           name?: string
           points_required?: number
+          achievement_code?: string | null
         }
         Relationships: []
       }
@@ -1302,6 +1305,40 @@ export type Database = {
       award_badge_if_eligible: {
         Args: { _badge_id: string }
         Returns: undefined
+      }
+      open_game_attempt: {
+        Args: { _game: string; _difficulty: string }
+        Returns: Json
+      }
+      submit_game_attempt: {
+        Args: { _attempt_id: string; _idempotency_key: string; _events: Json }
+        Returns: Json
+      }
+      reverse_reward_entry: {
+        Args: { _entry_id: string; _reason: string }
+        Returns: Json
+      }
+      reward_summary: {
+        Args: { _student_id: string }
+        Returns: Json
+      }
+      student_reward_summary: {
+        Args: never
+        Returns: Json
+      }
+      reward_summaries: {
+        Args: { _student_ids: string[] }
+        Returns: {
+          student_id: string
+          xp: number
+          level: number
+          streak: number
+          today_xp: number
+        }[]
+      }
+      my_game_leaderboards: {
+        Args: never
+        Returns: Json
       }
       check_answer: {
         Args: { _answer: string; _exercise_id: string }

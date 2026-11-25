@@ -14,6 +14,7 @@ export type ParentRecord = {
   completedLessons: number | null;
   exerciseCount: number | null;
   exercisePoints: number | null;
+  reward: { xp: number; level: number; streak: number } | null;
 };
 
 export function ParentRecordView({
@@ -72,6 +73,11 @@ export function ParentRecordView({
             {record.exerciseCount != null ? (
               <p className="mt-3 text-xs text-muted-foreground">
                 {`Exercices récents : ${record.exerciseCount}. Points d'exercice : ${record.exercisePoints ?? 0}. Ces points restent séparés de la note du devoir.`}
+              </p>
+            ) : null}
+            {record.reward ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                {`XP de jeu : ${record.reward.xp}. Niveau ${record.reward.level}. Série ${record.reward.streak} jour(s) à Asia/Nicosia. L'XP ne change pas la note.`}
               </p>
             ) : null}
           </article>
