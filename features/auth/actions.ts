@@ -5,8 +5,9 @@ import { clientAddress } from "@/lib/auth/client-address";
 import { sessionFromClaims } from "@/lib/auth/claims";
 import { authRateLimiter } from "@/lib/auth/limiter";
 import { configuredSiteUrl, resolvePublicOrigin } from "@/lib/auth/origin";
-import { authEmailOrigin } from "@/lib/auth/site";
+import { authEmailOrigin, SIGNUP_CONFIRM_PATH } from "@/lib/auth/site";
 import { createClient } from "@/lib/supabase/server";
+import { runRegister, type PublicRole } from "@/features/auth/register";
 import { runRequestPasswordReset } from "@/features/auth/request-password-reset";
 import { runSignIn } from "@/features/auth/sign-in";
 import { runSignOut } from "@/features/auth/sign-out";
@@ -106,6 +107,54 @@ export async function updatePasswordAction(input: { password?: string; confirm?:
       confirm: input?.confirm,
       address: clientAddress(headerList.get("x-forwarded-for")),
       hasSession,
+    },
+  );
+}
+
+export async function registerAccountAction(input: {
+  role?: PublicRole;
+  email?: string;
+  password?: string;
+  fullName?: string;
+}) {
+  const headerList = await headers();
+  const production = process.env.NODE_ENV === "production";
+  const requestOrigin = resolvePublicOrigin({
+    siteUrl: undefined,
+    forwardedHost: headerList.get("x-forwarded-host"),
+    forwardedProto: headerList.get("x-forwarded-proto"),
+    host: headerList.get("host"),
+    production,
+  });
+  const origin = authEmailOrigin({
+    siteUrl: configuredSiteUrl(),
+    requestOrigin,
+    production,
+  });
+
+  return runRegister(
+    {
+      consume: authRateLimiter,
+      signUp: async ({ email, password, fullName, role, redirectTo }) => {
+        const supabase = await createClient();
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName, role },
+            emailRedirectTo: redirectTo,
+          },
+        });
+        return { error: failureOf(error) };
+      },
+    },
+    {
+      role: input?.role,
+      email: input?.email,
+      password: input?.password,
+      fullName: input?.fullName,
+      address: clientAddress(headerList.get("x-forwarded-for")),
+      redirectTo: `${origin}${SIGNUP_CONFIRM_PATH}`,
     },
   );
 }

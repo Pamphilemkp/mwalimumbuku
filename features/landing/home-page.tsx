@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -14,11 +13,10 @@ import {
   Shield,
   Sparkles,
   Star,
-  User,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LanguageSwitcher } from "./language-switcher";
+import { PublicFooter, PublicHeader } from "@/features/public/site-chrome";
 import { useLanguage } from "./language";
 
 export function HomePage() {
@@ -31,13 +29,6 @@ export function HomePage() {
     { icon: Sparkles, title: t.landing.gamified, desc: t.landing.gamifiedDesc, color: "text-primary" },
     { icon: Globe, title: t.landing.lowBandwidth, desc: t.landing.lowBandwidthDesc, color: "text-secondary" },
     { icon: BookOpen, title: t.landing.teacherTools, desc: t.landing.teacherToolsDesc, color: "text-accent" },
-  ];
-
-  const stats = [
-    { value: "10K+", label: t.landing.statsLearners },
-    { value: "500+", label: t.landing.statsCourses },
-    { value: "98%", label: t.landing.statsSatisfaction },
-    { value: "15+", label: t.landing.statsCountries },
   ];
 
   const steps = [
@@ -61,34 +52,7 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
-        <nav className="container flex h-14 items-center justify-between px-4 sm:h-16">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Mwalimu Mbuku" width={40} height={40} className="h-8 w-8 object-contain sm:h-10 sm:w-10" />
-            <span className="font-display text-lg font-bold text-foreground sm:text-xl">{t.appName}</span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher />
-            <Link href="/mission" className="hidden md:inline-flex">
-              <Button variant="ghost" size="sm" className="gap-1.5">
-                <Heart className="h-3.5 w-3.5 text-accent" />
-                {t.landing.missionLabel}
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-                {t.landing.login}
-              </Button>
-              <Button variant="ghost" size="icon" className="sm:hidden">
-                <User className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm">{t.landing.getStarted}</Button>
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <PublicHeader />
 
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{ background: "var(--gradient-hero)" }} />
@@ -125,26 +89,6 @@ export function HomePage() {
               </Link>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      <section className="border-t border-border bg-card py-8 sm:py-12">
-        <div className="container px-4">
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
-            {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center"
-              >
-                <p className="font-display text-2xl font-bold text-primary sm:text-3xl md:text-4xl">{s.value}</p>
-                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{s.label}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -316,17 +260,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-6 sm:py-8">
-        <div className="container flex flex-col items-center justify-between gap-3 px-4 sm:gap-4 md:flex-row">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-            <span className="font-display text-sm font-semibold text-foreground sm:text-base">{t.appName}</span>
-          </div>
-          <p className="text-center text-xs text-muted-foreground sm:text-sm">
-            © {new Date().getFullYear()} {t.appName}. {t.landing.footer}
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
