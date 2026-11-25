@@ -1,73 +1,65 @@
-# Welcome to your Lovable project
+# Mwalimu Mbuku
 
-## Project info
+Next.js App Router application at the repository root. This phase covers password sign-in, a cookie session, and a single role check. Courses, homework, assessments, games, and the other product screens are not in this tree yet. See [MIGRATION_INVENTORY.md](MIGRATION_INVENTORY.md).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Local commands
 
-## How can I edit this code?
+Requires Node.js 20.9 or newer.
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cp .env.example .env.local
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The dev server runs at `http://localhost:3000`. `npm run dev` starts Next.js.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run lint
+npx tsc --noEmit
+npm test
+npm run build
+```
 
-**Use GitHub Codespaces**
+Tests use the Node.js test runner. They do not call Supabase and they do not use a password.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Environment variables
 
-## What technologies are used for this project?
+Set these in `.env.local`. Do not commit that file.
 
-This project is built with:
+| Name | Previous Vite name |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | `VITE_SUPABASE_URL` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `VITE_SUPABASE_PUBLISHABLE_KEY` |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Both are public client settings. `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the same public key the previous Vite client passed to Supabase. This app has no privileged server client.
 
-## How can I deploy this project?
+## Sign-in
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Password sign-in uses `signInWithPassword` and `@supabase/ssr` cookies (`getAll` / `setAll`). The browser client does not use `localStorage`.
 
-## Can I connect a custom domain to my Lovable project?
+`/dashboard` and `/holding` require a session. A session with exactly one of `student`, `parent`, `teacher`, or `admin` sees a short confirmation of that role. Missing, duplicate, unrecognized, or failed role checks stay on a holding page and do not open a role dashboard.
 
-Yes, you can!
+Next.js 16 refreshes the session in `proxy.ts` (the supported replacement for `middleware.ts`) by calling `auth.getClaims()`. The app layout and each protected page verify the user and the role again. `proxy.ts` alone is not the authorization boundary.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Anonymous visitors go to `/login`. Sign-out checks the error and navigates to `/login` only after success.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Proxy responses, including anonymous redirects, send `Cache-Control: private, no-store`. Session cookies are readable by the browser client (`httpOnly: false`). The `Secure` flag is on when `NODE_ENV` is `production`.
+
+This app does not include signup. The current password cookie flow does not use an `/auth/callback` route, so that route is not included.
+
+## Staging on Vercel
+
+Create a **new** Vercel project. Do not attach this app to the existing production project, and do not replace `https://mwalimumbuku.vercel.app`.
+
+- Root directory: the repository root
+- Framework: Next.js
+- `vercel.json` sets the framework to Next.js and does not rewrite routes to `index.html`
+- Environment variable names: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- Use the same values as the existing `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+Deploy the new project on its own URL. Do not cut over the production domain.
+
+## Roles
+
+The only roles are `student`, `parent`, `teacher`, and `admin`.
