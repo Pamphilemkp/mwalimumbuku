@@ -9,7 +9,7 @@ export interface GameProps {
 /** Time limit in seconds per difficulty */
 export const TIME_LIMITS: Record<Difficulty, number> = {
   easy: 120,
-  medium: 90,
+  medium: 105,
   hard: 60,
 };
 

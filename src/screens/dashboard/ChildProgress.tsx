@@ -36,6 +36,19 @@ export default function ChildProgress() {
 
   const studentIds = children?.map((c) => c.student_id) ?? [];
 
+  const { data: rewardRows } = useQuery({
+    queryKey: ['child-rewards', studentIds],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('reward_summaries', { _student_ids: studentIds });
+      if (error) {
+        if (missingSchema(error)) return [];
+        throw error;
+      }
+      return data ?? [];
+    },
+    enabled: studentIds.length > 0,
+  });
+
   const { data: results, isLoading } = useQuery({
     queryKey: ['child-results', studentIds],
     queryFn: async () => {
@@ -109,6 +122,7 @@ export default function ChildProgress() {
             const total = childResults.length;
             const correct = childResults.filter((r) => r.is_correct).length;
             const points = childResults.reduce((s, r) => s + r.points_earned, 0);
+            const reward = rewardRows?.find((row) => row.student_id === child.student_id);
             const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
 
             // Weekly breakdown
@@ -127,6 +141,9 @@ export default function ChildProgress() {
                     { label: 'Accuracy', value: `${accuracy}%`, icon: TrendingUp, color: 'text-primary' },
                     { label: 'Exercises Done', value: total, icon: BookOpen, color: 'text-secondary' },
                     { label: 'This Week Points', value: weekPoints, icon: Calendar, color: 'text-primary' },
+                    { label: 'XP', value: reward?.xp ?? 0, icon: Award, color: 'text-primary' },
+                    { label: 'Niveau', value: reward?.level ?? 1, icon: TrendingUp, color: 'text-accent' },
+                    { label: 'Série', value: reward?.streak ?? 0, icon: Calendar, color: 'text-secondary' },
                   ].map((s, i) => (
                     <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                       className="rounded-xl border border-border bg-card p-5">

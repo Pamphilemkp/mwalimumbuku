@@ -14,10 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/src/components/ui/dialog';
 import { Users, Mail, Phone, Send, Lightbulb, BarChart3 } from 'lucide-react';
 import { toast } from '@/src/components/ui/sonner';
+import { missingSchema } from '@/lib/portals/schema';
+import { reverseRewardAction } from '@/features/games/actions';
 
 export default function TeacherStudentsPage() {
   const { user } = useAuth();
   const [recoFor, setRecoFor] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
   const [message, setMessage] = useState('');
   const [priority, setPriority] = useState<'low'|'normal'|'high'>('normal');
 
@@ -78,6 +81,46 @@ export default function TeacherStudentsPage() {
     enabled: courseIds.length > 0,
   });
 
+  const studentIds = useMemo(() => (roster ?? []).map((student) => student.id), [roster]);
+  const { data: rewards } = useQuery({
+    queryKey: ['teacher-rewards', studentIds],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('reward_summaries', { _student_ids: studentIds });
+      if (error) {
+        if (missingSchema(error)) return [];
+        throw error;
+      }
+      return data ?? [];
+    },
+    enabled: studentIds.length > 0,
+  });
+  const { data: boards } = useQuery({
+    queryKey: ['teacher-game-boards', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('my_game_leaderboards');
+      if (error) {
+        if (missingSchema(error)) return [];
+        throw error;
+      }
+      return Array.isArray(data) ? data as { classId: string; className: string; rows: { rank: number; label: string; xp: number; level: number }[] }[] : [];
+    },
+    enabled: !!user,
+  });
+
+  const reverseLatest = async (studentId: string) => {
+    const text = reason.trim();
+    if (text.length < 3) return;
+    const { data, error } = await (supabase as any).from('reward_ledger').select('id, kind, reverses_id').eq('user_id', studentId).order('created_at', { ascending: false }).limit(20);
+    if (error) { toast.error(error.message); return; }
+    const reversed = new Set((data ?? []).filter((row: { kind: string }) => row.kind === 'reversal').map((row: { reverses_id: string }) => row.reverses_id));
+    const entry = (data ?? []).find((row: { id: string; kind: string }) => row.kind === 'game_xp' && !reversed.has(row.id));
+    if (!entry) { toast.error('Aucun XP de jeu à corriger.'); return; }
+    const result = await reverseRewardAction(entry.id, text);
+    if (!result.ok) { toast.error(result.message); return; }
+    toast.success('Correction enregistrée');
+    setReason('');
+  };
+
   const sendReco = async () => {
     if (!recoFor || !message.trim() || !user) return;
     const { error } = await (supabase as any).from('teacher_recommendations').insert({
@@ -96,6 +139,22 @@ export default function TeacherStudentsPage() {
         </h1>
         <p className="text-sm text-muted-foreground">Suivi, parents, performance et recommandations personnalisées</p>
       </div>
+
+      {boards?.map((board) => (
+        <Card key={board.classId}>
+          <CardContent className="space-y-2 pt-5">
+            <p className="font-semibold">Classement · {board.className}</p>
+            <ol className="space-y-1 text-sm">
+              {board.rows.map((row) => (
+                <li key={`${board.classId}-${row.rank}`} className="flex justify-between gap-3">
+                  <span>{row.rank}. {row.label}</span>
+                  <span className="text-muted-foreground">{row.xp} XP · niv. {row.level}</span>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      ))}
 
       {(!roster || roster.length === 0) && (
         <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Aucun élève inscrit dans vos cours.</CardContent></Card>
@@ -157,6 +216,22 @@ export default function TeacherStudentsPage() {
                   <p className="text-lg font-bold text-secondary">{s.total}</p>
                   <p className="text-[10px] text-muted-foreground">Exercices</p>
                 </div>
+                <div className="rounded-lg bg-primary/5 p-2">
+                  <p className="text-lg font-bold text-primary">{rewards?.find((row) => row.student_id === s.id)?.xp ?? 0}</p>
+                  <p className="text-[10px] text-muted-foreground">XP</p>
+                </div>
+                <div className="rounded-lg bg-accent/5 p-2">
+                  <p className="text-lg font-bold text-accent">{rewards?.find((row) => row.student_id === s.id)?.level ?? 1}</p>
+                  <p className="text-[10px] text-muted-foreground">Niveau</p>
+                </div>
+                <div className="rounded-lg bg-secondary/5 p-2">
+                  <p className="text-lg font-bold text-secondary">{rewards?.find((row) => row.student_id === s.id)?.streak ?? 0}</p>
+                  <p className="text-[10px] text-muted-foreground">Série</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Motif d'une correction d'XP" />
+                <Button type="button" variant="outline" onClick={() => void reverseLatest(s.id)} disabled={reason.trim().length < 3}>Corriger l'XP</Button>
               </div>
 
               {s.weakSubjects.length > 0 && (

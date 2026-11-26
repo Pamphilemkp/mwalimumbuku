@@ -103,7 +103,15 @@ export async function ParentAcademicRecord({ requestedChild }: { requestedChild?
     completedLessons,
     exerciseCount: missingSchema(results.error) ? null : (results.data ?? []).length,
     exercisePoints: missingSchema(results.error) ? null : (results.data ?? []).reduce((sum, row) => sum + (row.points_earned ?? 0), 0),
+    reward: null,
   };
+  const reward = await supabase.rpc("reward_summary", { _student_id: studentId });
+  if (!reward.error && reward.data && typeof reward.data === "object") {
+    const row = reward.data as { xp?: unknown; level?: unknown; streak?: unknown };
+    if (typeof row.xp === "number") {
+      record.reward = { xp: row.xp, level: Number(row.level ?? 1), streak: Number(row.streak ?? 0) };
+    }
+  }
 
   return <ParentRecordView childLinks={children} denied={false} selectedId={studentId} record={record} />;
 }

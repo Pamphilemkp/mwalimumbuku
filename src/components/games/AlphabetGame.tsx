@@ -1,107 +1,157 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useLanguage } from '@/src/i18n/LanguageContext';
-import { cn } from '@/src/lib/utils';
-import { RotateCcw } from 'lucide-react';
-import { Button } from '@/src/components/ui/button';
-import { toast } from '@/src/components/ui/sonner';
-import GameTimer from './GameTimer';
-import type { GameProps } from './types';
-import { TIME_LIMITS } from './types';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/src/i18n/LanguageContext";
+import { cn } from "@/src/lib/utils";
+import { Button } from "@/src/components/ui/button";
+import { MIN_GAP_MS, type Round } from "@/lib/games/engine";
+import GameTimer from "./GameTimer";
+import { useStamps } from "./useStamps";
+import { fill, GameGuide, GameHud, PlaySurface, ResultBanner, type Banner } from "./GameChrome";
 
-export default function AlphabetGame({ onScore, difficulty, onGameEnd }: GameProps) {
+export default function AlphabetGame({
+  round,
+  deadlineMs,
+  onComplete,
+}: {
+  round: Extract<Round, { game: "alphabet" }>;
+  deadlineMs: number;
+  onComplete: (events: { game: "alphabet"; orders: string[][]; atMs: number[] }) => void;
+}) {
   const { t } = useLanguage();
-  const count = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 8 : 12;
-
-  const [letters, setLetters] = useState<string[]>([]);
+  const [stageIndex, setStageIndex] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
-  const [correct, setCorrect] = useState<string[]>([]);
-  const [done, setDone] = useState(false);
-  const [running, setRunning] = useState(true);
-  const [elapsed, setElapsed] = useState(0);
-  const [score, setScore] = useState(0);
+  const [banner, setBanner] = useState<Banner | null>(null);
+  const done = useRef(false);
+  const lock = useRef(false);
+  const clean = useRef(true);
+  const selectedRef = useRef<string[]>([]);
+  const ordersRef = useRef<string[][]>([]);
+  const stageRef = useRef(0);
+  const { mark, stamps, drop } = useStamps(MIN_GAP_MS.alphabet);
+  const stage = round.stages[stageIndex] ?? [];
+  const expected = stage.slice().sort();
+
+  const finish = useCallback((orders: string[][]) => {
+    if (done.current) return;
+    done.current = true;
+    onComplete({ game: "alphabet", orders, atMs: stamps.current.slice(0, orders.reduce((sum, order) => sum + order.length, 0)) });
+  }, [onComplete, stamps]);
+
+  const choose = useCallback((letter: string) => {
+    const current = round.stages[stageRef.current] ?? [];
+    const order = current.slice().sort();
+    if (done.current || lock.current || !current.includes(letter) || selectedRef.current.includes(letter)) return;
+    if (selectedRef.current.length >= current.length || mark() === null) return;
+    const next = [...selectedRef.current, letter];
+    selectedRef.current = next;
+    setSelected(next);
+    const place = next.length - 1;
+    if (letter === order[place]) {
+      setBanner({ tone: "correct", text: fill(t.games.feedback.letterFits, { letter }) });
+    } else {
+      setBanner({ tone: "wrong", text: fill(t.games.feedback.notNextLetter, { letter, expected: order[place] }) });
+    }
+    if (next.length < current.length) return;
+    const stagePerfect = next.every((item, index) => item === order[index]);
+    if (!stagePerfect) clean.current = false;
+    ordersRef.current = [...ordersRef.current, next];
+    selectedRef.current = [];
+    lock.current = true;
+    window.setTimeout(() => {
+      const last = stageRef.current + 1 >= round.stages.length;
+      if (last) {
+        setBanner({
+          tone: clean.current ? "correct" : "wrong",
+          text: clean.current ? t.games.feedback.perfectSets : fill(t.games.feedback.wrongSets, { order: order.join(" ") }),
+        });
+        window.setTimeout(() => finish(ordersRef.current), 700);
+        return;
+      }
+      setBanner({
+        tone: stagePerfect ? "info" : "wrong",
+        text: stagePerfect ? t.games.feedback.nextSet : fill(t.games.feedback.wrongSets, { order: order.join(" ") }),
+      });
+      stageRef.current += 1;
+      setStageIndex(stageRef.current);
+      setSelected([]);
+      lock.current = false;
+    }, 1000);
+  }, [finish, mark, round.stages, t]);
+
+  const undo = useCallback(() => {
+    if (done.current || lock.current || selectedRef.current.length === 0) return;
+    drop();
+    const next = selectedRef.current.slice(0, -1);
+    selectedRef.current = next;
+    setSelected(next);
+  }, [drop]);
 
   useEffect(() => {
-    if (!running) return;
-    const iv = setInterval(() => setElapsed(t => t + 1), 1000);
-    return () => clearInterval(iv);
-  }, [running]);
-
-  const newGame = useCallback(() => {
-    const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const start = Math.floor(Math.random() * (26 - count));
-    const slice = all.slice(start, start + count);
-    setCorrect([...slice]);
-    setLetters([...slice].sort(() => Math.random() - 0.5));
-    setSelected([]);
-    setDone(false);
-    setRunning(true);
-    setElapsed(0);
-    setScore(0);
-  }, [count]);
-
-  useEffect(() => { newGame(); }, [newGame]);
-
-  const handleTimeUp = useCallback(() => {
-    setRunning(false);
-    setDone(true);
-    onGameEnd?.(score, elapsed);
-  }, [score, elapsed, onGameEnd]);
-
-  const selectLetter = (l: string) => {
-    if (!running || selected.includes(l)) return;
-    const newSel = [...selected, l];
-    setSelected(newSel);
-    if (newSel.length === correct.length) {
-      const isCorrect = newSel.every((s, i) => s === correct[i]);
-      setDone(true);
-      setRunning(false);
-      if (isCorrect) {
-        const pts = 30;
-        setScore(pts);
-        onScore(pts);
-        toast.success(`🎉 ${t.games.perfectOrder}`);
-        setTimeout(() => onGameEnd?.(pts, elapsed), 1500);
-      } else {
-        toast.error(`❌ ${t.games.wrongOrder}`);
-        setTimeout(() => onGameEnd?.(0, elapsed), 1500);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        undo();
+        return;
       }
-    }
-  };
+      if (/^[a-zA-Z]$/.test(event.key)) choose(event.key.toUpperCase());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [choose, undo]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-xs sm:text-sm text-muted-foreground">{t.games.alphabetInstruction}</p>
-        <GameTimer duration={TIME_LIMITS[difficulty]} running={running} onTimeUp={handleTimeUp} />
-      </div>
-      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-        {correct.map((_, i) => (
-          <div key={i} className={cn(
-            'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg border-2 text-sm sm:text-lg font-bold',
-            selected[i]
-              ? (done ? (selected[i] === correct[i] ? 'border-primary bg-primary/10 text-primary' : 'border-destructive bg-destructive/10 text-destructive')
-                : 'border-primary/50 bg-card text-foreground')
-              : 'border-dashed border-border'
-          )}>{selected[i] || ''}</div>
-        ))}
-      </div>
-      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-        {letters.map(l => (
-          <button key={l} disabled={selected.includes(l) || done} onClick={() => selectLetter(l)}
-            className={cn(
-              'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg border text-sm sm:text-lg font-bold transition-all',
-              selected.includes(l) ? 'opacity-30 border-border' : 'border-border bg-card hover:border-primary hover:bg-primary/5 cursor-pointer'
-            )}>{l}</button>
-        ))}
-      </div>
-      <div className="flex justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setSelected([]); setDone(false); }}>
-          <RotateCcw className="mr-1 h-3.5 w-3.5" /> {t.games.undo}
-        </Button>
-        <Button variant="outline" size="sm" onClick={newGame}>{t.games.newLetters}</Button>
-      </div>
+    <div className="min-w-0 max-w-full space-y-3">
+      <GameGuide game="alphabet" />
+      <GameHud
+        left={<span>{fill(t.games.feedback.setOf, { n: Math.min(stageIndex + 1, round.stages.length), total: round.stages.length })}</span>}
+        right={<GameTimer deadlineMs={deadlineMs} onTimeUp={() => finish(selectedRef.current.length > 0 ? [...ordersRef.current, selectedRef.current] : ordersRef.current)} />}
+      />
+      <p className="text-xs text-muted-foreground">{t.games.keyboardAlphabet}</p>
+      <PlaySurface>
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {expected.map((_, index) => {
+            const letter = selected[index];
+            const right = Boolean(letter) && letter === expected[index];
+            const wrong = Boolean(letter) && letter !== expected[index];
+            return (
+              <div
+                key={`${stageIndex}-${index}`}
+                className={cn(
+                  "flex h-11 w-9 items-center justify-center rounded-lg border-2 text-lg font-bold sm:w-11",
+                  !letter && "border-dashed border-border",
+                  letter && right && "border-primary bg-primary/10 text-primary",
+                  wrong && "border-destructive bg-destructive/10 text-destructive",
+                )}
+              >
+                {letter ?? ""}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap justify-center gap-2" role="group" aria-label={t.games.alphabetInstruction}>
+          {stage.map((letter) => (
+            <button
+              key={`${stageIndex}-${letter}`}
+              type="button"
+              disabled={selected.includes(letter) || lock.current || done.current}
+              onClick={() => choose(letter)}
+              className={cn(
+                "flex h-12 w-12 items-center justify-center rounded-lg border text-lg font-bold",
+                selected.includes(letter) ? "border-border opacity-30" : "border-border bg-card hover:border-primary hover:bg-primary/5",
+              )}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-center">
+          <Button type="button" variant="outline" className="h-11 px-4" onClick={undo} disabled={lock.current || done.current || selected.length === 0}>
+            {t.games.undo}
+          </Button>
+        </div>
+        {banner ? <ResultBanner tone={banner.tone}>{banner.text}</ResultBanner> : null}
+      </PlaySurface>
     </div>
   );
 }
