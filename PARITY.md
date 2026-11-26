@@ -2,7 +2,7 @@
 
 The product is the Next.js app at the repository root. Screens live in `src/screens` and are mounted by `app/`. There is no second runnable Vite app: `package.json` has no Vite dependency, `vercel.json` sets `"framework": "nextjs"` and has no SPA rewrite, and `services/auth/toolchain.test.mts` asserts that `vite.config.ts`, `index.html`, and a second app directory are absent. That was already true on `origin/main`. This branch did not delete a remaining Vite runtime.
 
-A row is **Migrated and verified** only when a test exercised the behavior and that test passed in this run (`npm test`: 113 passed, 1 failed). The failed test is `features/auth/privilege.test.mts`, which still finds `signUp(` in `features/auth/actions.ts`. That call is the existing public student/parent registration and was already on `main`. The signed-in dashboard was not opened in a browser (no session).
+A row is **Migrated and verified** only when a test exercised the behavior and that test passed in this run (`npm test`: 114 passed, 1 failed). The failed test is `features/auth/privilege.test.mts`, which still finds `signUp(` in `features/auth/actions.ts`. That call is the existing public student/parent registration and was already on `main`. The signed-in dashboard was not opened in a browser (no session).
 
 | Feature | Classification | Evidence |
 | --- | --- | --- |
@@ -29,6 +29,6 @@ A row is **Migrated and verified** only when a test exercised the behavior and t
 | Payments | Partially migrated | Stripe checkout remains in `supabase/functions/create-checkout/index.ts` and now sends `client_reference_id`. Signature, replay, refund, and unpaid decisions: `lib/payments/webhook.test.mts`. The webhook function was not called with a live Stripe event |
 | Mobile-money checkout | Intentionally retired | The subscription screen no longer submits a simulated M-Pesa, Orange Money, or Airtel payment. No provider is configured in this repo |
 
-Counts: 18 migrated and verified, 4 partially migrated, 0 missing, 1 intentionally retired.
+Counts: 17 migrated and verified, 4 partially migrated, 0 missing, 1 intentionally retired.
 
 `features/auth/privilege.test.mts` is the one failing test and is not used above as proof that registration is free of `signUp(`.

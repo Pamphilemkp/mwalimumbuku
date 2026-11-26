@@ -25,5 +25,8 @@ describe("support files", () => {
       `${owner}/note.pdf`,
     );
     assert.equal(supportObjectPath(`${other}/../note.pdf`), null);
+    const legacyName = `${"a".repeat(90)}.pdf`;
+    assert.equal(supportObjectPath(`${owner}/${legacyName}`), `${owner}/${legacyName}`);
+    assert.equal(validateSupportFile({ ...file, objectName: `${"b".repeat(81)}.pdf` }).ok, false);
   });
 });

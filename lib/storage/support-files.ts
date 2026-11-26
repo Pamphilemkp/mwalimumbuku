@@ -46,18 +46,27 @@ export function validateSupportFile(input: {
   return { ok: true, path: `${input.ownerId}/${objectName}` };
 }
 
+function storedObjectName(name: string): boolean {
+  return name.length > 0 && !name.includes("..") && !name.includes("/") && !name.includes("\\");
+}
+
 export function supportObjectPath(fileUrl: string): string | null {
   const raw = fileUrl.trim();
-  if (raw.length === 0 || raw.includes("..")) return null;
+  if (raw.length === 0 || raw.includes("..") || raw.includes("\\")) return null;
   let path = raw;
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
     const marker = "/support-files/";
     const at = raw.indexOf(marker);
     if (at < 0) return null;
-    path = decodeURIComponent(raw.slice(at + marker.length).split("?")[0] ?? "");
+    try {
+      path = decodeURIComponent(raw.slice(at + marker.length).split("?")[0] ?? "");
+    } catch {
+      return null;
+    }
   }
+  if (path.includes("..") || path.includes("\\")) return null;
   const parts = path.split("/");
   if (parts.length !== 2 || !/^[0-9a-f-]{36}$/i.test(parts[0] ?? "")) return null;
-  if (!safeName(parts[1] ?? "")) return null;
-  return path;
+  if (!storedObjectName(parts[1] ?? "")) return null;
+  return `${parts[0]}/${parts[1]}`;
 }

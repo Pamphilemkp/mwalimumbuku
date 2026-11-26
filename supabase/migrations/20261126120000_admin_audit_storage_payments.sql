@@ -99,7 +99,26 @@ CREATE INDEX admin_audit_log_school_idx
 
 ALTER TABLE public.admin_audit_log ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.admin_audit_log FROM PUBLIC;
-GRANT SELECT ON public.admin_audit_log TO authenticated;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE ALL ON public.admin_audit_log FROM anon;
+    REVOKE TRUNCATE ON public.admin_audit_log FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON public.admin_audit_log FROM authenticated;
+    GRANT SELECT ON public.admin_audit_log TO authenticated;
+    REVOKE TRUNCATE ON public.admin_audit_log FROM authenticated;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    REVOKE ALL ON public.admin_audit_log FROM service_role;
+    GRANT SELECT, INSERT ON public.admin_audit_log TO service_role;
+    REVOKE TRUNCATE ON public.admin_audit_log FROM service_role;
+  END IF;
+END $$;
+
+REVOKE TRUNCATE ON public.admin_audit_log FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION public.reject_audit_mutation()
 RETURNS trigger
@@ -143,6 +162,16 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.append_admin_audit(uuid, uuid, text, text, uuid, text) FROM PUBLIC;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE ALL ON FUNCTION public.append_admin_audit(uuid, uuid, text, text, uuid, text) FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON FUNCTION public.append_admin_audit(uuid, uuid, text, text, uuid, text) FROM authenticated;
+  END IF;
+END $$;
 
 CREATE POLICY "Platform admins read the audit log"
   ON public.admin_audit_log
@@ -200,12 +229,17 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.record_email_delivery(text, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.record_email_delivery(text, text, text) TO authenticated;
 
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
-    GRANT EXECUTE ON FUNCTION public.record_email_delivery(text, text, text) TO anon;
+    REVOKE ALL ON FUNCTION public.record_email_delivery(text, text, text) FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON FUNCTION public.record_email_delivery(text, text, text) FROM authenticated;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT EXECUTE ON FUNCTION public.record_email_delivery(text, text, text) TO service_role;
   END IF;
 END $$;
 
@@ -225,7 +259,6 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
     GRANT ALL ON public.payment_events TO service_role;
-    GRANT ALL ON public.admin_audit_log TO service_role;
     GRANT ALL ON public.email_deliveries TO service_role;
   END IF;
 END $$;
@@ -236,12 +269,18 @@ LANGUAGE plpgsql
 SET search_path = public
 AS $$
 BEGIN
-  IF auth.uid() IS NOT NULL AND (
-    NEW.tier IS DISTINCT FROM OLD.tier
-    OR NEW.is_active IS DISTINCT FROM OLD.is_active
-    OR NEW.expires_at IS DISTINCT FROM OLD.expires_at
-  ) THEN
-    RAISE EXCEPTION 'a signed-in user cannot change a subscription tier';
+  IF auth.uid() IS NOT NULL THEN
+    IF TG_OP = 'INSERT' OR TG_OP = 'DELETE' THEN
+      RAISE EXCEPTION 'a signed-in user cannot change a subscription tier';
+    END IF;
+    IF NEW.tier IS DISTINCT FROM OLD.tier
+       OR NEW.is_active IS DISTINCT FROM OLD.is_active
+       OR NEW.expires_at IS DISTINCT FROM OLD.expires_at THEN
+      RAISE EXCEPTION 'a signed-in user cannot change a subscription tier';
+    END IF;
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
   END IF;
   RETURN NEW;
 END;
@@ -250,9 +289,11 @@ $$;
 DO $$
 BEGIN
   IF to_regclass('public.subscriptions') IS NOT NULL THEN
+    ALTER TABLE public.subscriptions
+      ADD COLUMN IF NOT EXISTS entitlement_event_at bigint;
     DROP TRIGGER IF EXISTS subscriptions_no_self_tier ON public.subscriptions;
     CREATE TRIGGER subscriptions_no_self_tier
-      BEFORE UPDATE ON public.subscriptions
+      BEFORE INSERT OR UPDATE OR DELETE ON public.subscriptions
       FOR EACH ROW EXECUTE FUNCTION public.prevent_subscription_self_update();
   END IF;
   IF to_regclass('public.payment_history') IS NOT NULL THEN
@@ -353,9 +394,17 @@ BEGIN
   IF _caller IS NULL THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
-  IF NOT public.is_platform_admin(_caller)
-     AND NOT public.active_membership(_caller, target_school, 'school_admin') THEN
-    RAISE EXCEPTION 'not authorized for that school';
+  IF NOT public.is_platform_admin(_caller) THEN
+    PERFORM 1
+    FROM public.school_memberships AS membership
+    WHERE membership.user_id = _caller
+      AND membership.school_id = target_school
+      AND membership.membership_role = 'school_admin'
+      AND membership.status = 'active'
+    FOR UPDATE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'not authorized for that school';
+    END IF;
   END IF;
   IF _title IS NULL OR char_length(_title) < 2 OR char_length(_title) > 120
      OR _message IS NULL OR char_length(_message) < 2 OR char_length(_message) > 500 THEN
@@ -363,7 +412,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.notifications (user_id, title, message, type)
-  SELECT membership.user_id, _title, _message, 'admin'
+  SELECT DISTINCT membership.user_id, _title, _message, 'admin'
   FROM public.school_memberships AS membership
   WHERE membership.school_id = target_school
     AND membership.status = 'active'
@@ -566,10 +615,161 @@ BEGIN
             WHERE public.support_ticket_visible(message.ticket_id)
               AND (
                 message.attachment_url = storage.objects.name
-                OR message.attachment_url LIKE '%/' || storage.objects.name
+                OR (
+                  length(message.attachment_url) > length(storage.objects.name)
+                  AND right(message.attachment_url, length(storage.objects.name) + 1)
+                      = '/' || storage.objects.name
+                )
               )
           )
         )
       );
+  END IF;
+END $$;
+
+CREATE TABLE public.stripe_customer_links (
+  customer_id text PRIMARY KEY,
+  user_id uuid NOT NULL,
+  subscription_id text,
+  CHECK (customer_id ~ '^[A-Za-z0-9_]{3,120}$'),
+  CHECK (subscription_id IS NULL OR subscription_id ~ '^[A-Za-z0-9_]{3,120}$')
+);
+
+ALTER TABLE public.stripe_customer_links ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.stripe_customer_links FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION public.stripe_refund_user(_customer_id text)
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT link.user_id
+  FROM public.stripe_customer_links AS link
+  WHERE _customer_id IS NOT NULL
+    AND link.customer_id = _customer_id
+$$;
+
+CREATE OR REPLACE FUNCTION public.apply_payment_event(
+  _event_id text,
+  _event_type text,
+  _event_created bigint,
+  _user_id uuid,
+  _action text,
+  _tier text,
+  _is_active boolean,
+  _expires_at timestamptz,
+  _apply_entitlement boolean,
+  _amount numeric,
+  _currency text,
+  _payment_status text,
+  _customer_id text,
+  _subscription_id text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _stored bigint;
+  _subscription text;
+BEGIN
+  IF _event_id IS NULL OR char_length(_event_id) < 3 OR char_length(_event_id) > 120
+     OR _event_type IS NULL OR char_length(_event_type) < 1 OR char_length(_event_type) > 80
+     OR _action NOT IN ('sync', 'ignore') THEN
+    RAISE EXCEPTION 'payment event is invalid';
+  END IF;
+  IF _action = 'sync' AND _user_id IS NULL THEN
+    RAISE EXCEPTION 'payment event has no owner';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.payment_events (event_id, event_type, status)
+    VALUES (
+      _event_id,
+      _event_type,
+      CASE WHEN _action = 'sync' THEN 'processed' ELSE 'ignored' END
+    );
+  EXCEPTION WHEN unique_violation THEN
+    RETURN jsonb_build_object('ok', true, 'duplicate', true);
+  END;
+
+  IF _action = 'ignore' THEN
+    RETURN jsonb_build_object('ok', true, 'ignored', true);
+  END IF;
+
+  _subscription := CASE
+    WHEN _subscription_id ~ '^[A-Za-z0-9_]{3,120}$' THEN _subscription_id
+    ELSE NULL
+  END;
+  IF _customer_id ~ '^[A-Za-z0-9_]{3,120}$' THEN
+    INSERT INTO public.stripe_customer_links (customer_id, user_id, subscription_id)
+    VALUES (_customer_id, _user_id, _subscription)
+    ON CONFLICT (customer_id) DO UPDATE
+      SET subscription_id = COALESCE(EXCLUDED.subscription_id, public.stripe_customer_links.subscription_id)
+      WHERE public.stripe_customer_links.user_id = EXCLUDED.user_id;
+  END IF;
+
+  IF _apply_entitlement THEN
+    IF _tier NOT IN ('free', 'premium') THEN
+      RAISE EXCEPTION 'payment entitlement is invalid';
+    END IF;
+    SELECT subscriptions.entitlement_event_at
+    INTO _stored
+    FROM public.subscriptions AS subscriptions
+    WHERE subscriptions.user_id = _user_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      INSERT INTO public.subscriptions (user_id, tier, is_active, expires_at, entitlement_event_at, updated_at)
+      VALUES (_user_id, _tier, COALESCE(_is_active, false), _expires_at, _event_created, now());
+    ELSIF _event_created IS NOT NULL AND (_stored IS NULL OR _event_created > _stored) THEN
+      UPDATE public.subscriptions
+      SET tier = _tier,
+          is_active = COALESCE(_is_active, false),
+          expires_at = _expires_at,
+          entitlement_event_at = _event_created,
+          updated_at = now()
+      WHERE user_id = _user_id;
+    END IF;
+  END IF;
+
+  IF _payment_status IN ('succeeded', 'failed', 'refunded') AND _currency ~ '^[A-Za-z]{3}$' THEN
+    INSERT INTO public.payment_history (user_id, amount, currency, status, provider, provider_ref, description)
+    VALUES (
+      _user_id,
+      COALESCE(_amount, 0),
+      upper(_currency),
+      _payment_status,
+      'stripe',
+      _event_id,
+      _event_type
+    );
+  END IF;
+
+  RETURN jsonb_build_object('ok', true);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.stripe_refund_user(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.apply_payment_event(text, text, bigint, uuid, text, text, boolean, timestamptz, boolean, numeric, text, text, text, text) FROM PUBLIC;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE ALL ON FUNCTION public.stripe_refund_user(text) FROM anon;
+    REVOKE ALL ON FUNCTION public.apply_payment_event(text, text, bigint, uuid, text, text, boolean, timestamptz, boolean, numeric, text, text, text, text) FROM anon;
+    REVOKE ALL ON public.stripe_customer_links FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON FUNCTION public.stripe_refund_user(text) FROM authenticated;
+    REVOKE ALL ON FUNCTION public.apply_payment_event(text, text, bigint, uuid, text, text, boolean, timestamptz, boolean, numeric, text, text, text, text) FROM authenticated;
+    REVOKE ALL ON public.stripe_customer_links FROM authenticated;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT EXECUTE ON FUNCTION public.stripe_refund_user(text) TO service_role;
+    GRANT EXECUTE ON FUNCTION public.apply_payment_event(text, text, bigint, uuid, text, text, boolean, timestamptz, boolean, numeric, text, text, text, text) TO service_role;
   END IF;
 END $$;

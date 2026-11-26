@@ -1,7 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { claimPaymentEvent, decideStripeEvent, signStripePayload, verifyStripeSignature } from "./webhook.ts";
+import { decideStripeEvent } from "./decision.ts";
+import { claimPaymentEvent, signStripePayload, verifyStripeSignature } from "./webhook.ts";
 
 const secret = "whsec_test_only";
 const payload = JSON.stringify({ id: "evt_1", type: "checkout.session.completed" });
@@ -35,9 +36,9 @@ describe("stripe webhook decisions", () => {
     const unpaid = decideStripeEvent({
       id: "evt_open",
       type: "checkout.session.completed",
-      data: { object: { client_reference_id: userId, payment_status: "unpaid", status: "open" } },
+      data: { object: { client_reference_id: userId, payment_status: "unpaid", status: "complete" } },
     });
-    assert.equal(unpaid.action === "sync" && unpaid.tier, "free");
+    assert.equal(unpaid.action, "ignore");
     assert.equal(
       decideStripeEvent({
         id: "evt_anon",
@@ -63,15 +64,48 @@ describe("stripe webhook decisions", () => {
     });
     assert.equal(refund.action === "sync" && refund.payment?.status, "refunded");
     assert.equal(refund.action === "sync" && refund.tier, "free");
+    const otherUser = "33333333-3333-4333-8333-333333333333";
+    const mapped = decideStripeEvent(
+      {
+        id: "evt_refund_mapped",
+        type: "charge.refunded",
+        data: { object: { amount_refunded: 500, currency: "usd" } },
+      },
+      { resolvedUserId: userId },
+    );
+    assert.equal(mapped.action === "sync" && mapped.userId, userId);
+    const conflict = decideStripeEvent(
+      {
+        id: "evt_refund_conflict",
+        type: "charge.refunded",
+        data: { object: { metadata: { user_id: userId }, amount_refunded: 500, currency: "usd" } },
+      },
+      { resolvedUserId: otherUser },
+    );
+    assert.equal(conflict.action, "ignore");
+    assert.equal(
+      decideStripeEvent({
+        id: "evt_refund_unknown",
+        type: "charge.refunded",
+        data: { object: { amount_refunded: 500, currency: "usd" } },
+      }).action,
+      "ignore",
+    );
   });
 
   it("keeps the edge function on signature checks and the event table", () => {
     const source = readFileSync(new URL("../../supabase/functions/stripe-webhook/index.ts", import.meta.url), "utf8");
     assert.match(source, /stripe-signature/);
-    assert.match(source, /payment_events/);
+    assert.match(source, /apply_payment_event/);
+    assert.match(source, /stripe_refund_user/);
     assert.match(source, /STRIPE_WEBHOOK_SECRET/);
-    assert.match(source, /checkout\.session\.completed/);
+    assert.match(source, /lib\/payments\/decision\.ts/);
     assert.equal(source.includes("success=true"), false);
+    assert.equal(source.includes('status === "complete"'), false);
+    const decision = readFileSync(new URL("./decision.ts", import.meta.url), "utf8");
+    assert.match(decision, /checkout\.session\.completed/);
+    assert.match(decision, /payment_status === "paid"/);
+    assert.equal(decision.includes('status === "complete"'), false);
     const page = readFileSync(new URL("../../src/screens/dashboard/SubscriptionPage.tsx", import.meta.url), "utf8");
     assert.equal(page.includes("tier: 'premium'"), false);
     assert.equal(page.includes("update-subscription"), false);

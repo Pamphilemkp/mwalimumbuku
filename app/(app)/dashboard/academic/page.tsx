@@ -43,6 +43,9 @@ export default async function Page({
   const yearRows = (years.data ?? []) as YearRow[];
   const gradeRows = (grades.data ?? []) as GradeRow[];
   const classRows = (classes.data ?? []) as ClassRow[];
+  const rosterState = roster.error ? "error" : "ready";
+  const courseState = courses.error ? "error" : "ready";
+  const auditState = audit.error ? "error" : "ready";
   const rosterRows = (roster.error ? [] : (roster.data ?? [])) as SchoolMember[];
   const courseRows = (courses.error ? [] : (courses.data ?? [])) as CourseRow[];
   const auditRows = (audit.error ? [] : (audit.data ?? [])) as AuditRow[];
@@ -128,7 +131,7 @@ export default async function Page({
                     </tbody>
                   </table>
                 </div>
-                {canManage ? (
+                {isPlatformAdmin || canManage ? (
                   <SchoolAdminTools
                     schoolId={school.id}
                     schoolStatus={school.status}
@@ -145,6 +148,9 @@ export default async function Page({
                       summary: entry.summary,
                       created_at: entry.created_at,
                     }))}
+                    rosterState={rosterState}
+                    courseState={courseState}
+                    auditState={auditState}
                   />
                 ) : null}
                 {canManage ? (

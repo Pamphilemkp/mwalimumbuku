@@ -10,6 +10,7 @@ import {
 type Membership = { id: string; user_id: string; membership_role: string; status: string };
 type Course = { id: string; title: string; is_published: boolean };
 type Audit = { id: string; action: string; summary: string; created_at: string };
+type LoadState = "ready" | "error";
 
 const field = "flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm";
 
@@ -20,6 +21,9 @@ export function SchoolAdminTools({
   names,
   courses,
   audit,
+  rosterState,
+  courseState,
+  auditState,
 }: {
   schoolId: string;
   schoolStatus: string;
@@ -27,6 +31,9 @@ export function SchoolAdminTools({
   names: Record<string, string>;
   courses: Course[];
   audit: Audit[];
+  rosterState: LoadState;
+  courseState: LoadState;
+  auditState: LoadState;
 }) {
   return (
     <div className="mt-6 space-y-6 border-t border-border pt-6">
@@ -72,7 +79,11 @@ export function SchoolAdminTools({
             </tr>
           </thead>
           <tbody>
-            {memberships.length === 0 ? (
+            {rosterState === "error" ? (
+              <tr>
+                <td colSpan={4} className="py-2 text-muted-foreground" role="alert">Les rattachements n'ont pas pu être chargés.</td>
+              </tr>
+            ) : memberships.length === 0 ? (
               <tr>
                 <td colSpan={4} className="py-2 text-muted-foreground">Aucun rattachement.</td>
               </tr>
@@ -97,7 +108,11 @@ export function SchoolAdminTools({
       </div>
       <div className="space-y-2">
         <p className="text-sm font-medium">Cours de l'école</p>
-        {courses.length === 0 ? <p className="text-sm text-muted-foreground">Aucun cours rattaché à cette école.</p> : null}
+        {courseState === "error" ? (
+          <p className="text-sm text-muted-foreground" role="alert">Les cours n'ont pas pu être chargés.</p>
+        ) : courses.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucun cours rattaché à cette école.</p>
+        ) : null}
         {courses.map((course) => (
           <form key={course.id} action={setCoursePublishedAction} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
             <input type="hidden" name="schoolId" value={schoolId} />
@@ -119,7 +134,11 @@ export function SchoolAdminTools({
       </form>
       <div>
         <p className="text-sm font-medium">Journal</p>
-        {audit.length === 0 ? <p className="mt-1 text-sm text-muted-foreground">Aucune action administrative enregistrée.</p> : null}
+        {auditState === "error" ? (
+          <p className="mt-1 text-sm text-muted-foreground" role="alert">Le journal n'a pas pu être chargé.</p>
+        ) : audit.length === 0 ? (
+          <p className="mt-1 text-sm text-muted-foreground">Aucune action administrative enregistrée.</p>
+        ) : null}
         <ul className="mt-2 space-y-1 text-sm">
           {audit.map((entry) => (
             <li key={entry.id} className="text-muted-foreground">

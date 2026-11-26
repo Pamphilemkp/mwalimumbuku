@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTicketMessages, uploadSupportFile, supportFileUrl, SupportTicket } from '@/src/hooks/useSupport';
+import { SUPPORT_URL_SECONDS } from '@/lib/storage/support-files';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -13,11 +14,21 @@ function SupportFile({ url, name, kind }: { url: string; name: string; kind: 'im
   const [href, setHref] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    supportFileUrl(url).then((signed) => {
-      if (active) setHref(signed);
-    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refreshMs = Math.max(15, SUPPORT_URL_SECONDS - 30) * 1000;
+    const load = () => {
+      supportFileUrl(url).then((signed) => {
+        if (!active) return;
+        setHref(signed);
+        if (!signed) return;
+        timer = setTimeout(load, refreshMs);
+      });
+    };
+    setHref(null);
+    load();
     return () => {
       active = false;
+      if (timer) clearTimeout(timer);
     };
   }, [url]);
   if (!href) return <p className="mt-1 text-xs opacity-70">{name || 'Fichier'}</p>;

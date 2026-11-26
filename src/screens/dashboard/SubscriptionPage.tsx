@@ -43,7 +43,7 @@ export default function SubscriptionPage() {
     enabled: !!user,
   });
 
-  const { data: stripeStatus, refetch: refreshStripe } = useQuery({
+  const { data: stripeStatus, dataUpdatedAt, refetch: refreshStripe } = useQuery({
     queryKey: ['stripe-subscription', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('check-subscription');
@@ -53,6 +53,11 @@ export default function SubscriptionPage() {
     enabled: !!user,
     refetchInterval: 60000,
   });
+
+  useEffect(() => {
+    if (!user?.id || dataUpdatedAt === 0) return;
+    void qc.invalidateQueries({ queryKey: ['subscription', user.id] });
+  }, [dataUpdatedAt, user?.id, qc]);
 
   const checkout = useMutation({
     mutationFn: async () => {

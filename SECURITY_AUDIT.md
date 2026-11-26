@@ -1,6 +1,6 @@
 # Security audit
 
-Scope is the Next.js app on this branch. Checks that ran here: `npx tsc --noEmit`, `npm test` (113 passed, 1 failed), `npm run build`, and the new PGlite case `supabase/tests/admin-boundaries.test.mts`. No request was sent to the hosted Supabase project, and no migration was applied there. The signed-in product was not exercised in a browser.
+Scope is the Next.js app on this branch. This review pass ran `npx tsc --noEmit` and `npm test` (114 passed, 1 failed), including `supabase/tests/admin-boundaries.test.mts`. The earlier pass on this branch ran `npm run build`; this pass did not. No request was sent to the hosted Supabase project, and no migration was applied there. The signed-in product was not exercised in a browser.
 
 The one failing test, `features/auth/privilege.test.mts`, reports `signUp(` in `features/auth/actions.ts`. That call is public student/parent registration and is already on `main`. Signup metadata still cannot become `admin` or `teacher`: `public.signup_role` maps anything else to `student`, and the PGlite test checks that.
 
@@ -8,7 +8,7 @@ The one failing test, `features/auth/privilege.test.mts`, reports `signUp(` in `
 
 | Severity | Issue | Evidence | Change |
 | --- | --- | --- | --- |
-| High | A signed-in user, including a platform admin, could treat the checkout return URL as payment and write `subscriptions.tier`. The old screen also passed `child_id` from the query string | `src/screens/dashboard/SubscriptionPage.tsx` previously updated the row when `success=true` | The screen no longer writes a tier. `prevent_subscription_self_update` rejects tier, `is_active`, and `expires_at` changes when `auth.uid()` is set. PGlite: a platform admin update raises |
+| High | A signed-in user, including a platform admin, could treat the checkout return URL as payment and write `subscriptions.tier`. The old screen also passed `child_id` from the query string | `src/screens/dashboard/SubscriptionPage.tsx` previously updated the row when `success=true` | The screen no longer writes a tier. `prevent_subscription_self_update` rejects a signed-in insert, delete, or change to tier, `is_active`, and `expires_at`. PGlite: a platform admin update, insert, and delete each raise. A write with no signed-in user still changes the tier |
 | High | `update-subscription` accepted a user JWT and wrote `tier` with the function's privileged key | `supabase/functions/update-subscription/index.ts` | The function now returns 403 after it checks the JWT. Cancellation stays with Stripe and `supabase/functions/stripe-webhook/index.ts` |
 | High | `payment_history` allowed any signed-in insert (`WITH CHECK (true)`), so a student could insert `status = succeeded` | `supabase/migrations/20260529162956_9ee10810-cb4f-411e-b3c4-4b8858f74427.sql` | The new migration drops that policy. PGlite: the student insert fails |
 | High | The user screen updated `user_roles` and deleted profiles, results, and related rows from the browser. A platform admin could grant `admin`. Creating a teacher called `signUp` in the admin session | `src/screens/dashboard/AdminUsers.tsx` | Role changes and deletion are gone from that screen. `user_roles_no_self_grant` blocks a self-grant of `admin` or `teacher`. A school admin cannot insert `admin` (PGlite). Teachers are attached with `provision_teacher` for an existing account |
@@ -25,9 +25,9 @@ Audit rows are append-only. PGlite: `DELETE FROM admin_audit_log` raises, includ
 - A student cannot set `homework_submissions.grade`: courses test and portals test.
 - Homework upload validation rejects another owner, a script, an oversize file, and a PDF name with `text/html`: `lib/assessment/grade.test.mts`.
 - Game scores ignore a client score and XP field: `lib/games/engine.test.mts` and `supabase/tests/games-parity.test.mts`.
-- Webhook decisions reject a bad signature, a timestamp older than 300 seconds, a replayed event id, an unpaid checkout, and a refund that would leave the user premium: `lib/payments/webhook.test.mts`. The edge function reads `stripe-signature` and `payment_events`.
+- Webhook decisions reject a bad signature, a timestamp older than 300 seconds, a replayed event id, an unpaid checkout, and a refund that would leave the user premium: `lib/payments/webhook.test.mts`. The edge function checks `stripe-signature` and calls `apply_payment_event`, which stores `payment_events` in the same transaction as the entitlement and payment history. An older event does not restore a newer cancellation. PGlite covers that order.
 - Auth, contact, games, and portal actions use `lib/auth/limits.ts` through `authRateLimiter`. The limiter is process-local (`lib/auth/limiter.ts`).
-- Password recovery records `provider_rejected` or `provider_unreachable` and does not put the address in the outcome (`lib/email/delivery.ts`).
+- Password recovery records `provider_rejected` or `provider_unreachable` and does not put the address in the outcome (`lib/email/delivery.ts`). Signup and recovery send that outcome to `record-auth-email` before sign-in. `anon` and `authenticated` cannot execute `record_email_delivery`. A school notice still records its outcome inside `admin_notify_school`.
 
 ## Documented, not changed
 

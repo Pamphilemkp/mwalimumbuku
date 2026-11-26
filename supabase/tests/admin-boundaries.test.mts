@@ -23,7 +23,8 @@ returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
 create role authenticated nologin nosuperuser nobypassrls;
-grant usage on schema public, auth to authenticated;
+create role anon nologin nosuperuser nobypassrls;
+grant usage on schema public, auth to authenticated, anon;
 grant execute on function auth.uid() to authenticated;
 
 create type public.app_role as enum ('student', 'parent', 'teacher', 'admin');
@@ -75,7 +76,8 @@ create table public.subscriptions (
   user_id uuid not null unique,
   tier text not null default 'free',
   is_active boolean not null default true,
-  expires_at timestamptz
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
 );
 create table public.platform_settings (
   id uuid primary key default gen_random_uuid(),
@@ -169,7 +171,8 @@ async function errorText(run) {
 describe("administration boundaries", { timeout: 120000 }, () => {
   it("does not delete stored rows", () => {
     assert.doesNotMatch(migrationSql, /\bdelete\s+from\b/i);
-    assert.doesNotMatch(migrationSql, /\btruncate\b/i);
+    assert.doesNotMatch(migrationSql, /\btruncate\s+(table\b|only\b|public\.)/i);
+    assert.doesNotMatch(migrationSql, /^\s*truncate\b/im);
   });
 
   it("refuses self-promotion, cross-school admin, platform actions, and forged payments", async () => {
@@ -238,10 +241,37 @@ describe("administration boundaries", { timeout: 120000 }, () => {
     const erased = await errorText(() => db.exec("delete from public.admin_audit_log"));
     assert.match(erased, /append-only/);
 
+    await asUser(db, platform, () => db.exec(`select public.provision_teacher('${teacherA}', '${schoolB}')`));
+    const schoolBAudit = await asUser(db, platform, () =>
+      db.query(`select id from public.admin_audit_log where school_id = '${schoolB}'`),
+    );
+    assert.equal(schoolBAudit.rows.length > 0, true);
     const hiddenSchool = await asUser(db, adminA, () =>
       db.query(`select id from public.admin_audit_log where school_id = '${schoolB}'`),
     );
     assert.equal(hiddenSchool.rows.length, 0);
+
+    const auditPrivileges = await db.query(`
+      select has_function_privilege('anon', 'public.append_admin_audit(uuid,uuid,text,text,uuid,text)', 'execute') as anon_exec,
+             has_function_privilege('authenticated', 'public.append_admin_audit(uuid,uuid,text,text,uuid,text)', 'execute') as user_exec
+    `);
+    assert.equal(auditPrivileges.rows[0].anon_exec, false);
+    assert.equal(auditPrivileges.rows[0].user_exec, false);
+    const forgedAudit = await errorText(() =>
+      asUser(db, platform, () =>
+        db.exec(`select public.append_admin_audit('${platform}', '${schoolA}', 'forged', 'notes', null, 'forged row')`),
+      ),
+    );
+    assert.match(forgedAudit, /permission denied/i);
+    const anonAudit = await errorText(async () => {
+      await db.exec("set role anon");
+      try {
+        await db.exec(`select public.append_admin_audit('${platform}', '${schoolA}', 'forged', 'notes', null, 'forged row')`);
+      } finally {
+        await db.exec("reset role");
+      }
+    });
+    assert.match(anonAudit, /permission denied/i);
 
     const settings = await asUser(db, adminA, () =>
       db.query(`update public.platform_settings set value = '{"easy_time": 1}'::jsonb where key = 'game_settings' returning key`),
@@ -256,6 +286,20 @@ describe("administration boundaries", { timeout: 120000 }, () => {
       asUser(db, platform, () => db.exec(`update public.subscriptions set tier = 'premium' where user_id = '${platform}'`)),
     );
     assert.match(tier, /cannot change a subscription tier/);
+    const insertedTier = await errorText(() =>
+      asUser(db, platform, () =>
+        db.exec(`insert into public.subscriptions (user_id, tier) values ('00000000-0000-0000-0000-000000000099', 'premium')`),
+      ),
+    );
+    assert.match(insertedTier, /cannot change a subscription tier/);
+    const deletedTier = await errorText(() =>
+      asUser(db, platform, () => db.exec(`delete from public.subscriptions where user_id = '${studentA}'`)),
+    );
+    assert.match(deletedTier, /cannot change a subscription tier/);
+    await db.exec(`update public.subscriptions set tier = 'premium', is_active = true where user_id = '${studentA}'`);
+    const serviceTier = await db.query(`select tier from public.subscriptions where user_id = '${studentA}'`);
+    assert.equal(serviceTier.rows[0].tier, "premium");
+    await db.exec(`update public.subscriptions set tier = 'free', is_active = true where user_id = '${studentA}'`);
 
     const forged = await errorText(() =>
       asUser(db, studentA, () =>
@@ -265,12 +309,36 @@ describe("administration boundaries", { timeout: 120000 }, () => {
     assert.notEqual(forged, "");
 
     const token = await errorText(() =>
-      asUser(db, adminA, () => db.exec(`select public.record_email_delivery('password_recovery', 'failed', 'reset-token')`)),
+      db.exec(`select public.record_email_delivery('password_recovery', 'failed', 'reset-token')`),
     );
     assert.match(token, /not allowed/);
-    await asUser(db, adminA, () => db.exec(`select public.record_email_delivery('password_recovery', 'failed', 'provider_rejected')`));
-    const mail = await asUser(db, platform, () => db.query(`select detail from public.email_deliveries`));
-    assert.equal(mail.rows.some((row) => row.detail === "provider_rejected"), true);
+    const clientMail = await errorText(() =>
+      asUser(db, adminA, () => db.exec(`select public.record_email_delivery('password_recovery', 'failed', 'provider_rejected')`)),
+    );
+    assert.match(clientMail, /permission denied/i);
+    const anonMail = await errorText(async () => {
+      await db.exec("set role anon");
+      try {
+        await db.exec(`select public.record_email_delivery('auth_signup', 'failed', 'provider_rejected')`);
+      } finally {
+        await db.exec("reset role");
+      }
+    });
+    assert.match(anonMail, /permission denied/i);
+    await db.exec(`select public.record_email_delivery('auth_signup', 'failed', 'provider_rejected')`);
+    await db.exec(`
+      insert into public.school_memberships (school_id, user_id, membership_role, status)
+      values ('${schoolA}', '${adminA}', 'teacher', 'active')
+    `);
+    const notices = await asUser(db, adminA, () =>
+      db.query(`select public.admin_notify_school('${schoolA}', 'Avis ecole', 'Un seul avis par personne') as delivered`),
+    );
+    assert.equal(Number(notices.rows[0].delivered), 2);
+    const adminNotices = await db.query(`select count(*)::int as n from public.notifications where user_id = '${adminA}'`);
+    assert.equal(Number(adminNotices.rows[0].n), 1);
+    const mail = await asUser(db, platform, () => db.query(`select kind, detail from public.email_deliveries`));
+    assert.equal(mail.rows.some((row) => row.kind === "auth_signup" && row.detail === "provider_rejected"), true);
+    assert.equal(mail.rows.some((row) => row.kind === "notification" && row.detail === "notification_in_app"), true);
     const mailHidden = await asUser(db, adminA, () => db.query(`select id from public.email_deliveries`));
     assert.equal(mailHidden.rows.length, 0);
 
@@ -278,5 +346,62 @@ describe("administration boundaries", { timeout: 120000 }, () => {
     assert.equal(lookup.rows.length, 0);
     const found = await asUser(db, adminA, () => db.query(`select user_id from public.find_account_for_admin('90000006')`));
     assert.equal(found.rows[0].user_id, studentA);
+
+    const clientPayment = await errorText(() =>
+      asUser(db, studentA, () =>
+        db.exec(`
+          select public.apply_payment_event(
+            'evt_client', 'customer.subscription.updated', 300,
+            '${studentA}', 'sync', 'premium', true, null, true,
+            null, null, null, null, null
+          )
+        `),
+      ),
+    );
+    assert.match(clientPayment, /permission denied/i);
+
+    await db.exec(`
+      select public.apply_payment_event(
+        'evt_cancel', 'customer.subscription.deleted', 200,
+        '${studentA}', 'sync', 'free', false, null, true,
+        null, null, null, 'cus_student', 'sub_student'
+      )
+    `);
+    await db.exec(`
+      select public.apply_payment_event(
+        'evt_old', 'customer.subscription.updated', 100,
+        '${studentA}', 'sync', 'premium', true, null, true,
+        5, 'USD', 'succeeded', 'cus_other', 'sub_old'
+      )
+    `);
+    const kept = await db.query(`select tier, is_active from public.subscriptions where user_id = '${studentA}'`);
+    assert.equal(kept.rows[0].tier, "free");
+    assert.equal(kept.rows[0].is_active, false);
+    const oldPayment = await db.query(`select status from public.payment_history where provider_ref = 'evt_old'`);
+    assert.equal(oldPayment.rows.length, 1);
+    const replay = await db.query(`
+      select public.apply_payment_event(
+        'evt_old', 'customer.subscription.updated', 100,
+        '${studentA}', 'sync', 'premium', true, null, true,
+        5, 'USD', 'succeeded', 'cus_other', 'sub_old'
+      ) as result
+    `);
+    const replayResult = typeof replay.rows[0].result === "string" ? JSON.parse(replay.rows[0].result) : replay.rows[0].result;
+    assert.equal(replayResult.duplicate, true);
+    const replayCount = await db.query(`select count(*)::int as n from public.payment_history where provider_ref = 'evt_old'`);
+    assert.equal(Number(replayCount.rows[0].n), 1);
+    await db.exec(`
+      select public.apply_payment_event(
+        'evt_steal', 'checkout.session.completed', 300,
+        '${teacherA}', 'sync', 'premium', true, null, true,
+        null, null, null, 'cus_student', 'sub_student'
+      )
+    `);
+    const owner = await db.query(`select public.stripe_refund_user('cus_student') as user_id`);
+    assert.equal(owner.rows[0].user_id, studentA);
+    const unknownOwner = await db.query(`select public.stripe_refund_user('cus_missing') as user_id`);
+    assert.equal(unknownOwner.rows[0].user_id, null);
+    const relink = await db.query(`select user_id from public.stripe_customer_links where customer_id = 'cus_other'`);
+    assert.equal(relink.rows[0].user_id, studentA);
   });
 });

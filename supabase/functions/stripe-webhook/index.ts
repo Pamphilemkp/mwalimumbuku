@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { decideStripeEvent, type StripeObject } from "../../../lib/payments/decision.ts";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOLERANCE_SEC = 300;
 
 function json(status: number, body: Record<string, unknown>) {
@@ -45,85 +45,27 @@ async function signatureOk(payload: string, header: string | null, secret: strin
   return signatures.some((signature) => timingSafeEqual(signature, expected));
 }
 
-type StripeObject = {
-  client_reference_id?: string | null;
-  metadata?: { user_id?: string | null } | null;
-  status?: string | null;
-  payment_status?: string | null;
-  amount_total?: number | null;
-  amount_refunded?: number | null;
-  currency?: string | null;
-  current_period_end?: number | null;
+type IncomingEvent = {
+  id?: string;
+  type?: string;
+  created?: number;
+  data?: { object?: StripeObject & { id?: string; customer?: unknown; subscription?: unknown; payment_intent?: unknown } };
 };
 
-type Decision =
-  | { action: "ignore" }
-  | { action: "invalid" }
-  | {
-      action: "sync";
-      userId: string;
-      tier: "premium" | "free";
-      isActive: boolean;
-      expiresAt: string | null;
-      payment: { amount: number; currency: string; status: "succeeded" | "failed" | "refunded" } | null;
-    };
-
-function userIdOf(object: StripeObject): string | null {
-  for (const candidate of [object.client_reference_id, object.metadata?.user_id]) {
-    if (typeof candidate === "string" && UUID.test(candidate)) return candidate;
-  }
-  return null;
+function stripeId(value: unknown): string | null {
+  return typeof value === "string" && /^[A-Za-z0-9_]{3,120}$/.test(value) ? value : null;
 }
 
-function currencyOf(value: string | null | undefined): string {
-  return typeof value === "string" && /^[a-zA-Z]{3}$/.test(value) ? value.toUpperCase() : "USD";
-}
-
-function amountOf(cents: number | null | undefined): number {
-  if (typeof cents !== "number" || !Number.isFinite(cents) || cents < 0) return 0;
-  return Math.round(cents) / 100;
-}
-
-function decide(event: { id?: string; type?: string; data?: { object?: StripeObject } }): Decision {
-  if (!event.id || event.id.length < 3 || event.id.length > 120 || !event.type || !event.data?.object) return { action: "invalid" };
-  const object = event.data.object;
-  const userId = userIdOf(object);
-  if (event.type === "checkout.session.completed") {
-    if (!userId) return { action: "ignore" };
-    const paid = object.payment_status === "paid" || object.status === "complete";
-    return {
-      action: "sync",
-      userId,
-      tier: paid ? "premium" : "free",
-      isActive: true,
-      expiresAt: null,
-      payment: {
-        amount: amountOf(object.amount_total),
-        currency: currencyOf(object.currency),
-        status: paid ? "succeeded" : "failed",
-      },
-    };
-  }
+function mappingFor(event: IncomingEvent): { customerId: string | null; subscriptionId: string | null } {
+  const object = event.data?.object;
+  const customerId = stripeId(object?.customer);
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-    if (!userId) return { action: "ignore" };
-    const active = event.type === "customer.subscription.updated" && (object.status === "active" || object.status === "trialing");
-    const expires = typeof object.current_period_end === "number" && object.current_period_end > 0
-      ? new Date(object.current_period_end * 1000).toISOString()
-      : null;
-    return { action: "sync", userId, tier: active ? "premium" : "free", isActive: active, expiresAt: active ? expires : null, payment: null };
+    return { customerId, subscriptionId: stripeId(object?.id) };
   }
-  if (event.type === "charge.refunded") {
-    if (!userId) return { action: "ignore" };
-    return {
-      action: "sync",
-      userId,
-      tier: "free",
-      isActive: false,
-      expiresAt: null,
-      payment: { amount: amountOf(object.amount_refunded), currency: currencyOf(object.currency), status: "refunded" },
-    };
+  if (event.type === "checkout.session.completed") {
+    return { customerId, subscriptionId: stripeId(object?.subscription) };
   }
-  return { action: "ignore" };
+  return { customerId, subscriptionId: null };
 }
 
 Deno.serve(async (req) => {
@@ -134,60 +76,57 @@ Deno.serve(async (req) => {
   const ok = await signatureOk(payload, req.headers.get("stripe-signature"), secret, Math.floor(Date.now() / 1000));
   if (!ok) return json(400, { error: "signature rejected" });
 
-  let event: { id?: string; type?: string; data?: { object?: StripeObject } };
+  let event: IncomingEvent;
   try {
     event = JSON.parse(payload);
   } catch {
     return json(400, { error: "invalid event" });
   }
-
-  const decision = decide(event);
-  if (decision.action === "invalid" || !event.id || !event.type) return json(400, { error: "invalid event" });
+  if (!event.id || !event.type || !event.data?.object) return json(400, { error: "invalid event" });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) return json(500, { error: "payment sync is not configured" });
-
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  const { error: stored } = await admin.from("payment_events").insert({
-    event_id: event.id,
-    event_type: event.type.slice(0, 80),
-    status: decision.action === "sync" ? "processed" : "ignored",
-  });
-  if (stored) {
-    if (stored.code === "23505") return json(200, { received: true, duplicate: true });
-    return json(500, { error: "event store failed" });
-  }
-  if (decision.action === "ignore") return json(200, { received: true, ignored: true });
 
-  const { error: subscriptionError } = await admin.from("subscriptions").upsert({
-    user_id: decision.userId,
-    tier: decision.tier,
-    is_active: decision.isActive,
-    expires_at: decision.expiresAt,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" });
-
-  if (subscriptionError) {
-    await admin.from("payment_events").delete().eq("event_id", event.id);
-    return json(500, { error: "subscription sync failed" });
-  }
-
-  if (decision.payment) {
-    const { error: paymentError } = await admin.from("payment_history").insert({
-      user_id: decision.userId,
-      amount: decision.payment.amount,
-      currency: decision.payment.currency,
-      status: decision.payment.status,
-      provider: "stripe",
-      provider_ref: event.id,
-      description: event.type.slice(0, 80),
-    });
-    if (paymentError) {
-      await admin.from("payment_events").delete().eq("event_id", event.id);
-      return json(500, { error: "payment history failed" });
+  let resolvedUserId: string | null = null;
+  if (event.type === "charge.refunded") {
+    const customerId = stripeId(event.data.object.customer);
+    if (customerId) {
+      const { data, error } = await admin.rpc("stripe_refund_user", { _customer_id: customerId });
+      if (error) return json(500, { error: "refund owner lookup failed" });
+      resolvedUserId = typeof data === "string" ? data : null;
     }
   }
 
+  const decision = decideStripeEvent(
+    { id: event.id, type: event.type, data: { object: event.data.object } },
+    { resolvedUserId },
+  );
+  if (decision.action === "invalid") return json(400, { error: "invalid event" });
+
+  const created = typeof event.created === "number" && Number.isFinite(event.created) ? Math.trunc(event.created) : null;
+  const link = decision.action === "sync" ? mappingFor(event) : { customerId: null, subscriptionId: null };
+  const { data, error } = await admin.rpc("apply_payment_event", {
+    _event_id: event.id,
+    _event_type: event.type.slice(0, 80),
+    _event_created: created,
+    _user_id: decision.action === "sync" ? decision.userId : null,
+    _action: decision.action,
+    _tier: decision.action === "sync" ? decision.tier : null,
+    _is_active: decision.action === "sync" ? decision.isActive : null,
+    _expires_at: decision.action === "sync" ? decision.expiresAt : null,
+    _apply_entitlement: decision.action === "sync",
+    _amount: decision.action === "sync" ? decision.payment?.amount ?? null : null,
+    _currency: decision.action === "sync" ? decision.payment?.currency ?? null : null,
+    _payment_status: decision.action === "sync" ? decision.payment?.status ?? null : null,
+    _customer_id: link.customerId,
+    _subscription_id: link.subscriptionId,
+  });
+  if (error) return json(500, { error: "payment sync failed" });
+
+  const result = (data ?? {}) as { duplicate?: boolean; ignored?: boolean };
+  if (result.duplicate) return json(200, { received: true, duplicate: true });
+  if (result.ignored || decision.action === "ignore") return json(200, { received: true, ignored: true });
   return json(200, { received: true });
 });
