@@ -13,8 +13,6 @@ import { cn } from '@/src/lib/utils';
 import { useSearchParams } from '@/src/lib/next-router';
 import { useLanguage } from '@/src/i18n/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
-import { Input } from '@/src/components/ui/input';
-import { Label } from '@/src/components/ui/label';
 
 export default function SubscriptionPage() {
   const { user } = useAuth();
@@ -22,26 +20,18 @@ export default function SubscriptionPage() {
   const [searchParams] = useSearchParams();
   const { t, lang } = useLanguage();
   const [currency, setCurrency] = useState<'usd' | 'cdf'>('cdf');
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [mobileProvider, setMobileProvider] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      toast.success(t.subscription.welcomePremium);
-      if (user) {
-        supabase.from('subscriptions')
-          .update({ tier: 'premium', is_active: true })
-          .eq('user_id', searchParams.get('child_id') || user.id)
-          .then(() => {
-            qc.invalidateQueries({ queryKey: ['subscription'] });
-            qc.invalidateQueries({ queryKey: ['stripe-subscription'] });
-          });
-      }
+      toast.info(lang === 'fr'
+        ? 'Le retour du paiement ne change pas le forfait. Le forfait suit la confirmation du fournisseur.'
+        : 'Returning from checkout does not change the plan. The plan follows the provider confirmation.');
+      qc.invalidateQueries({ queryKey: ['stripe-subscription'] });
     }
     if (searchParams.get('canceled') === 'true') {
       toast.info(t.subscription.checkoutCanceled);
     }
-  }, [searchParams, qc, t, user]);
+  }, [searchParams, qc, t, lang]);
 
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['subscription', user?.id],
@@ -53,7 +43,7 @@ export default function SubscriptionPage() {
     enabled: !!user,
   });
 
-  const { data: stripeStatus, refetch: refreshStripe } = useQuery({
+  const { data: stripeStatus, dataUpdatedAt, refetch: refreshStripe } = useQuery({
     queryKey: ['stripe-subscription', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('check-subscription');
@@ -63,6 +53,11 @@ export default function SubscriptionPage() {
     enabled: !!user,
     refetchInterval: 60000,
   });
+
+  useEffect(() => {
+    if (!user?.id || dataUpdatedAt === 0) return;
+    void qc.invalidateQueries({ queryKey: ['subscription', user.id] });
+  }, [dataUpdatedAt, user?.id, qc]);
 
   const checkout = useMutation({
     mutationFn: async () => {
@@ -88,41 +83,7 @@ export default function SubscriptionPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const downgrade = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('update-subscription', { body: { tier: 'free' } });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-    },
-    onSuccess: () => {
-      toast.success(t.subscription.downgradedFree);
-      qc.invalidateQueries({ queryKey: ['subscription'] });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const handleMobileMoney = (provider: string) => {
-    setMobileProvider(provider);
-    toast.info(lang === 'fr'
-      ? `${provider} — Mode test activé. L'intégration sera disponible après configuration du compte marchand.`
-      : `${provider} — Test mode active. Integration will be available after merchant account setup.`
-    );
-  };
-
-  const submitMobileMoney = () => {
-    if (!mobileNumber || mobileNumber.length < 9) {
-      toast.error(lang === 'fr' ? 'Numéro invalide' : 'Invalid number');
-      return;
-    }
-    toast.info(lang === 'fr'
-      ? `Paiement ${mobileProvider} simulé avec succès (mode test). Numéro: ${mobileNumber}`
-      : `${mobileProvider} payment simulated successfully (test mode). Number: ${mobileNumber}`
-    );
-    setMobileProvider(null);
-    setMobileNumber('');
-  };
-
-  const isPremium = stripeStatus?.subscribed || subscription?.tier === 'premium';
+  const isPremium = stripeStatus?.subscribed || (subscription?.tier === 'premium' && subscription?.is_active);
   const currentTier = isPremium ? 'premium' : 'free';
 
   const priceLabel = currency === 'usd' ? '$5 USD/mo' : '5 000 CDF/mois';
@@ -144,12 +105,6 @@ export default function SubscriptionPage() {
       features: t.subscription.premiumFeatures,
       popular: true,
     },
-  ];
-
-  const MOBILE_PROVIDERS = [
-    { id: 'mpesa', name: 'M-Pesa', color: 'bg-green-600', desc: 'Vodacom' },
-    { id: 'orange', name: 'Orange Money', color: 'bg-orange-500', desc: 'Orange' },
-    { id: 'airtel', name: 'Airtel Money', color: 'bg-red-500', desc: 'Airtel' },
   ];
 
   if (isLoading) return <Skeleton className="h-60" />;
@@ -230,40 +185,14 @@ export default function SubscriptionPage() {
                       <p className="mt-1 text-center text-[10px] text-muted-foreground">Stripe · {currency === 'cdf' ? 'Franc Congolais' : 'US Dollar'}</p>
                     </TabsContent>
                     <TabsContent value="mobile" className="mt-3 space-y-2">
-                      {!mobileProvider ? (
-                        MOBILE_PROVIDERS.map((p) => (
-                          <button key={p.id} onClick={() => handleMobileMoney(p.name)}
-                            className="flex w-full items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors">
-                            <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white', p.color)}>
-                              {p.name[0]}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-medium text-foreground">{p.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{p.desc}</p>
-                            </div>
-                            <Badge variant="outline" className="ml-auto text-[9px]">Test</Badge>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-xs font-medium text-foreground">{mobileProvider}</p>
-                          <div className="space-y-1">
-                            <Label className="text-xs">{lang === 'fr' ? 'Numéro de téléphone' : 'Phone number'}</Label>
-                            <Input placeholder="+243 ..." value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1" onClick={() => { setMobileProvider(null); setMobileNumber(''); }}>
-                              {lang === 'fr' ? 'Retour' : 'Back'}
-                            </Button>
-                            <Button size="sm" className="flex-1" onClick={submitMobileMoney}>
-                              {lang === 'fr' ? 'Payer (test)' : 'Pay (test)'}
-                            </Button>
-                          </div>
-                          <p className="text-center text-[10px] text-muted-foreground">
-                            {lang === 'fr' ? '⚠️ Mode test — aucun débit réel' : '⚠️ Test mode — no real charge'}
-                          </p>
-                        </div>
-                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {lang === 'fr'
+                          ? 'Mobile Money est indisponible. Aucun paiement n’est lancé depuis cet écran.'
+                          : 'Mobile money is unavailable. This screen does not start a payment.'}
+                      </p>
+                      <Button className="w-full" disabled>
+                        {lang === 'fr' ? 'Indisponible' : 'Unavailable'}
+                      </Button>
                     </TabsContent>
                   </Tabs>
                 </div>
@@ -275,8 +204,8 @@ export default function SubscriptionPage() {
                   </Button>
                 </div>
               ) : tier.id === 'free' && isPremium ? (
-                <Button className="mt-6 w-full" variant="secondary" disabled={downgrade.isPending} onClick={() => downgrade.mutate()}>
-                  {t.subscription.downgrade}
+                <Button className="mt-6 w-full" variant="secondary" disabled>
+                  {lang === 'fr' ? 'Le changement de forfait passe par le fournisseur' : 'Plan changes go through the provider'}
                 </Button>
               ) : (
                 <Button className="mt-6 w-full" variant="outline" disabled>{t.subscription.currentPlanBtn}</Button>

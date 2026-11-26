@@ -9,9 +9,29 @@ import { authEmailOrigin, SIGNUP_CONFIRM_PATH } from "@/lib/auth/site";
 import { createClient } from "@/lib/supabase/server";
 import { runRegister, type PublicRole } from "@/features/auth/register";
 import { runRequestPasswordReset } from "@/features/auth/request-password-reset";
+import { emailOutcome, isRecordableEmailOutcome, type EmailOutcome } from "@/lib/email/delivery";
 import { runSignIn } from "@/features/auth/sign-in";
 import { runSignOut } from "@/features/auth/sign-out";
 import { runUpdatePassword } from "@/features/auth/update-password";
+
+async function recordAuthEmail(outcome: EmailOutcome) {
+  const secret = process.env.AUTH_EMAIL_LOG_SECRET;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!secret || !url || !isRecordableEmailOutcome(outcome)) return;
+  if (outcome.kind === "notification") return;
+  try {
+    await fetch(new URL("/functions/v1/record-auth-email", url), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-email-log-secret": secret,
+      },
+      body: JSON.stringify({ kind: outcome.kind, status: outcome.status, detail: outcome.detail }),
+    });
+  } catch {
+    // The auth response stays the same when the outcome log is unreachable.
+  }
+}
 
 function failureOf(error: { name?: string; status?: number } | null): { name?: string; status?: number } | null {
   if (!error) return null;
@@ -73,6 +93,7 @@ export async function requestPasswordResetAction(input: { email?: string }) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
         return { error: failureOf(error) };
       },
+      recordDelivery: recordAuthEmail,
     },
     {
       email: input?.email,
@@ -145,7 +166,9 @@ export async function registerAccountAction(input: {
             emailRedirectTo: redirectTo,
           },
         });
-        return { error: failureOf(error) };
+        const failure = failureOf(error);
+        await recordAuthEmail(emailOutcome("auth_signup", failure));
+        return { error: failure };
       },
     },
     {

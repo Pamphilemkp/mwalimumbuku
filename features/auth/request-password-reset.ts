@@ -1,6 +1,7 @@
 import { AUTH_LIMITS } from "../../lib/auth/limits.ts";
 import type { RateLimiter } from "../../lib/auth/rate-limit.ts";
 import { parseEmail } from "../../lib/auth/validation.ts";
+import { emailOutcome, type EmailOutcome } from "../../lib/email/delivery.ts";
 import type { AuthFailure } from "./sign-in.ts";
 
 export type RecoveryResult =
@@ -21,6 +22,7 @@ export async function runRequestPasswordReset(
   deps: {
     consume: RateLimiter;
     resetPasswordForEmail: (email: string, redirectTo: string) => Promise<{ error: AuthFailure | null }>;
+    recordDelivery?: (outcome: EmailOutcome) => Promise<void>;
   },
   input: { email: unknown; address: string },
   origin: string | null,
@@ -35,8 +37,10 @@ export async function runRequestPasswordReset(
   const redirectTo = `${origin}/auth/callback`;
   try {
     const { error } = await deps.resetPasswordForEmail(email, redirectTo);
+    if (deps.recordDelivery) await deps.recordDelivery(emailOutcome("password_recovery", error));
     if (error && isUnreachable(error)) return { status: "failed", message: UNAVAILABLE };
   } catch {
+    if (deps.recordDelivery) await deps.recordDelivery(emailOutcome("password_recovery", { status: 0 }));
     return { status: "failed", message: UNAVAILABLE };
   }
 

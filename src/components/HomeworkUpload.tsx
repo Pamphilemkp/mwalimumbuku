@@ -28,6 +28,7 @@ export default function HomeworkUpload({ assignmentId, onUploaded }: HomeworkUpl
       const decision = validateHomeworkFile({
         fileName: file.name,
         size: file.size,
+        contentType: file.type,
         ownerId: user.id,
         callerId: user.id,
         assignmentId,

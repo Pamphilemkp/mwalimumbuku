@@ -72,6 +72,8 @@ describe("homework files", () => {
     assert.equal(validateHomeworkFile({ ...file, fileName: "notes.exe", objectName: "notes.exe", size: 1000 }).ok, false);
     assert.equal(validateHomeworkFile({ ...file, fileName: "notes.pdf", size: 9_000_000 }).ok, false);
     assert.equal(validateHomeworkFile({ ...file, fileName: "notes.pdf", size: 1000, callerId: other }).ok, false);
+    assert.equal(validateHomeworkFile({ ...file, fileName: "notes.pdf", size: 1000, contentType: "text/html" }).ok, false);
+    assert.equal(validateHomeworkFile({ ...file, fileName: "notes.pdf", size: 1000, contentType: "application/pdf" }).ok, true);
   });
 
   it("issues a short-lived path only for the caller's own file", () => {

@@ -1,6 +1,5 @@
 "use client";
 
-import { authEmailOrigin, SIGNUP_CONFIRM_PATH } from '@/lib/auth/site';
 import { supabase } from '@/src/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/src/components/ui/badge';
@@ -8,25 +7,20 @@ import { Button } from '@/src/components/ui/button';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/src/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/src/components/ui/dialog';
 import { toast } from '@/src/components/ui/sonner';
-import { Users, Search, Shield, Plus, Trash2, Eye, Copy, UserPlus, Link2 } from 'lucide-react';
+import { Users, Search, Shield, Eye, Copy, Link2 } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '@/src/hooks/useAuth';
 import { motion } from 'framer-motion';
 import { cn } from '@/src/lib/utils';
 import { usePagination } from '@/src/hooks/usePagination';
 import PaginationControls from '@/src/components/PaginationControls';
 
 export default function AdminUsers() {
-  const { role } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [createDialog, setCreateDialog] = useState(false);
   const [detailDialog, setDetailDialog] = useState<string | null>(null);
   const [linkDialog, setLinkDialog] = useState<string | null>(null);
-  const [newUser, setNewUser] = useState({ email: '', password: '', fullName: '', role: 'student' });
   const [linkStudentCode, setLinkStudentCode] = useState('');
 
   const { data: profiles, isLoading } = useQuery({
@@ -81,68 +75,6 @@ export default function AdminUsers() {
       if (error) throw error;
       return data;
     },
-  });
-
-  const updateRole = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
-      const { error } = await supabase.from('user_roles').update({ role: newRole as any }).eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success('Rôle mis à jour.'); qc.invalidateQueries({ queryKey: ['admin-roles'] }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const deleteUser = useMutation({
-    mutationFn: async (userId: string) => {
-      // Delete related data first
-      await supabase.from('results').delete().eq('user_id', userId);
-      await supabase.from('course_enrollments').delete().eq('user_id', userId);
-      await supabase.from('parent_student').delete().or(`parent_id.eq.${userId},student_id.eq.${userId}`);
-      await supabase.from('daily_moods').delete().eq('user_id', userId);
-      await supabase.from('messages').delete().or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-      await supabase.from('subscriptions').delete().eq('user_id', userId);
-      await supabase.from('user_badges').delete().eq('user_id', userId);
-      await supabase.from('user_roles').delete().eq('user_id', userId);
-      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success('Utilisateur supprimé.');
-      qc.invalidateQueries({ queryKey: ['admin-profiles'] });
-      qc.invalidateQueries({ queryKey: ['admin-roles'] });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const createTeacher = useMutation({
-    mutationFn: async () => {
-      const emailOrigin = authEmailOrigin({
-        siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-        requestOrigin: window.location.origin,
-        production: process.env.NODE_ENV === 'production',
-      });
-      const { data, error } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-        options: {
-          data: { full_name: newUser.fullName, role: newUser.role },
-          emailRedirectTo: `${emailOrigin}${SIGNUP_CONFIRM_PATH}`,
-        },
-      });
-      if (error) throw error;
-      // Force role if teacher/admin
-      if (data.user && (newUser.role === 'teacher' || newUser.role === 'admin')) {
-        await supabase.from('user_roles').update({ role: newUser.role as any }).eq('user_id', data.user.id);
-      }
-    },
-    onSuccess: () => {
-      toast.success('Compte créé avec succès !');
-      setCreateDialog(false);
-      setNewUser({ email: '', password: '', fullName: '', role: 'student' });
-      qc.invalidateQueries({ queryKey: ['admin-profiles'] });
-      qc.invalidateQueries({ queryKey: ['admin-roles'] });
-    },
-    onError: (e: any) => toast.error(e.message),
   });
 
   const linkParentStudent = useMutation({
@@ -210,46 +142,10 @@ export default function AdminUsers() {
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">Gestion des Utilisateurs</h1>
           <p className="mt-1 text-muted-foreground">{stats.total} utilisateurs enregistrés.</p>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Les rôles et les rattachements d'école se gèrent dans Structure. Cette liste ne modifie pas un rôle et ne supprime pas un dossier.
+          </p>
         </div>
-        <Dialog open={createDialog} onOpenChange={setCreateDialog}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" /> Créer un compte</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Créer un nouveau compte</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Nom complet</Label>
-                <Input value={newUser.fullName} onChange={(e) => setNewUser(p => ({ ...p, fullName: e.target.value }))} placeholder="Nom complet..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" value={newUser.email} onChange={(e) => setNewUser(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
-              </div>
-              <div className="space-y-2">
-                <Label>Mot de passe</Label>
-                <Input type="password" value={newUser.password} onChange={(e) => setNewUser(p => ({ ...p, password: e.target.value }))} placeholder="Mot de passe..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Rôle</Label>
-                <Select value={newUser.role} onValueChange={(v) => setNewUser(p => ({ ...p, role: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Élève</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
-                    <SelectItem value="teacher">Enseignant</SelectItem>
-                    <SelectItem value="admin">Administrateur</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => createTeacher.mutate()} disabled={createTeacher.isPending || !newUser.email || !newUser.password}>
-                {createTeacher.isPending ? 'Création...' : 'Créer le compte'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Stats cards */}
@@ -337,19 +233,6 @@ export default function AdminUsers() {
                             <Link2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        <Select value={userRole} onValueChange={(v) => updateRole.mutate({ userId: p.user_id, newRole: v })}>
-                          <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="student">Élève</SelectItem>
-                            <SelectItem value="teacher">Enseignant</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => { if (confirm('Supprimer cet utilisateur ?')) deleteUser.mutate(p.user_id); }}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
                       </div>
                     </td>
                   </tr>

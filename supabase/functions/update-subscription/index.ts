@@ -20,11 +20,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Verify user with their JWT
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
+    const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
@@ -35,48 +31,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { tier } = await req.json();
-    if (!tier || !["free", "premium"].includes(tier)) {
-      return new Response(JSON.stringify({ error: "Invalid tier" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Only allow downgrades to free via this endpoint.
-    // Premium upgrades MUST go through Stripe checkout/webhook flow.
-    if (tier === "premium") {
-      return new Response(JSON.stringify({ error: "Payment required. Please use the checkout flow to upgrade." }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    const { data: existing } = await adminClient
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (existing) {
-      const { error } = await adminClient
-        .from("subscriptions")
-        .update({ tier, updated_at: new Date().toISOString(), is_active: true })
-        .eq("user_id", user.id);
-      if (error) throw error;
-    } else {
-      const { error } = await adminClient
-        .from("subscriptions")
-        .insert({ user_id: user.id, tier });
-      if (error) throw error;
-    }
-
-    return new Response(JSON.stringify({ success: true, tier }), {
+    return new Response(JSON.stringify({ error: "Subscription changes are confirmed by the payment provider." }), {
+      status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch {
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

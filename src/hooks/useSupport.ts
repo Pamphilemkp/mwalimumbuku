@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createSupportTicketAction, sendSupportMessageAction } from '@/features/portals/actions';
 import { supabase } from '@/src/integrations/supabase/client';
+import { supportObjectPath, validateSupportFile, SUPPORT_URL_SECONDS } from '@/lib/storage/support-files';
 import { useAuth } from '@/src/hooks/useAuth';
 
 export type SupportCategory =
@@ -144,9 +145,25 @@ export async function createTicket(input: {
 }
 
 export async function uploadSupportFile(file: Blob, userId: string, name: string) {
-  const path = `${userId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-  const { error } = await supabase.storage.from('support-files').upload(path, file, { upsert: false });
+  const extension = name.split('.').pop()?.toLowerCase() ?? 'bin';
+  const decision = validateSupportFile({
+    fileName: name,
+    size: file.size,
+    contentType: file.type || (extension === 'webm' ? 'audio/webm' : ''),
+    ownerId: userId,
+    callerId: userId,
+    objectName: `${Date.now()}-${name}`,
+  });
+  if (!decision.ok) throw new Error('Choose a PDF, image, or voice note under 5 MB.');
+  const { error } = await supabase.storage.from('support-files').upload(decision.path, file, { upsert: false });
   if (error) throw error;
-  const { data } = supabase.storage.from('support-files').getPublicUrl(path);
-  return data.publicUrl;
+  return decision.path;
+}
+
+export async function supportFileUrl(fileUrl: string): Promise<string | null> {
+  const path = supportObjectPath(fileUrl);
+  if (!path) return null;
+  const { data, error } = await supabase.storage.from('support-files').createSignedUrl(path, SUPPORT_URL_SECONDS);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
 }

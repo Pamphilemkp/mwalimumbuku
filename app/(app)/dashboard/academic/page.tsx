@@ -1,4 +1,5 @@
 import { requireAccess } from "@/features/auth/require-access";
+import { SchoolAdminTools } from "@/features/admin/school-tools";
 import { createClassAction, createGradeAction, createSchoolAction, createYearAction } from "@/features/dashboard/academic-actions";
 import { APP_ROLES } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,10 @@ type YearRow = { id: string; school_id: string; name: string; status: string };
 type GradeRow = { id: string; school_id: string; name: string };
 type ClassRow = { id: string; school_id: string; name: string; academic_year_id: string };
 type MembershipRow = { school_id: string; membership_role: string };
+type SchoolMember = { id: string; school_id: string; user_id: string; membership_role: string; status: string };
+type CourseRow = { id: string; school_id: string | null; title: string; is_published: boolean };
+type AuditRow = { id: string; school_id: string | null; action: string; summary: string; created_at: string };
+type ProfileRow = { user_id: string; full_name: string | null; student_code: string | null };
 
 export default async function Page({
   searchParams,
@@ -18,7 +23,7 @@ export default async function Page({
   const session = await requireAccess(APP_ROLES);
   const params = await searchParams;
   const supabase = await createClient();
-  const [schools, years, grades, classes, memberships] = await Promise.all([
+  const [schools, years, grades, classes, memberships, roster, courses, audit, profiles] = await Promise.all([
     supabase.from("schools").select("id, name, status").order("name"),
     supabase.from("academic_years").select("id, school_id, name, status").order("name"),
     supabase.from("grade_levels").select("id, school_id, name").order("name"),
@@ -28,12 +33,28 @@ export default async function Page({
       .select("school_id, membership_role")
       .eq("user_id", session.userId ?? "")
       .eq("status", "active"),
+    supabase.from("school_memberships").select("id, school_id, user_id, membership_role, status").order("membership_role"),
+    supabase.from("courses").select("id, school_id, title, is_published").not("school_id", "is", null).order("title"),
+    supabase.from("admin_audit_log").select("id, school_id, action, summary, created_at").order("created_at", { ascending: false }).limit(40),
+    supabase.from("profiles").select("user_id, full_name, student_code"),
   ]);
   const unavailable = schools.error || years.error || grades.error || classes.error || memberships.error;
   const schoolRows = (schools.data ?? []) as SchoolRow[];
   const yearRows = (years.data ?? []) as YearRow[];
   const gradeRows = (grades.data ?? []) as GradeRow[];
   const classRows = (classes.data ?? []) as ClassRow[];
+  const rosterState = roster.error ? "error" : "ready";
+  const courseState = courses.error ? "error" : "ready";
+  const auditState = audit.error ? "error" : "ready";
+  const rosterRows = (roster.error ? [] : (roster.data ?? [])) as SchoolMember[];
+  const courseRows = (courses.error ? [] : (courses.data ?? [])) as CourseRow[];
+  const auditRows = (audit.error ? [] : (audit.data ?? [])) as AuditRow[];
+  const names = Object.fromEntries(
+    ((profiles.error ? [] : (profiles.data ?? [])) as ProfileRow[]).map((profile) => [
+      profile.user_id,
+      profile.full_name || profile.student_code || profile.user_id.slice(0, 8),
+    ]),
+  );
   const adminSchoolIds = new Set(
     ((memberships.data ?? []) as MembershipRow[])
       .filter((row) => row.membership_role === "school_admin")
@@ -110,6 +131,28 @@ export default async function Page({
                     </tbody>
                   </table>
                 </div>
+                {isPlatformAdmin || canManage ? (
+                  <SchoolAdminTools
+                    schoolId={school.id}
+                    schoolStatus={school.status}
+                    memberships={rosterRows.filter((row) => row.school_id === school.id)}
+                    names={names}
+                    courses={courseRows.filter((course) => course.school_id === school.id).map((course) => ({
+                      id: course.id,
+                      title: course.title,
+                      is_published: course.is_published,
+                    }))}
+                    audit={auditRows.filter((entry) => entry.school_id === school.id).map((entry) => ({
+                      id: entry.id,
+                      action: entry.action,
+                      summary: entry.summary,
+                      created_at: entry.created_at,
+                    }))}
+                    rosterState={rosterState}
+                    courseState={courseState}
+                    auditState={auditState}
+                  />
+                ) : null}
                 {canManage ? (
                   <div className="mt-4 grid gap-4 lg:grid-cols-3">
                     <form action={createYearAction} className="space-y-2">

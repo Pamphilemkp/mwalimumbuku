@@ -1,7 +1,16 @@
 export const HOMEWORK_MAX_BYTES = 5 * 1024 * 1024;
 export const HOMEWORK_URL_SECONDS = 120;
+/** Keep a student file for 24 months after it is stored. Nothing here deletes it. */
+export const HOMEWORK_RETENTION_MS = 730 * 24 * 60 * 60 * 1000;
 
 const EXTENSIONS = new Set(["pdf", "jpg", "jpeg", "png", "webp"]);
+const MIME: Record<string, string> = {
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
 
 export type FileDecision =
   | { ok: true; path: string }
@@ -19,6 +28,10 @@ function safeSegment(value: string): boolean {
   return value.length > 0 && value.length <= 80 && !value.includes("..") && !value.includes("/") && !value.includes("\\");
 }
 
+export function homeworkRetainUntil(createdAtMs: number): number {
+  return createdAtMs + HOMEWORK_RETENTION_MS;
+}
+
 export function validateHomeworkFile(input: {
   fileName: string;
   size: number;
@@ -26,6 +39,7 @@ export function validateHomeworkFile(input: {
   callerId: string;
   assignmentId: string;
   objectName: string;
+  contentType?: string;
 }): FileDecision {
   if (input.callerId !== input.ownerId || !safeSegment(input.ownerId) || !safeSegment(input.assignmentId)) {
     return { ok: false, reason: "owner" };
@@ -33,6 +47,8 @@ export function validateHomeworkFile(input: {
   if (!Number.isInteger(input.size) || input.size < 1 || input.size > HOMEWORK_MAX_BYTES) return { ok: false, reason: "size" };
   const extension = extensionOf(input.fileName);
   if (!extension || !EXTENSIONS.has(extension)) return { ok: false, reason: "type" };
+  const declared = input.contentType?.split(";")[0]?.trim().toLowerCase();
+  if (declared && MIME[extension] !== declared) return { ok: false, reason: "type" };
   if (!safeSegment(input.objectName) || extensionOf(input.objectName) !== extension) return { ok: false, reason: "name" };
   return { ok: true, path: `${input.ownerId}/${input.assignmentId}/${input.objectName}` };
 }
