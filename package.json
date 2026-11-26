@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test features/auth/*.test.mts lib/auth/*.test.mts lib/assessment/*.test.mts lib/games/*.test.mts lib/portals/*.test.mts lib/rewards/*.test.mts lib/supabase/*.test.mts lib/http/*.test.mts services/auth/*.test.mts supabase/tests/*.test.mts"
+    "test": "node --test features/auth/*.test.mts lib/admin/*.test.mts lib/auth/*.test.mts lib/assessment/*.test.mts lib/email/*.test.mts lib/games/*.test.mts lib/payments/*.test.mts lib/portals/*.test.mts lib/rewards/*.test.mts lib/storage/*.test.mts lib/supabase/*.test.mts lib/http/*.test.mts services/auth/*.test.mts supabase/tests/*.test.mts"
   },
   "engines": {
     "node": ">=20.9.0"

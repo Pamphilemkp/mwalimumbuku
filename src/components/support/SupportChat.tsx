@@ -1,13 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { useTicketMessages, uploadSupportFile, SupportTicket } from '@/src/hooks/useSupport';
+import { useTicketMessages, uploadSupportFile, supportFileUrl, SupportTicket } from '@/src/hooks/useSupport';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Paperclip, Send, Mic, Square, Image as ImageIcon, CheckCheck, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/src/lib/utils';
+
+function SupportFile({ url, name, kind }: { url: string; name: string; kind: 'image' | 'voice' | 'file' }) {
+  const [href, setHref] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    supportFileUrl(url).then((signed) => {
+      if (active) setHref(signed);
+    });
+    return () => {
+      active = false;
+    };
+  }, [url]);
+  if (!href) return <p className="mt-1 text-xs opacity-70">{name || 'Fichier'}</p>;
+  if (kind === 'image') return <img src={href} alt={name} className="mt-1 max-h-60 rounded-lg" />;
+  if (kind === 'voice') return <audio src={href} controls className="mt-1 w-full" />;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 underline">
+      <Paperclip className="h-3 w-3" />{name}
+    </a>
+  );
+}
 
 export default function SupportChat({ ticket }: { ticket: SupportTicket }) {
   const { user } = useAuth();
@@ -72,16 +93,13 @@ export default function SupportChat({ ticket }: { ticket: SupportTicket }) {
                 mine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground')}>
                 {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
                 {m.attachment_url && m.attachment_type === 'image' && (
-                  <img src={m.attachment_url} alt={m.attachment_name ?? ''} className="mt-1 max-h-60 rounded-lg" />
+                  <SupportFile url={m.attachment_url} name={m.attachment_name ?? ''} kind="image" />
                 )}
                 {m.attachment_url && m.attachment_type === 'voice' && (
-                  <audio src={m.attachment_url} controls className="mt-1 w-full" />
+                  <SupportFile url={m.attachment_url} name={m.attachment_name ?? ''} kind="voice" />
                 )}
                 {m.attachment_url && m.attachment_type === 'file' && (
-                  <a href={m.attachment_url} target="_blank" rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 underline">
-                    <Paperclip className="h-3 w-3" />{m.attachment_name ?? 'Fichier'}
-                  </a>
+                  <SupportFile url={m.attachment_url} name={m.attachment_name ?? 'Fichier'} kind="file" />
                 )}
                 <div className={cn('mt-1 flex items-center gap-1 text-[10px] opacity-70')}>
                   {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

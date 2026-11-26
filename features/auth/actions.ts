@@ -9,9 +9,23 @@ import { authEmailOrigin, SIGNUP_CONFIRM_PATH } from "@/lib/auth/site";
 import { createClient } from "@/lib/supabase/server";
 import { runRegister, type PublicRole } from "@/features/auth/register";
 import { runRequestPasswordReset } from "@/features/auth/request-password-reset";
+import { emailOutcome, type EmailOutcome } from "@/lib/email/delivery";
 import { runSignIn } from "@/features/auth/sign-in";
 import { runSignOut } from "@/features/auth/sign-out";
 import { runUpdatePassword } from "@/features/auth/update-password";
+
+async function recordAuthEmail(outcome: EmailOutcome) {
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("record_email_delivery", {
+      _kind: outcome.kind,
+      _status: outcome.status,
+      _detail: outcome.detail,
+    });
+  } catch {
+    // The auth response stays the same when the outcome log is unreachable.
+  }
+}
 
 function failureOf(error: { name?: string; status?: number } | null): { name?: string; status?: number } | null {
   if (!error) return null;
@@ -73,6 +87,7 @@ export async function requestPasswordResetAction(input: { email?: string }) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
         return { error: failureOf(error) };
       },
+      recordDelivery: recordAuthEmail,
     },
     {
       email: input?.email,
@@ -145,7 +160,9 @@ export async function registerAccountAction(input: {
             emailRedirectTo: redirectTo,
           },
         });
-        return { error: failureOf(error) };
+        const failure = failureOf(error);
+        await recordAuthEmail(emailOutcome("auth_signup", failure));
+        return { error: failure };
       },
     },
     {

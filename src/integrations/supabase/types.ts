@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          school_id: string | null
+          summary: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          school_id?: string | null
+          summary: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          school_id?: string | null
+          summary?: string
+        }
+        Relationships: []
+      }
+      email_deliveries: {
+        Row: {
+          created_at: string
+          detail: string
+          id: string
+          kind: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          detail: string
+          id?: string
+          kind: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string
+          id?: string
+          kind?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      payment_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          received_at: string
+          status: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          received_at?: string
+          status: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          received_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           allow_resubmit: boolean
@@ -247,6 +325,7 @@ export type Database = {
           description: string | null
           education_stage: string | null
           id: string
+          school_id: string | null
           is_open_enrollment: boolean
           is_premium: boolean
           is_published: boolean
@@ -263,6 +342,7 @@ export type Database = {
           description?: string | null
           education_stage?: string | null
           id?: string
+          school_id?: string | null
           is_open_enrollment?: boolean
           is_premium?: boolean
           is_published?: boolean
@@ -279,6 +359,7 @@ export type Database = {
           description?: string | null
           education_stage?: string | null
           id?: string
+          school_id?: string | null
           is_open_enrollment?: boolean
           is_premium?: boolean
           is_published?: boolean
@@ -1305,6 +1386,26 @@ export type Database = {
       award_badge_if_eligible: {
         Args: { _badge_id: string }
         Returns: undefined
+      }
+      admin_notify_school: {
+        Args: { target_school: string; title: string; message: string }
+        Returns: number
+      }
+      find_account_for_admin: {
+        Args: { _code: string }
+        Returns: { user_id: string; full_name: string }[]
+      }
+      provision_teacher: {
+        Args: { target_user: string; target_school: string }
+        Returns: undefined
+      }
+      record_email_delivery: {
+        Args: { _kind: string; _status: string; _detail: string }
+        Returns: undefined
+      }
+      signup_role: {
+        Args: { raw: string }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       open_game_attempt: {
         Args: { _game: string; _difficulty: string }

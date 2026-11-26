@@ -61,6 +61,9 @@ Deno.serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : data.user.email,
+      client_reference_id: data.user.id,
+      metadata: { user_id: data.user.id },
+      subscription_data: { metadata: { user_id: data.user.id } },
       line_items: [
         {
           price: "price_1T8dMCISWfq7E6OHrcwo3lMv",
