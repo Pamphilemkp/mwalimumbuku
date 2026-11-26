@@ -68,19 +68,21 @@ describe("sql game rules match the typescript engine", () => {
     const memory = buildRound("memory", "easy", 7);
     if (memory.game === "memory") {
       const flips: number[] = [];
-      const seen = new Map<string, number>();
-      for (let index = 0; index < memory.deck.length; index += 1) {
-        const previous = seen.get(memory.deck[index]);
-        if (previous === undefined) seen.set(memory.deck[index], index);
-        else flips.push(previous, index);
+      for (const wave of memory.waves) {
+        const seen = new Map<string, number>();
+        wave.forEach((emoji, index) => {
+          const previous = seen.get(emoji);
+          if (previous === undefined) seen.set(emoji, index);
+          else flips.push(previous, index);
+        });
       }
       cases.push({ round: memory, events: { game: "memory", flips, atMs: flips.map((_, index) => index * 180) }, elapsed: 20_000 });
       cases.push({ round: memory, events: { game: "memory", flips: [0, 0], atMs: [0, 180] }, elapsed: 5_000 });
     }
-    const alphabet = { game: "alphabet" as const, difficulty: "easy" as const, durationSeconds: 120, letters: ["C", "A", "E", "B", "D"] };
+    const alphabet = { game: "alphabet" as const, difficulty: "easy" as const, durationSeconds: 120, stages: [["C", "A", "E", "B", "D"]] };
     cases.push({
       round: alphabet,
-      events: { game: "alphabet", order: ["A", "B", "C", "D", "E"], atMs: [120, 240, 360, 480, 600] },
+      events: { game: "alphabet", orders: [["A", "B", "C", "D", "E"]], atMs: [120, 240, 360, 480, 600] },
       elapsed: 4_000,
     });
     const colors = {
@@ -231,15 +233,15 @@ describe("verified game results and rewards", () => {
     await db.exec(migrationSql);
     await db.exec(`select set_config('request.jwt.claim.sub', '${studentA}', false)`);
     await db.exec("set role authenticated");
-    const opened = await db.query<{ open_game_attempt: { attemptId: string; round: { letters: string[] } } }>(
+    const opened = await db.query<{ open_game_attempt: { attemptId: string; round: { stages: string[][] } } }>(
       "select public.open_game_attempt('alphabet', 'easy') as open_game_attempt",
     );
     const attempt = opened.rows[0].open_game_attempt;
-    const order = attempt.round.letters.slice().sort();
+    const orders = attempt.round.stages.map((stage) => stage.slice().sort());
     const events = {
       game: "alphabet",
-      order,
-      atMs: order.map((_, index) => (index + 1) * 120),
+      orders,
+      atMs: orders.flat().map((_, index) => (index + 1) * 120),
       score: 99999,
       xp: 99999,
     };

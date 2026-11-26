@@ -5,7 +5,8 @@
  * and per-key timestamps are client clocks that can be spaced evenly.
  */
 
-export const TIME_LIMITS = { easy: 120, medium: 90, hard: 60 } as const;
+/** Easy→medium is a smaller step than medium→hard. See GAMES_REDESIGN.md. */
+export const TIME_LIMITS = { easy: 120, medium: 105, hard: 60 } as const;
 export const MIN_GAP_MS = {
   memory: 180,
   words: 400,
@@ -62,11 +63,24 @@ export type WordRound = { word: string; scrambled: string; hintFr: string; hintE
 
 export type Round =
   | { game: "math"; difficulty: Difficulty; durationSeconds: number; problems: MathProblem[] }
-  | { game: "memory"; difficulty: Difficulty; durationSeconds: number; deck: string[] }
-  | { game: "alphabet"; difficulty: Difficulty; durationSeconds: number; letters: string[] }
+  | { game: "memory"; difficulty: Difficulty; durationSeconds: number; waves: string[][] }
+  | { game: "alphabet"; difficulty: Difficulty; durationSeconds: number; stages: string[][] }
   | { game: "colors"; difficulty: Difficulty; durationSeconds: number; rounds: ColorRound[] }
   | { game: "words"; difficulty: Difficulty; durationSeconds: number; rounds: WordRound[] }
   | { game: "typing"; difficulty: Difficulty; durationSeconds: number; words: string[] };
+
+/**
+ * Item counts. The easy→medium gap is smaller than the medium→hard gap.
+ * Memory values are pair counts per wave. Alphabet values are letters per stage.
+ * A round cannot score above the previous maximum: memory 100, math 360,
+ * words 140, alphabet 30, colors 180, typing 180.
+ */
+export const MEMORY_WAVE_PAIRS = { easy: [2, 2], medium: [2, 3], hard: [2, 3, 4] } as const;
+export const MATH_COUNTS = { easy: 5, medium: 8, hard: 15 } as const;
+export const WORD_COUNTS = { easy: 3, medium: 4, hard: 7 } as const;
+export const ALPHABET_STAGE_SIZES = { easy: [5], medium: [4, 6], hard: [4, 6, 10] } as const;
+export const COLOR_COUNTS = { easy: 5, medium: 6, hard: 12 } as const;
+export const TYPING_COUNTS = { easy: 8, medium: 9, hard: 12 } as const;
 
 export type GradeStats = Record<string, number>;
 
@@ -127,19 +141,45 @@ export function buildRound(game: GameKey, difficulty: Difficulty, seed: number):
   const rng = makeRng(seed);
   const durationSeconds = TIME_LIMITS[difficulty];
   if (game === "math") return { game, difficulty, durationSeconds, problems: buildMath(rng, difficulty) };
-  if (game === "memory") return { game, difficulty, durationSeconds, deck: buildMemory(rng, difficulty) };
-  if (game === "alphabet") return { game, difficulty, durationSeconds, letters: buildAlphabet(rng, difficulty) };
+  if (game === "memory") return { game, difficulty, durationSeconds, waves: buildMemory(rng, difficulty) };
+  if (game === "alphabet") return { game, difficulty, durationSeconds, stages: buildAlphabet(rng, difficulty) };
   if (game === "colors") return { game, difficulty, durationSeconds, rounds: buildColors(rng, difficulty) };
   if (game === "words") return { game, difficulty, durationSeconds, rounds: buildWords(rng, difficulty) };
   return { game, difficulty, durationSeconds, words: buildTyping(rng, difficulty) };
 }
 
+/** 0 = first third, 1 = middle, 2 = last third. Integer bounds so SQL can match. */
+export function difficultyBand(index: number, count: number): 0 | 1 | 2 {
+  if (index < Math.ceil(count / 3)) return 0;
+  if (index < Math.ceil((2 * count) / 3)) return 1;
+  return 2;
+}
+
+const MATH_BANDS: Record<Difficulty, { ops: MathProblem["op"][]; maxN: number }[]> = {
+  easy: [
+    { ops: ["+", "-"], maxN: 5 },
+    { ops: ["+", "-"], maxN: 8 },
+    { ops: ["+", "-"], maxN: 10 },
+  ],
+  medium: [
+    { ops: ["+", "-"], maxN: 10 },
+    { ops: ["+", "-", "×"], maxN: 15 },
+    { ops: ["+", "-", "×"], maxN: 20 },
+  ],
+  hard: [
+    { ops: ["+", "-"], maxN: 12 },
+    { ops: ["+", "-", "×"], maxN: 20 },
+    { ops: ["+", "-", "×", "÷"], maxN: 50 },
+  ],
+};
+
 function buildMath(rng: Rng, difficulty: Difficulty): MathProblem[] {
-  const count = difficulty === "easy" ? 5 : difficulty === "medium" ? 10 : 15;
-  const ops: MathProblem["op"][] = difficulty === "easy" ? ["+", "-"] : difficulty === "medium" ? ["+", "-", "×"] : ["+", "-", "×", "÷"];
-  const maxN = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 50;
+  const count = MATH_COUNTS[difficulty];
   const problems: MathProblem[] = [];
   for (let n = 0; n < count; n += 1) {
+    const plan = MATH_BANDS[difficulty][difficultyBand(n, count)];
+    const ops = plan.ops;
+    const maxN = plan.maxN;
     const op = ops[randInt(rng, ops.length)];
     let a = randInt(rng, maxN) + 1;
     let b = randInt(rng, Math.floor(maxN / 2)) + 1;
@@ -161,40 +201,59 @@ function buildMath(rng: Rng, difficulty: Difficulty): MathProblem[] {
   return problems;
 }
 
-function buildMemory(rng: Rng, difficulty: Difficulty): string[] {
-  const pairs = difficulty === "easy" ? 4 : difficulty === "medium" ? 6 : 8;
-  const faces = MEMORY_EMOJIS.slice(0, pairs);
-  return shuffle(rng, [...faces, ...faces]);
+function buildMemory(rng: Rng, difficulty: Difficulty): string[][] {
+  return MEMORY_WAVE_PAIRS[difficulty].map((pairs) => {
+    const faces = MEMORY_EMOJIS.slice(0, pairs);
+    return shuffle(rng, [...faces, ...faces]);
+  });
 }
 
-function buildAlphabet(rng: Rng, difficulty: Difficulty): string[] {
-  const count = difficulty === "easy" ? 5 : difficulty === "medium" ? 8 : 12;
-  const start = randInt(rng, 26 - count);
-  return shuffle(rng, ALPHABET.slice(start, start + count));
+function buildAlphabet(rng: Rng, difficulty: Difficulty): string[][] {
+  return ALPHABET_STAGE_SIZES[difficulty].map((count) => {
+    const start = randInt(rng, 26 - count);
+    return shuffle(rng, ALPHABET.slice(start, start + count));
+  });
+}
+
+/** Choice count and whether the ink differs from the word. Early rounds stay easier. */
+export function colorStep(difficulty: Difficulty, index: number): { optionCount: number; stroop: boolean } {
+  if (difficulty === "easy") return { optionCount: index < 2 ? 2 : 3, stroop: false };
+  if (difficulty === "medium") return { optionCount: index < 2 ? 3 : 4, stroop: false };
+  if (index < 4) return { optionCount: 3, stroop: false };
+  if (index < 8) return { optionCount: 4, stroop: true };
+  return { optionCount: 6, stroop: true };
 }
 
 function buildColors(rng: Rng, difficulty: Difficulty): ColorRound[] {
-  const count = difficulty === "easy" ? 5 : difficulty === "medium" ? 8 : 12;
-  const optionCount = difficulty === "easy" ? 3 : difficulty === "medium" ? 4 : 6;
-  const stroop = difficulty === "hard";
+  const count = COLOR_COUNTS[difficulty];
   const rounds: ColorRound[] = [];
   for (let n = 0; n < count; n += 1) {
+    const step = colorStep(difficulty, n);
     const shuffled = shuffle(rng, COLORS);
     const word = shuffled[0].id;
-    const ink = stroop ? shuffled[1].id : shuffled[0].id;
-    const pool = shuffled.slice(0, optionCount).map((color) => color.id);
+    const ink = step.stroop ? shuffled[1].id : shuffled[0].id;
+    const pool = shuffled.slice(0, step.optionCount).map((color) => color.id);
     if (!pool.includes(ink)) pool[pool.length - 1] = ink;
     rounds.push({ word, ink, options: shuffle(rng, pool) });
   }
   return rounds;
 }
 
+/** Short words first. Easy stays on difficulty 1. Medium and hard open there, then step up. */
+export function wordDifficultyAt(difficulty: Difficulty, index: number): number {
+  if (difficulty === "easy") return 1;
+  if (difficulty === "medium") return index < 2 ? 1 : 2;
+  if (index < 2) return 1;
+  if (index < 4) return 2;
+  return 3;
+}
+
 function buildWords(rng: Rng, difficulty: Difficulty): WordRound[] {
-  const maxDiff = difficulty === "easy" ? 1 : difficulty === "medium" ? 2 : 3;
-  const count = difficulty === "easy" ? 3 : difficulty === "medium" ? 5 : 7;
-  const pool = SCRAMBLE_WORDS.filter((entry) => entry.diff <= maxDiff);
+  const count = WORD_COUNTS[difficulty];
   const rounds: WordRound[] = [];
   for (let n = 0; n < count; n += 1) {
+    const band = wordDifficultyAt(difficulty, n);
+    const pool = SCRAMBLE_WORDS.filter((entry) => entry.diff === band);
     const entry = pool[randInt(rng, pool.length)];
     rounds.push({
       word: entry.word,
@@ -216,16 +275,32 @@ function scramble(rng: Rng, word: string): string {
   return text;
 }
 
+/**
+ * Shorter (or, on easy, the more common) words, then the rest.
+ * Easy keeps the pool order and splits it in half. Other levels sort by
+ * character length, then by UTF-16 code unit, and split in half.
+ */
+export function typingGroups(difficulty: Difficulty): [string[], string[]] {
+  const pool = [...TYPING_POOLS[difficulty]];
+  if (difficulty === "easy") return [pool.slice(0, 5), pool.slice(5)];
+  const sorted = pool.sort((a, b) => [...a].length - [...b].length || (a < b ? -1 : a > b ? 1 : 0));
+  const mid = Math.ceil(sorted.length / 2);
+  return [sorted.slice(0, mid), sorted.slice(mid)];
+}
+
 function buildTyping(rng: Rng, difficulty: Difficulty): string[] {
-  const pool = TYPING_POOLS[difficulty];
-  const total = difficulty === "easy" ? 8 : difficulty === "medium" ? 10 : 12;
-  let bag = shuffle(rng, pool);
+  const total = TYPING_COUNTS[difficulty];
+  const refill = () => {
+    const [early, later] = typingGroups(difficulty);
+    return [...shuffle(rng, early), ...shuffle(rng, later)];
+  };
+  let bag = refill();
   let index = 0;
   let last = "";
   const words: string[] = [];
   for (let n = 0; n < total; n += 1) {
     if (index >= bag.length) {
-      bag = shuffle(rng, pool);
+      bag = refill();
       index = 0;
       if (bag.length > 1 && bag[0] === last) {
         const swap = bag[0];
@@ -370,39 +445,55 @@ function gradeMath(round: Extract<Round, { game: "math" }>, record: Record<strin
 function gradeMemory(round: Extract<Round, { game: "memory" }>, record: Record<string, unknown>, atMs: number[], elapsedMs: number): Grade {
   const flips = integerList(record.flips);
   if (!flips || flips.length !== atMs.length) return reject("mismatch");
-  if (round.deck.length < 2 || round.deck.length % 2 !== 0) return reject("rules");
-  const matched = new Set<number>();
+  if (round.waves.length === 0 || flips.length > 400) return reject("rules");
+  let wave = 0;
+  let matched = new Set<number>();
   let pending = -1;
   let moves = 0;
   let matches = 0;
   for (const index of flips) {
-    if (index < 0 || index >= round.deck.length || matched.has(index)) return reject("rules");
+    const deck = round.waves[wave];
+    if (!deck || deck.length < 2 || deck.length % 2 !== 0) return reject("rules");
+    if (index < 0 || index >= deck.length || matched.has(index)) return reject("rules");
     if (pending === -1) {
       pending = index;
       continue;
     }
     if (pending === index) return reject("rules");
     moves += 1;
-    if (round.deck[pending] === round.deck[index]) {
+    if (deck[pending] === deck[index]) {
       matched.add(pending);
       matched.add(index);
       matches += 1;
     }
     pending = -1;
+    if (matched.size === deck.length) {
+      wave += 1;
+      matched = new Set();
+    }
   }
-  const pairCount = round.deck.length / 2;
-  const completed = matches === pairCount && pending === -1 ? 1 : 0;
-  // A finished board is max(100 - 2 per move, 20). A partial board is 5 per match.
+  const completed = wave === round.waves.length && pending === -1 ? 1 : 0;
+  // A finished round is max(100 - 2 per move, 20). A partial round is 5 per match.
   const score = completed === 1 ? Math.max(100 - moves * 2, 20) : matches * 5;
   return pass(score, { moves, matches, completed }, elapsedMs);
 }
 
 function gradeAlphabet(round: Extract<Round, { game: "alphabet" }>, record: Record<string, unknown>, atMs: number[], elapsedMs: number): Grade {
-  const order = stringList(record.order);
-  if (!order || order.length !== atMs.length) return reject("mismatch");
-  const expected = round.letters.slice().sort();
-  const perfect = order.length === expected.length && order.every((letter, index) => letter === expected[index]) ? 1 : 0;
-  // Full alphabetical order scores 30. Anything else, including a prefix, scores 0.
+  if (!Array.isArray(record.orders)) return reject("mismatch");
+  const orders: string[][] = [];
+  let picks = 0;
+  for (const entry of record.orders) {
+    const order = stringList(entry);
+    if (!order) return reject("mismatch");
+    orders.push(order);
+    picks += order.length;
+  }
+  if (picks !== atMs.length || orders.length > round.stages.length) return reject("mismatch");
+  const perfect = orders.length === round.stages.length && orders.every((order, stage) => {
+    const expected = round.stages[stage].slice().sort();
+    return order.length === expected.length && order.every((letter, index) => letter === expected[index]);
+  }) ? 1 : 0;
+  // Every stage in A–Z order scores 30. A wrong or unfinished stage scores 0.
   return pass(perfect === 1 ? 30 : 0, { perfect }, elapsedMs);
 }
 

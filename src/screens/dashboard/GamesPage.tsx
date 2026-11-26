@@ -15,6 +15,7 @@ import ColorMatchGame from "@/src/components/games/ColorMatchGame";
 import TypingGame from "@/src/components/games/TypingGame";
 import { TIME_LIMITS, type Difficulty, type Round } from "@/lib/games/engine";
 import { startGameAction, submitGameAction } from "@/features/games/actions";
+import { GameGuide, type GameId } from "@/src/components/games/GameChrome";
 
 type Phase = "menu" | "ready" | "playing" | "finished";
 type Verified = {
@@ -161,20 +162,21 @@ export default function GamesPage() {
         ) : null}
 
         {phase === "ready" && activeGame ? (
-          <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto max-w-md space-y-6 py-8 text-center">
+          <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto max-w-lg space-y-5 py-6 text-center">
             <h2 className="font-display text-2xl font-bold">{t.games.list[activeGame]?.label}</h2>
-            <p className="text-muted-foreground">{t.games.list[activeGame]?.desc}</p>
+            <p className="text-sm text-muted-foreground">{t.games.list[activeGame]?.desc}</p>
+            <GameGuide game={activeGame as GameId} />
             <div className="flex justify-center"><DifficultySelector value={difficulty} onChange={setDifficulty} /></div>
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Timer className="h-4 w-4" />
               <span>{t.games.timeLeft}: {Math.floor(timeLimit / 60)}:{(timeLimit % 60).toString().padStart(2, "0")}</span>
             </div>
             {notice ? <p className="text-sm text-destructive" role="alert">{notice}</p> : null}
-            <Button size="lg" onClick={() => void start(activeGame)} disabled={busy} className="gap-2 px-8">
+            <Button size="lg" onClick={() => void start(activeGame)} disabled={busy} className="h-12 gap-2 px-8">
               <Play className="h-5 w-5" /> {t.games.startGame}
             </Button>
             <div>
-              <Button variant="ghost" size="sm" onClick={() => setPhase("menu")}>← {t.games.backToGames}</Button>
+              <Button variant="ghost" className="h-11" onClick={() => setPhase("menu")}>← {t.games.backToGames}</Button>
             </div>
           </motion.div>
         ) : null}
@@ -184,35 +186,39 @@ export default function GamesPage() {
             <div className="mb-4">
               <Button variant="ghost" size="sm" onClick={() => setPhase("menu")}>← {t.games.backToGames}</Button>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">{gameView}</div>
+            <div className="min-w-0 overflow-x-hidden rounded-2xl border border-border bg-card p-3 sm:p-6">{gameView}</div>
           </motion.div>
         ) : null}
 
         {phase === "finished" && result ? (
-          <motion.div key="finished" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-md space-y-5 py-8 text-center">
-            <Trophy className="mx-auto h-10 w-10 text-primary" />
+          <motion.div key="finished" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-md space-y-5 rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <Trophy className="h-7 w-7 text-primary" />
+            </div>
             <h2 className="font-display text-2xl font-bold">{t.games.gameOver}</h2>
             {result.message ? <p className="text-sm text-destructive" role="alert">{result.message}</p> : (
               <>
-                <p className="text-3xl font-bold text-primary">{result.score}</p>
-                <p className="text-sm text-muted-foreground">{t.games.verifiedScore}: {result.xpGranted} XP · {t.games.levelLabel} {result.level} · {t.games.streak} {result.streak}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.games.finalScore}</p>
+                <p className="text-5xl font-bold tabular-nums text-primary">{result.score}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{t.games.verifiedScore}: {result.xpGranted} XP · {t.games.levelLabel} {result.level} · {t.games.streak} {result.streak}</p>
                 {activeGame === "typing" ? (
                   <p className="text-sm text-muted-foreground">
                     {t.games.wpm} {(result.stats.wpmDeci ?? 0) / 10} · {t.games.accuracy} {Math.round((result.stats.accuracyMillis ?? 0) / 10)}% · {t.games.errors} {result.stats.errors ?? 0} · {t.games.corrected} {result.stats.corrected ?? 0}
                   </p>
                 ) : null}
+                {activeGame ? <p className="text-sm text-muted-foreground">{t.games.coach[activeGame as GameId]?.retry}</p> : null}
                 <p className="text-xs text-muted-foreground">{t.games.exercisePointsNote}</p>
               </>
             )}
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
               {result.message ? (
-                <Button onClick={() => void submit()} disabled={busy}>{t.games.retrySubmit}</Button>
+                <Button className="h-12" onClick={() => void submit()} disabled={busy}>{t.games.retrySubmit}</Button>
               ) : (
-                <Button onClick={() => activeGame && void start(activeGame)} disabled={busy} className="gap-2">
+                <Button className="h-12 gap-2" onClick={() => activeGame && void start(activeGame)} disabled={busy}>
                   <Play className="h-4 w-4" /> {t.games.playAgain}
                 </Button>
               )}
-              <Button variant="outline" onClick={() => setPhase("menu")}>← {t.games.backToGames}</Button>
+              <Button variant="outline" className="h-12" onClick={() => setPhase("menu")}>← {t.games.backToGames}</Button>
             </div>
           </motion.div>
         ) : null}

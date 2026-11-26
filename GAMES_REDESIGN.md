@@ -8,7 +8,7 @@ The pure rules live in `lib/games/engine.ts`. The client and the Postgres grader
 
 An attempt starts with `open_game_attempt(game, difficulty)`. Postgres draws a seed, builds the round with the seeded LCG below, and stores it. The browser plays that round. It never sends a score, WPM, or XP number that is trusted.
 
-The duration is the code constant, which is also what the ready screen shows: easy 120 seconds, medium 90, hard 60. Admin `game_settings` is not applied, because the running game already ignored it and a client-supplied duration cannot be the limit.
+The duration is the code constant, which is also what the ready screen shows: easy 120 seconds, medium 105, hard 60. The easy-to-medium step is 15 seconds. The medium-to-hard step is 45 seconds. Admin `game_settings` is not applied, because the running game already ignored it and a client-supplied duration cannot be the limit.
 
 The clock is one deadline. When the attempt arrives, the client stores `serverNow` and `startedAt` and paints remaining time from that offset. `onTimeUp` fires once. The server does not trust the painted clock. It trusts `started_at` and the event timestamps under the rules below.
 
@@ -42,6 +42,36 @@ Reject the payload when any of these is true:
 
 Minimum gaps: math 300ms, colors 250ms, words 400ms, alphabet 120ms, memory 180ms, typing 40ms per key.
 
+## Difficulty curve
+
+The three names stay: easy, medium, and hard. Two rules shape every round.
+
+1. Inside one round, the first items are easier than the later items. The server builds that order from the seed. The client plays `problems[i]`, `waves[i]`, `stages[i]`, `rounds[i]`, or `words[i]` and does not choose a different next item.
+2. The step from easy to medium is smaller than the step from medium to hard, in item count, in time, or in both.
+
+| | Easy | Medium | Hard | Easy → medium | Medium → hard |
+| --- | --- | --- | --- | --- | --- |
+| Time | 120s | 105s | 60s | 15s | 45s |
+| Memory pairs | 2 then 2 | 2 then 3 | 2 then 3 then 4 | +1 pair | +4 pairs |
+| Math problems | 5 | 8 | 15 | +3 | +7 |
+| Word rounds | 3 | 4 | 7 | +1 | +3 |
+| Alphabet letters | 5 | 4 then 6 | 4 then 6 then 10 | +5 letters | +10 letters |
+| Color rounds | 5 | 6 | 12 | +1 | +6 |
+| Typing words | 8 | 9 | 12 | +1 | +3 |
+
+Score formulas are unchanged. Counts were lowered on some medium rounds so a round cannot score more than the previous maximum:
+
+| Game | Previous maximum | After this curve |
+| --- | --- | --- |
+| Memory | 100 from the formula. A perfect 4-pair clear is 92. | Same formula. Perfect clears score 92, 90, and 82 for 4, 5, and 9 pairs. |
+| Math | 360, a perfect 15-answer streak: `15 × (15 + 9)`. | Hard stays 15, so 360. Easy stays 5, so 70. Medium is 8, so 136, down from 190. |
+| Words | 140 (`7 × 20`) | Hard stays 7. Medium is 4, so 80, down from 100. |
+| Alphabet | 30 | Still 30, and only when every stage is exact. |
+| Colors | 180 (`12 × 15`) | Hard stays 12. Medium is 6, so 90, down from 120. |
+| Typing | 180 (`12 × 15` at full accuracy) | Hard stays 12. Medium is 9, so 90, down from 100. |
+
+XP stays `min(score, max(0, 400 - xpAlreadyToday))`.
+
 WPM time, typing only: `wpmMs = min(serverElapsedMs, durationSeconds * 1000)`. A late but honest submit cannot shrink the clock to inflate WPM. The 36-hour bound is the streak grace in `REWARDS.md`, not extra play time. Events still have to fit inside the duration.
 
 Consistency is not calculated. A consistency score needs trustworthy gaps between keys or words. The server only observes attempt start and submit. The per-key timestamps are chosen by the browser, so a script can space them evenly. Those timestamps are checked for order and for a human minimum gap, and then they are not turned into a consistency percentage.
@@ -50,26 +80,34 @@ Consistency is not calculated. A consistency score needs trustworthy gaps betwee
 
 Purpose: remember where pairs are.
 
-Deal: easy 4 pairs, medium 6, hard 8, from the existing animal list, shuffled as a doubled deck with Fisher-Yates. The grid is 4 columns on a wide screen and 4 on a narrow screen as well, with larger gaps and 44px minimum cells so 16 cards still fit.
+Deal: waves of pairs from the front of the animal list. Easy is 2 pairs, then 2 pairs. Medium is 2, then 3. Hard is 2, then 3, then 4. Each wave is that many animals doubled and shuffled with Fisher-Yates. The grid is 4 columns, with 44px minimum cells. The largest wave is 8 cards.
 
-Play: one face-up selection, then a second different index. A match stays open. A mismatch closes after the pair is recorded. The UI refuses a third card and a second click on the same card. Arrow keys move a roving tabindex. Enter or Space flips the focused card.
+Play: one face-up selection, then a second different index, on the current wave only. A match stays open. A mismatch closes after the pair is recorded. When the wave is fully matched, the next flips belong to the next wave and indexes start again at 0. The UI refuses a third card and a second click on the same card. Arrow keys move a roving tabindex. Enter or Space flips the focused card. A flip index outside the current wave is illegal.
 
 Scoring, once, from the flip list:
 
 ```
 moves = floor(flips.length / 2)
 matches = number of those pairs whose emoji match and whose indexes differ
-completed = matches === pairCount and flips.length === pairCount * 2 and every flip was legal
+completed = every wave is fully matched and no card is left face-up
 score = completed ? max(100 - moves * 2, 20) : matches * 5
 ```
 
-An illegal flip (unknown index, already matched, same index twice, a third flip before the pair resolves) rejects the payload. Time-up submits the legal flips so far, so a partial board still scores `matches * 5`.
+Flips are indexes into the wave that is still open. After a wave’s cards are all matched, the next index is read against the next wave. An illegal flip (unknown index for that wave, already matched, same index twice) rejects the payload. Time-up submits the legal flips so far, so a partial round still scores `matches * 5`.
 
 ## Mental math
 
 Purpose: arithmetic facts.
 
-Generation matches the old ranges: easy `+` and `-` with operands up to 10, medium adds `×` up to 20, hard adds `÷` up to 50. Multiplication is 1–12 by 1–10. Division builds an exact multiple. Subtraction is swapped so the answer is not negative. Round counts stay 5, 10, and 15.
+Counts are 5, 8, and 15. Each round is split into thirds with `difficultyBand`: index below `ceil(count / 3)`, then below `ceil(2 * count / 3)`, then the rest. The first third is only `+` and `-` with a small maximum. Multiplication and division, when the level has them, arrive in a later third.
+
+| Third | Easy | Medium | Hard |
+| --- | --- | --- | --- |
+| First | `+` `−` up to 5 | `+` `−` up to 10 | `+` `−` up to 12 |
+| Middle | `+` `−` up to 8 | `+` `−` `×` up to 15 | `+` `−` `×` up to 20 |
+| Last | `+` `−` up to 10 | `+` `−` `×` up to 20 | `+` `−` `×` `÷` up to 50 |
+
+Multiplication is still 1–12 by 1–10, drawn after the band’s operand draw so the seed stays aligned. Division still builds an exact multiple. Subtraction is swapped so the answer is not negative. Easy 5 stays a maximum of 70. Hard 15 stays a maximum of 360.
 
 The student types an integer and presses Enter or the button. One answer per problem. Junk such as `12abc` or `3.5` is wrong. The streak shown in the round is consecutive correct answers.
 
@@ -83,7 +121,7 @@ score = sum of those awards
 
 Purpose: spell the existing school words from a hint.
 
-Pools and round counts stay: easy words of difficulty 1, 3 rounds; medium up to difficulty 2, 5 rounds; hard the full list, 7 rounds. The scramble is Fisher-Yates and is dealt again while it equals the word, at most 8 times. Hints stay bilingual. The answer is not shown until that round is judged.
+Counts are 3, 4, and 7. Each round draws from one difficulty band, not from every easier word at once. Easy is three draws from difficulty 1. Medium is two from difficulty 1, then two from difficulty 2. Hard is two from difficulty 1, two from difficulty 2, then three from difficulty 3. The scramble is Fisher-Yates and is dealt again while it equals the word, at most 8 times. Hints stay bilingual. The answer is not shown until that round is judged.
 
 One guess per round. Comparison is trim plus Unicode upper case. `école` matches `ÉCOLE`. A second submit is ignored by the lock.
 
@@ -96,20 +134,22 @@ score = 20 * correctGuesses
 
 Purpose: put a consecutive slice of A–Z in order.
 
-Counts stay 5, 8, and 12. The slice start is `randInt(26 - count)`. The tiles are a Fisher-Yates shuffle. Letter keys select that letter. Backspace removes only the last pick. The undo button does the same. A letter already used is inert.
+Stages are easy `[5]`, medium `[4, 6]`, and hard `[4, 6, 10]`. Each stage’s start is `randInt(26 - count)` and its tiles are a Fisher-Yates shuffle. The player finishes one stage before the next, longer stage. Letter keys select that letter. Backspace removes only the last pick of the current stage. The undo button does the same. A letter already used in the stage is inert.
+
+Events are `orders`, one array per stage. `atMs` has one stamp per letter that is still in those arrays.
 
 ```
-perfect = the submitted order is exactly the slice sorted A to Z, each letter once
+perfect = every stage’s order is exactly that stage sorted A to Z, each letter once
 score = perfect ? 30 : 0
 ```
 
-A time-up with a partial order scores 0. That keeps the skill “the whole sequence”, which is what the old game graded, without the double-submit path.
+A time-up with a missing or partial stage scores 0. One wrong stage scores 0 even if the others are exact. That keeps the skill “the whole sequence” and the old maximum of 30.
 
 ## Colors
 
 Purpose: name colors. Hard is a Stroop round.
 
-The eight existing colors stay. Round counts stay 5, 8, and 12. Choice counts stay 3, 4, and 6. Easy and medium show the color name in that same ink and ask which color it is. Hard shows a name in a different ink and asks for the ink. The correct swatch is the ink. The word is the other color. Options are forced to include the ink, then shuffled.
+The eight existing colors stay. Round counts are 5, 6, and 12. Choice counts grow inside the round. Easy uses 2 choices for the first two rounds and 3 after that. Medium uses 3, then 4. Hard uses 3 choices with the word painted in that same ink for the first four rounds, then 4 Stroop choices, then 6 Stroop choices. Stroop means the name and the ink differ, and the correct swatch is the ink. Options are forced to include the ink, then shuffled. Each swatch shows its color name in text.
 
 Swatches expose the color name to assistive tech and a visible tooltip. Number keys 1–6 pick a swatch.
 
@@ -122,7 +162,12 @@ score = 15 * correctPicks
 
 Purpose: copy the shown French word.
 
-Pools stay the current easy, medium, and hard lists. Counts stay 8, 10, and 12. Words are dealt from a shuffled bag so the pool is exhausted before a repeat. If a refill would repeat the previous word immediately, the first two bag entries are swapped when the bag has two words.
+Pools stay the current easy, medium, and hard lists. Counts are 8, 9, and 12. Each bag is the shuffled shorter half, then the shuffled longer half, so a short word comes before a long one. Easy splits the list in its written order (`le un et la il`, then `de en ce tu je`) because every word is two letters. Medium and hard sort by character length, then by UTF-16 code unit, and split in half:
+
+- Medium early: `arbre`, `livre`, `école`, `classe`. Later: `enfant`, `maison`, `manger`, `soleil`.
+- Hard early: `éducation`, `bibliothèque`, `connaissance`. Later: `apprentissage`, `développement`, `mathématiques`.
+
+The bag is exhausted before a repeat. A refill builds the same two halves again. If that refill would repeat the previous word immediately, the first two bag entries are swapped when the bag has two words. The base stays easy 5, medium 10, hard 15, so a perfect medium round scores 90 and a perfect hard round still scores 180.
 
 The field accepts one new character at a time. A paste or a multi-character insertion is dropped. Backspace removes one character.
 
@@ -155,7 +200,7 @@ Rules:
 
 - Memory rejects a self-match and a third flip, and scores a partial board as `matches * 5`.
 - Math rejects `12abc` and scores a two-correct streak as `10` then `12`.
-- Colors scores the ink on a hard round, not the word.
+- Colors scores the ink. On a Stroop round that is not the written word. The first four hard rounds are not Stroop.
 - Alphabet scores `30` only for the full sorted slice.
 - Typing drops a multi-character insert, counts a wrong letter plus a repairing backspace as one error and one corrected mistake, and scores a clean word at the difficulty base.
 

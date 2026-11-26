@@ -177,11 +177,10 @@ SET search_path = public
 AS $$
 DECLARE
   rng bigint := CASE WHEN _seed IS NULL OR _seed < 0 THEN 0 ELSE _seed::bigint END;
-  duration integer := CASE _difficulty WHEN 'easy' THEN 120 WHEN 'medium' THEN 90 WHEN 'hard' THEN 60 ELSE NULL END;
+  duration integer := CASE _difficulty WHEN 'easy' THEN 120 WHEN 'medium' THEN 105 WHEN 'hard' THEN 60 ELSE NULL END;
   count integer;
   max_n integer;
   option_count integer;
-  max_diff integer;
   stroop boolean;
   op text;
   ops text[];
@@ -205,13 +204,18 @@ DECLARE
   diffs integer[] := ARRAY[1,1,1,2,2,2,2,3,3,3,3];
   indexes integer[] := ARRAY[]::integer[];
   emojis text[] := ARRAY['🐘','🦁','🐍','🦒','🐊','🦓','🐆','🦏','🦩','🐢','🦜','🐠'];
-  easy_words text[] := ARRAY['le','un','et','la','il','de','en','ce','tu','je'];
-  med_words text[] := ARRAY['maison','école','livre','classe','enfant','soleil','arbre','manger'];
-  hard_words text[] := ARRAY['apprentissage','éducation','développement','connaissance','bibliothèque','mathématiques'];
   last_word text := '';
   chars text[];
   scrambled text;
   attempt integer;
+  band integer;
+  band_diff integer;
+  wave_pairs integer[];
+  stage_sizes integer[];
+  early text[];
+  later text[];
+  waves jsonb;
+  stages jsonb;
   drawn record;
 BEGIN
   IF duration IS NULL OR _game NOT IN ('memory','words','math','alphabet','colors','typing') THEN
@@ -219,14 +223,41 @@ BEGIN
   END IF;
 
   IF _game = 'math' THEN
-    count := CASE _difficulty WHEN 'easy' THEN 5 WHEN 'medium' THEN 10 ELSE 15 END;
-    max_n := CASE _difficulty WHEN 'easy' THEN 10 WHEN 'medium' THEN 20 ELSE 50 END;
-    ops := CASE _difficulty
-      WHEN 'easy' THEN ARRAY['+','-']
-      WHEN 'medium' THEN ARRAY['+','-','×']
-      ELSE ARRAY['+','-','×','÷']
-    END;
+    count := CASE _difficulty WHEN 'easy' THEN 5 WHEN 'medium' THEN 8 ELSE 15 END;
     FOR i IN 1..count LOOP
+      IF (i - 1) < ceil(count / 3.0) THEN
+        band := 0;
+      ELSIF (i - 1) < ceil((2 * count) / 3.0) THEN
+        band := 1;
+      ELSE
+        band := 2;
+      END IF;
+      IF _difficulty = 'easy' THEN
+        ops := ARRAY['+','-'];
+        max_n := CASE band WHEN 0 THEN 5 WHEN 1 THEN 8 ELSE 10 END;
+      ELSIF _difficulty = 'medium' THEN
+        IF band = 0 THEN
+          ops := ARRAY['+','-'];
+          max_n := 10;
+        ELSIF band = 1 THEN
+          ops := ARRAY['+','-','×'];
+          max_n := 15;
+        ELSE
+          ops := ARRAY['+','-','×'];
+          max_n := 20;
+        END IF;
+      ELSE
+        IF band = 0 THEN
+          ops := ARRAY['+','-'];
+          max_n := 12;
+        ELSIF band = 1 THEN
+          ops := ARRAY['+','-','×'];
+          max_n := 20;
+        ELSE
+          ops := ARRAY['+','-','×','÷'];
+          max_n := 50;
+        END IF;
+      END IF;
       SELECT d.next_state, d.value INTO rng, pick FROM public.game_draw(rng, array_length(ops, 1)) AS d;
       op := ops[pick + 1];
       SELECT d.next_state, d.value INTO rng, a FROM public.game_draw(rng, max_n) AS d;
@@ -254,34 +285,56 @@ BEGIN
   END IF;
 
   IF _game = 'memory' THEN
-    count := CASE _difficulty WHEN 'easy' THEN 4 WHEN 'medium' THEN 6 ELSE 8 END;
-    deck := ARRAY[]::text[];
-    FOR i IN 1..count LOOP
-      deck := deck || emojis[i];
+    wave_pairs := CASE _difficulty WHEN 'easy' THEN ARRAY[2,2] WHEN 'medium' THEN ARRAY[2,3] ELSE ARRAY[2,3,4] END;
+    waves := '[]'::jsonb;
+    FOREACH count IN ARRAY wave_pairs LOOP
+      deck := ARRAY[]::text[];
+      FOR i IN 1..count LOOP
+        deck := deck || emojis[i];
+      END LOOP;
+      FOR i IN 1..count LOOP
+        deck := deck || emojis[i];
+      END LOOP;
+      SELECT s.next_state, s.shuffled INTO rng, deck FROM public.game_shuffle_text(rng, deck) AS s;
+      waves := waves || jsonb_build_array(to_jsonb(deck));
     END LOOP;
-    FOR i IN 1..count LOOP
-      deck := deck || emojis[i];
-    END LOOP;
-    SELECT s.next_state, s.shuffled INTO rng, deck FROM public.game_shuffle_text(rng, deck) AS s;
-    RETURN jsonb_build_object('game', 'memory', 'difficulty', _difficulty, 'durationSeconds', duration, 'deck', to_jsonb(deck));
+    RETURN jsonb_build_object('game', 'memory', 'difficulty', _difficulty, 'durationSeconds', duration, 'waves', waves);
   END IF;
 
   IF _game = 'alphabet' THEN
-    count := CASE _difficulty WHEN 'easy' THEN 5 WHEN 'medium' THEN 8 ELSE 12 END;
-    SELECT d.next_state, d.value INTO rng, pick FROM public.game_draw(rng, 26 - count) AS d;
-    letters := ARRAY[]::text[];
-    FOR i IN 0..count - 1 LOOP
-      letters := letters || CHR(65 + pick + i);
+    stage_sizes := CASE _difficulty WHEN 'easy' THEN ARRAY[5] WHEN 'medium' THEN ARRAY[4,6] ELSE ARRAY[4,6,10] END;
+    stages := '[]'::jsonb;
+    FOREACH count IN ARRAY stage_sizes LOOP
+      SELECT d.next_state, d.value INTO rng, pick FROM public.game_draw(rng, 26 - count) AS d;
+      letters := ARRAY[]::text[];
+      FOR i IN 0..count - 1 LOOP
+        letters := letters || CHR(65 + pick + i);
+      END LOOP;
+      SELECT s.next_state, s.shuffled INTO rng, letters FROM public.game_shuffle_text(rng, letters) AS s;
+      stages := stages || jsonb_build_array(to_jsonb(letters));
     END LOOP;
-    SELECT s.next_state, s.shuffled INTO rng, letters FROM public.game_shuffle_text(rng, letters) AS s;
-    RETURN jsonb_build_object('game', 'alphabet', 'difficulty', _difficulty, 'durationSeconds', duration, 'letters', to_jsonb(letters));
+    RETURN jsonb_build_object('game', 'alphabet', 'difficulty', _difficulty, 'durationSeconds', duration, 'stages', stages);
   END IF;
 
   IF _game = 'colors' THEN
-    count := CASE _difficulty WHEN 'easy' THEN 5 WHEN 'medium' THEN 8 ELSE 12 END;
-    option_count := CASE _difficulty WHEN 'easy' THEN 3 WHEN 'medium' THEN 4 ELSE 6 END;
-    stroop := _difficulty = 'hard';
+    count := CASE _difficulty WHEN 'easy' THEN 5 WHEN 'medium' THEN 6 ELSE 12 END;
     FOR i IN 1..count LOOP
+      IF _difficulty = 'easy' THEN
+        option_count := CASE WHEN i <= 2 THEN 2 ELSE 3 END;
+        stroop := false;
+      ELSIF _difficulty = 'medium' THEN
+        option_count := CASE WHEN i <= 2 THEN 3 ELSE 4 END;
+        stroop := false;
+      ELSIF i <= 4 THEN
+        option_count := 3;
+        stroop := false;
+      ELSIF i <= 8 THEN
+        option_count := 4;
+        stroop := true;
+      ELSE
+        option_count := 6;
+        stroop := true;
+      END IF;
       SELECT s.next_state, s.shuffled INTO rng, shuffled FROM public.game_shuffle_text(rng, colors) AS s;
       pool := shuffled[1:option_count];
       IF stroop THEN
@@ -304,14 +357,25 @@ BEGIN
   END IF;
 
   IF _game = 'words' THEN
-    count := CASE _difficulty WHEN 'easy' THEN 3 WHEN 'medium' THEN 5 ELSE 7 END;
-    max_diff := CASE _difficulty WHEN 'easy' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END;
-    FOR i IN 1..array_length(word_list, 1) LOOP
-      IF diffs[i] <= max_diff THEN
-        indexes := indexes || i;
-      END IF;
-    END LOOP;
+    count := CASE _difficulty WHEN 'easy' THEN 3 WHEN 'medium' THEN 4 ELSE 7 END;
     FOR i IN 1..count LOOP
+      IF _difficulty = 'easy' THEN
+        band_diff := 1;
+      ELSIF _difficulty = 'medium' THEN
+        band_diff := CASE WHEN i <= 2 THEN 1 ELSE 2 END;
+      ELSIF i <= 2 THEN
+        band_diff := 1;
+      ELSIF i <= 4 THEN
+        band_diff := 2;
+      ELSE
+        band_diff := 3;
+      END IF;
+      indexes := ARRAY[]::integer[];
+      FOR pos IN 1..array_length(word_list, 1) LOOP
+        IF diffs[pos] = band_diff THEN
+          indexes := indexes || pos;
+        END IF;
+      END LOOP;
       SELECT d.next_state, d.value INTO rng, pick FROM public.game_draw(rng, array_length(indexes, 1)) AS d;
       pos := indexes[pick + 1];
       scrambled := word_list[pos];
@@ -334,14 +398,37 @@ BEGIN
     RETURN jsonb_build_object('game', 'words', 'difficulty', _difficulty, 'durationSeconds', duration, 'rounds', rounds);
   END IF;
 
-  count := CASE _difficulty WHEN 'easy' THEN 8 WHEN 'medium' THEN 10 ELSE 12 END;
-  pool := CASE _difficulty WHEN 'easy' THEN easy_words WHEN 'medium' THEN med_words ELSE hard_words END;
-  SELECT s.next_state, s.shuffled INTO rng, bag FROM public.game_shuffle_text(rng, pool) AS s;
+  count := CASE _difficulty WHEN 'easy' THEN 8 WHEN 'medium' THEN 9 ELSE 12 END;
+  IF _difficulty = 'easy' THEN
+    early := ARRAY['le','un','et','la','il'];
+    later := ARRAY['de','en','ce','tu','je'];
+  ELSIF _difficulty = 'medium' THEN
+    early := ARRAY['arbre','livre','école','classe'];
+    later := ARRAY['enfant','maison','manger','soleil'];
+  ELSE
+    early := ARRAY['éducation','bibliothèque','connaissance'];
+    later := ARRAY['apprentissage','développement','mathématiques'];
+  END IF;
+  SELECT s.next_state, s.shuffled INTO rng, early FROM public.game_shuffle_text(rng, early) AS s;
+  SELECT s.next_state, s.shuffled INTO rng, later FROM public.game_shuffle_text(rng, later) AS s;
+  bag := early || later;
   pos := 1;
   words := ARRAY[]::text[];
   FOR i IN 1..count LOOP
     IF pos > COALESCE(array_length(bag, 1), 0) THEN
-      SELECT s.next_state, s.shuffled INTO rng, bag FROM public.game_shuffle_text(rng, pool) AS s;
+      IF _difficulty = 'easy' THEN
+        early := ARRAY['le','un','et','la','il'];
+        later := ARRAY['de','en','ce','tu','je'];
+      ELSIF _difficulty = 'medium' THEN
+        early := ARRAY['arbre','livre','école','classe'];
+        later := ARRAY['enfant','maison','manger','soleil'];
+      ELSE
+        early := ARRAY['éducation','bibliothèque','connaissance'];
+        later := ARRAY['apprentissage','développement','mathématiques'];
+      END IF;
+      SELECT s.next_state, s.shuffled INTO rng, early FROM public.game_shuffle_text(rng, early) AS s;
+      SELECT s.next_state, s.shuffled INTO rng, later FROM public.game_shuffle_text(rng, later) AS s;
+      bag := early || later;
       pos := 1;
       IF COALESCE(array_length(bag, 1), 0) > 1 AND bag[1] = last_word THEN
         scrambled := bag[1];
@@ -429,8 +516,8 @@ DECLARE
   moves integer := 0;
   matches integer := 0;
   pending integer := -1;
+  wave integer := 0;
   idx integer;
-  pair_count integer;
   completed integer := 0;
   deck jsonb;
   order_list jsonb;
@@ -502,14 +589,23 @@ BEGIN
 
   IF game = 'memory' THEN
     flips := _events -> 'flips';
-    deck := _round -> 'deck';
-    IF jsonb_typeof(flips) <> 'array' OR jsonb_array_length(flips) <> jsonb_array_length(at_ms) THEN
+    IF jsonb_typeof(flips) <> 'array' OR jsonb_typeof(_round -> 'waves') <> 'array'
+       OR jsonb_array_length(flips) <> jsonb_array_length(at_ms) THEN
       RETURN jsonb_build_object('ok', false, 'reason', 'mismatch');
     END IF;
-    IF deck IS NULL OR jsonb_array_length(deck) < 2 OR jsonb_array_length(deck) % 2 <> 0 OR jsonb_array_length(flips) > 80 THEN
+    IF jsonb_array_length(_round -> 'waves') = 0 OR jsonb_array_length(flips) > 400 THEN
       RETURN jsonb_build_object('ok', false, 'reason', 'rules');
     END IF;
+    wave := 0;
+    expected_letters := ARRAY[]::text[];
     FOR i IN 0..jsonb_array_length(flips) - 1 LOOP
+      IF wave >= jsonb_array_length(_round -> 'waves') THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'rules');
+      END IF;
+      deck := _round -> 'waves' -> wave;
+      IF deck IS NULL OR jsonb_typeof(deck) <> 'array' OR jsonb_array_length(deck) < 2 OR jsonb_array_length(deck) % 2 <> 0 THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'rules');
+      END IF;
       IF jsonb_typeof(flips -> i) <> 'number' OR (flips ->> i)::numeric <> trunc((flips ->> i)::numeric) THEN
         RETURN jsonb_build_object('ok', false, 'reason', 'mismatch');
       END IF;
@@ -529,31 +625,51 @@ BEGIN
           expected_letters := expected_letters || pending::text || idx::text;
         END IF;
         pending := -1;
+        IF COALESCE(array_length(expected_letters, 1), 0) = jsonb_array_length(deck) THEN
+          wave := wave + 1;
+          expected_letters := ARRAY[]::text[];
+        END IF;
       END IF;
     END LOOP;
-    pair_count := jsonb_array_length(deck) / 2;
-    IF matches = pair_count AND pending = -1 THEN completed := 1; END IF;
+    IF wave = jsonb_array_length(_round -> 'waves') AND pending = -1 THEN completed := 1; END IF;
     score := CASE WHEN completed = 1 THEN GREATEST(100 - moves * 2, 20) ELSE matches * 5 END;
     RETURN jsonb_build_object('ok', true, 'score', score, 'elapsedMs', wpm_ms,
       'stats', jsonb_build_object('moves', moves, 'matches', matches, 'completed', completed));
   END IF;
 
   IF game = 'alphabet' THEN
-    order_list := _events -> 'order';
-    IF jsonb_typeof(order_list) <> 'array' OR jsonb_array_length(order_list) <> jsonb_array_length(at_ms) THEN
+    order_list := _events -> 'orders';
+    IF jsonb_typeof(order_list) <> 'array' OR jsonb_typeof(_round -> 'stages') <> 'array' THEN
       RETURN jsonb_build_object('ok', false, 'reason', 'mismatch');
     END IF;
-    FOR i IN 0..jsonb_array_length(_round -> 'letters') - 1 LOOP
-      expected_letters := expected_letters || (_round -> 'letters' ->> i);
+    stamp_count := 0;
+    FOR i IN 0..jsonb_array_length(order_list) - 1 LOOP
+      IF jsonb_typeof(order_list -> i) <> 'array' THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'mismatch');
+      END IF;
+      stamp_count := stamp_count + jsonb_array_length(order_list -> i);
     END LOOP;
-    SELECT array_agg(sorted ORDER BY sorted) INTO expected_letters FROM unnest(expected_letters) AS sorted;
+    IF stamp_count <> jsonb_array_length(at_ms) OR jsonb_array_length(order_list) > jsonb_array_length(_round -> 'stages') THEN
+      RETURN jsonb_build_object('ok', false, 'reason', 'mismatch');
+    END IF;
     perfect := 1;
-    IF COALESCE(array_length(expected_letters, 1), 0) <> jsonb_array_length(order_list) THEN
+    IF jsonb_array_length(order_list) <> jsonb_array_length(_round -> 'stages') THEN
       perfect := 0;
     ELSE
-      FOR i IN 1..array_length(expected_letters, 1) LOOP
-        IF (order_list ->> (i - 1)) IS DISTINCT FROM expected_letters[i] THEN
+      FOR i IN 0..jsonb_array_length(_round -> 'stages') - 1 LOOP
+        expected_letters := ARRAY[]::text[];
+        FOR k IN 0..jsonb_array_length(_round -> 'stages' -> i) - 1 LOOP
+          expected_letters := expected_letters || (_round -> 'stages' -> i ->> k);
+        END LOOP;
+        SELECT array_agg(sorted ORDER BY sorted) INTO expected_letters FROM unnest(expected_letters) AS sorted;
+        IF COALESCE(array_length(expected_letters, 1), 0) <> jsonb_array_length(order_list -> i) THEN
           perfect := 0;
+        ELSE
+          FOR k IN 1..COALESCE(array_length(expected_letters, 1), 0) LOOP
+            IF (order_list -> i ->> (k - 1)) IS DISTINCT FROM expected_letters[k] THEN
+              perfect := 0;
+            END IF;
+          END LOOP;
         END IF;
       END LOOP;
     END IF;

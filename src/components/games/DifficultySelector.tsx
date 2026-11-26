@@ -21,15 +21,17 @@ export default function DifficultySelector({
   const { t } = useLanguage();
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground font-medium">{t.games.level}:</span>
-      <div className="flex gap-1">
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <span className="text-sm font-medium text-muted-foreground">{t.games.level}:</span>
+      <div className="flex flex-wrap justify-center gap-2">
         {levels.map((l) => (
           <button
             key={l.key}
+            type="button"
+            data-difficulty={l.key}
             onClick={() => onChange(l.key)}
             className={cn(
-              'flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all',
+              'flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-all',
               value === l.key
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
